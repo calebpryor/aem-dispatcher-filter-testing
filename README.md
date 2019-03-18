@@ -1,6 +1,6 @@
 ## Adobe Experience Manager Dispatcher filter testing Docker image
 This image is located in docker hub here:
-<LINK GOES HERE>
+https://hub.docker.com/r/pryor/aem-dispatcher-filter-testing
 
 This repo is the Dockerfile source and dependent files to make this work.
 Instructions are here and in docker hub for convenience.
@@ -23,6 +23,23 @@ https://helpx.adobe.com/experience-manager/dispatcher/release-notes.html#Downloa
 
 That way you agree to Adobe terms of use etc..
 Download the version for apache 2.4 with ssl support for this image to work.
-Extract the .tar.gz file and rename the .so file to dispatcher.so and drop it in the same directory as the Dockerfile
+Extract the .tar.gz file and rename the .so file to mod_dispatcher.so and drop it in the dispatcher directory
 
-You'll then create a filters.any file with your filter rules you want to test.  This file will get mapped to your workstation so you can make changes and re-run your docker image and it will pick up the changes.
+Then create any filters files you want with a .any extension with your filter rules you want to test.
+Drop those files in the filters directory.
+This file will get mapped to your workstation so you can make changes and re-run your docker image and it will pick up the changes.
+
+## Syntax example(s)
+There are two different methods to use, docker run or docker-compose
+
+### docker run
+You can use docker run or docker-compose to run this image
+```
+docker build -t pryor/aem-dispatcher-filter-testing:latest .
+docker run -p 80:80 -v /DIR_YOU_CLONED_TO/filters/:/etc/httpd/conf.dispatcher.d/filters/ -v /DIR_YOU_CLONED_TO/dispatcher/:/etc/httpd/modules/dispatcher/ pryor/aem-dispatcher-filter-testing:latest
+```
+
+### docker-compose
+```
+docker-compose up
+```

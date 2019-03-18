@@ -1,0 +1,3 @@
+### Use this file to add your filters.
+### Keep in mind the first filter that you don't see is this one that's included in the parent file:
+### /0001 { /type "deny" /url "*" }

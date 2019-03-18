@@ -1,0 +1,66 @@
+/farms {
+  /filtertestfarm {
+    /clientheaders {
+      "*"
+    }
+    /virtualhosts {
+      "*"
+    }
+    /renders {
+      /rend01 {
+        /hostname "127.0.0.1"
+        /port "4503"
+        /timeout "0"
+      }
+    }
+    /filter {
+      /0001 { /type "deny" /url "*" }
+      $include "/etc/httpd/conf.dispatcher.d/filters/*.any"
+    }
+    /cache {
+      /docroot "/var/www/html/"
+      /rules {
+        /0000 {
+          /glob "*"
+          /type "allow"
+        }
+      }
+      /invalidate {
+        /0000 {
+          /glob "*"
+          /type "allow"
+        }
+      }
+      /allowedClients {
+        /0000 {
+          /glob "*"
+          /type "deny"
+        }
+        /0001 {
+          /glob "127.0.0.1"
+          /type "allow"
+        }
+      }
+      /headers {
+        "Cache-Control"
+        "Content-Disposition"
+        "Content-Type"
+        "Expires"
+        "Last-Modified"
+        "X-Content-Type-Options"
+      }
+      /gracePeriod "2"
+      /enableTTL "1"
+    }
+    /statistics {
+      /categories {
+        /html {
+          /glob "*.html"
+        }
+        /others {
+          /glob "*"
+        }
+      }
+    }
+  }
+}

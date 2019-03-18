@@ -1,0 +1,10 @@
+version: '3'
+services:
+  dispatcher:
+    build: .
+    ports:
+    - "80:80"
+    - "443:443"
+    volumes:
+      - ./filters/:/etc/httpd/conf.dispatcher.d/filters/
+      - ./dispatcher/:/etc/httpd/modules/dispatcher/
