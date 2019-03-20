@@ -1,7 +1,7 @@
 version: '3'
 services:
   dispatcher:
-    build: .
+    image: pryor/aem-dispatcher-filter-testing
     ports:
     - "80:80"
     - "443:443"
