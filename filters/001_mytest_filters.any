@@ -1,0 +1,6 @@
+/0002 {
+	/type "allow"
+	/method "GET"
+	/path "/content/*"
+	/extensions "html"
+}
