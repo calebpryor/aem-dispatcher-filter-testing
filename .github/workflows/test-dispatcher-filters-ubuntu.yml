@@ -1,4 +1,4 @@
-name: test-dispatcher-filters
+name: test-dispatcher-filters-ubuntu
 # run the workflow manually
 on: [workflow_dispatch]
 jobs:
