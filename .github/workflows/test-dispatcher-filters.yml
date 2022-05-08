@@ -1,13 +1,12 @@
 name: test-dispatcher-filters
-on: [push]
+on:
+  workflow_dispatch:
+    tags:
+      description: "filters testing"
 jobs:
   test_dispatcher_filters:
     container:
       image: alpine:latest
-    runs-on: 
-        workflow_dispatch:
-          tags:
-            description: "filters testing"
     steps:
       - uses: actions/checkout@v3
       - run: apk add apache2
