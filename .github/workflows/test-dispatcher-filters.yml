@@ -4,8 +4,8 @@ on: [workflow_dispatch]
 jobs:
   test_dispatcher_filters:
     # use lightweight Linux distro Alpine (https://hub.docker.com/_/alpine)
-    #container:
-    #  image: alpine:latest
+    container:
+      image: ubuntu:latest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
