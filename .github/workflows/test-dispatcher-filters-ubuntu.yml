@@ -1,0 +1,34 @@
+name: test-dispatcher-filters
+# run the workflow manually
+on: [workflow_dispatch]
+jobs:
+  test_dispatcher_filters:
+    # use lightweight Linux distro Alpine (https://hub.docker.com/_/alpine)
+    container:
+      image: alpine:latest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # https://stackoverflow.com/questions/66963068/docker-alpine-executable-binary-not-found-even-if-in-path
+      - run: apk add gcompat
+      - run: apk add libc6-compat
+      - run: apk upgrade musl
+      # install Apache (https://wiki.alpinelinux.org/wiki/Apache)
+      - run: apk add apache2
+      - run: apk add curl
+      # create soft link "httpd" to "apache2"
+      - run: ln -s /etc/apache2 /etc/httpd
+      - run: mkdir -p /etc/httpd/conf.dispatcher.d/filters
+      - run: mkdir -p /var/www/modules/dispatcher
+      - run: mkdir -p /var/www/renderer
+      - run: cp dispatcher/mod_dispatcher.so /var/www/modules/dispatcher/mod_dispatcher.so
+      - run: cp httpd-dispatcher.conf /etc/httpd/conf.d/httpd-dispatcher.conf
+      - run: cp dispatcher.any /etc/httpd/conf.dispatcher.d/dispatcher.any
+      #- run: cat /etc/apache2/httpd.conf
+      #- run: cat /etc/httpd/conf.d/default.conf
+      - run: cp 02-dispatcher.conf /etc/httpd/conf.d/02-dispatcher.conf
+      - run: cp index.html /var/www/renderer/index.html
+      - run: /usr/sbin/httpd -D FOREGROUND -f /etc/httpd/conf/httpd-renderer.conf &
+      - run: sleep 2
+      - run: /usr/sbin/httpd -D FOREGROUND
+      - run: curl -I localhost
