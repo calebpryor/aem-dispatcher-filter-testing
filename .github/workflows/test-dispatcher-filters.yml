@@ -1,0 +1,18 @@
+name: test-dispatcher-filters
+on: [push]
+jobs:
+  test_dispatcher_filters:
+    container:
+      image: alpine:latest
+    runs-on: 
+        workflow_dispatch:
+          tags:
+            description: "filters testing"
+    steps:
+      - uses: actions/checkout@v3
+      - run: apk add apache2
+      - run: mkdir -p /etc/httpd/conf.dispatcher.d/filters
+      - run: mkdir -p /etc/httpd/modules/dispatcher
+      - run: mkdir -p /var/www/renderer
+      - run: ls -la
+      - run: ls -la /etc/apache2/conf.d
