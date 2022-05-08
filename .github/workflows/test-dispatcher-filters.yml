@@ -24,6 +24,7 @@ jobs:
       - run: cp 02-dispatcher.conf /etc/httpd/conf.d/02-dispatcher.conf
       - run: cp index.html /var/www/renderer/index.html
       # start Apache processes
+      - run: rc-service apache2 start
       
       
       
