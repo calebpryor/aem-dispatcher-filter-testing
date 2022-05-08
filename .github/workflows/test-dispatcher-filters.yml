@@ -4,15 +4,16 @@ on: [workflow_dispatch]
 jobs:
   test_dispatcher_filters:
     # use lightweight Linux distro Alpine (https://hub.docker.com/_/alpine)
-    container:
-      image: alpine:latest
+    #container:
+    #  image: alpine:latest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       # install Apache (https://wiki.alpinelinux.org/wiki/Apache)
-      - run: apk add apache2
-      - run: apk add curl
-      - run: apk upgrade musl
+      #- run: apk add apache2
+      - run: apt install apache2
+      #- run: apk add curl
+      #- run: apk upgrade musl
       # create soft link "httpd" to "apache2"
       - run: ln -s /etc/apache2 /etc/httpd
       - run: mkdir -p /etc/httpd/conf.dispatcher.d/filters
