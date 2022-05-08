@@ -19,7 +19,7 @@ jobs:
       #- run: mkdir -p /etc/httpd/modules/dispatcher
       - run: mkdir -p /var/www/renderer
       #- run: cp dispatcher/mod_dispatcher.so /etc/httpd/modules/dispatcher/mod_dispatcher.so
-      - run: cp dispatcher/mod_dispatcher.so /var/www/modules/dispatcher/mod_dispatcher.so
+      #- run: cp dispatcher/mod_dispatcher.so /var/www/modules/dispatcher/mod_dispatcher.so
       - run: cp httpd-dispatcher.conf /etc/httpd/conf.d/httpd-dispatcher.conf
       - run: cp dispatcher.any /etc/httpd/conf.dispatcher.d/dispatcher.any
       - run: cat /etc/apache2/httpd.conf
