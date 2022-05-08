@@ -5,17 +5,11 @@ jobs:
   test_dispatcher_filters:
     # use lightweight Linux distro Alpine (https://hub.docker.com/_/alpine)
     container:
-      image: alpine:latest
+      image: ubuntu:latest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      # https://stackoverflow.com/questions/66963068/docker-alpine-executable-binary-not-found-even-if-in-path
-      - run: apk add gcompat
-      - run: apk add libc6-compat
-      - run: apk upgrade musl
-      # install Apache (https://wiki.alpinelinux.org/wiki/Apache)
-      - run: apk add apache2
-      - run: apk add curl
+      - run: apt-get -y update && sudo apt-get -y install apache2
       # create soft link "httpd" to "apache2"
       - run: ln -s /etc/apache2 /etc/httpd
       - run: mkdir -p /etc/httpd/conf.dispatcher.d/filters
