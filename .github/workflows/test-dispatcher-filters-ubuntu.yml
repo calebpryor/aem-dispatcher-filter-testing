@@ -12,6 +12,7 @@ jobs:
       - run: apt-get -y update && apt-get -y install apache2
       # create soft link "httpd" to "apache2"
       - run: ln -s /etc/apache2 /etc/httpd
+      - run: ls -laR /etc/apache2/
       - run: mkdir -p /etc/httpd/conf.dispatcher.d/filters
       - run: mkdir -p /var/www/modules/dispatcher
       - run: mkdir -p /var/www/renderer
