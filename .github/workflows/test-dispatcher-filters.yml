@@ -12,7 +12,7 @@ jobs:
       # install Apache (https://wiki.alpinelinux.org/wiki/Apache)
       #- run: apk add apache2
       - run: whoami
-      - run: apt -y install apache2
+      - run: apt-get update && apt-get install apache2
       #- run: apk add curl
       #- run: apk upgrade musl
       # create soft link "httpd" to "apache2"
