@@ -12,6 +12,7 @@ jobs:
       # install Apache (https://wiki.alpinelinux.org/wiki/Apache)
       - run: apk add apache2
       - run: apk add openrc --no-cache
+      - run: apk add curl
       # create soft link "httpd" to "apache2"
       - run: ln -s /etc/apache2 /etc/httpd
       - run: mkdir -p /etc/httpd/conf.dispatcher.d/filters
@@ -24,6 +25,7 @@ jobs:
       - run: cat /etc/httpd/conf.d/default.conf
       - run: cp 02-dispatcher.conf /etc/httpd/conf.d/02-dispatcher.conf
       - run: cp index.html /var/www/renderer/index.html
+      - run: curl -I localhost
       # start Apache processes
       - run: rc-service apache2 start
       
