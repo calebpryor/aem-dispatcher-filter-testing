@@ -1,15 +1,20 @@
 name: test-dispatcher-filters
+# run the workflow manually
 on: [workflow_dispatch]
 jobs:
   test_dispatcher_filters:
+    # use lightweight Linux distro Alpine (https://hub.docker.com/_/alpine)
     container:
       image: alpine:latest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      # install Apache (https://wiki.alpinelinux.org/wiki/Apache)
       - run: apk add apache2
+      # create soft link "httpd" to "apache2"
+      - run: ln -s /etc/apache2 /etc/httpd
       - run: mkdir -p /etc/httpd/conf.dispatcher.d/filters
       - run: mkdir -p /etc/httpd/modules/dispatcher
       - run: mkdir -p /var/www/renderer
       - run: ls -la
-      - run: ls -la /etc/apache2/conf.d
+      - run: ls -la /etc/httpd/conf.d
