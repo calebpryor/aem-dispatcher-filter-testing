@@ -25,8 +25,8 @@ jobs:
       - run: cat /etc/httpd/conf.d/default.conf
       - run: cp 02-dispatcher.conf /etc/httpd/conf.d/02-dispatcher.conf
       - run: cp index.html /var/www/renderer/index.html
-      - run: rc-service apache2 status
-      - run: curl -I localhost
+      - run: ls -ld /usr/sbin/httpd
+      #- run: curl -I localhost
       # start Apache processes
       
       
