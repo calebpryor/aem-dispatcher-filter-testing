@@ -16,9 +16,10 @@ jobs:
       # create soft link "httpd" to "apache2"
       - run: ln -s /etc/apache2 /etc/httpd
       - run: mkdir -p /etc/httpd/conf.dispatcher.d/filters
-      - run: mkdir -p /etc/httpd/modules/dispatcher
+      #- run: mkdir -p /etc/httpd/modules/dispatcher
       - run: mkdir -p /var/www/renderer
-      - run: cp dispatcher/mod_dispatcher.so /etc/httpd/modules/dispatcher/mod_dispatcher.so
+      #- run: cp dispatcher/mod_dispatcher.so /etc/httpd/modules/dispatcher/mod_dispatcher.so
+      - run: cp dispatcher/mod_dispatcher.so /var/www/modules/dispatcher/mod_dispatcher.so
       - run: cp httpd-dispatcher.conf /etc/httpd/conf.d/httpd-dispatcher.conf
       - run: cp dispatcher.any /etc/httpd/conf.dispatcher.d/dispatcher.any
       - run: ls -la /etc/httpd/*
