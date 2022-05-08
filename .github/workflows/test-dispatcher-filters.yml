@@ -28,8 +28,7 @@ jobs:
       - run: /usr/sbin/httpd -D FOREGROUND -f /etc/httpd/conf/httpd-renderer.conf &
       - run: sleep 2
       - run: /usr/sbin/httpd -D FOREGROUND
-      #- run: curl -I localhost
-      # start Apache processes
+      - run: curl -I localhost
       
       
       
