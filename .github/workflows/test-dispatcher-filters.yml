@@ -16,5 +16,15 @@ jobs:
       - run: mkdir -p /etc/httpd/conf.dispatcher.d/filters
       - run: mkdir -p /etc/httpd/modules/dispatcher
       - run: mkdir -p /var/www/renderer
-      - run: ls -la
-      - run: ls -la /etc/httpd/conf.d
+      - run: cp dispatcher/mod_dispatcher.so /etc/httpd/modules/dispatcher/mod_dispatcher.so
+      - run: cp httpd-dispatcher.conf /etc/httpd/conf.d/httpd-dispatcher.conf
+      - run: cp dispatcher.any /etc/httpd/conf.dispatcher.d/dispatcher.any
+      - run: cp 02-dispatcher.conf /etc/httpd/conf.modules.d/02-dispatcher.conf
+      - run: cp index.html /var/www/renderer/index.html
+      # start Apache processes
+      - run: ls -la /usr/sbin
+      
+      
+      
+      
+      
