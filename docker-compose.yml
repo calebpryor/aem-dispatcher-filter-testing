@@ -1,7 +1,9 @@
 version: '3'
 services:
   dispatcher:
-    image: pryor/aem-dispatcher-filter-testing
+    environment:
+     - DISP_VER=4.3.3
+    image: pryor/aem-dispatcher-filter-testing:centos8
     ports:
     - "80:80"
     - "443:443"
