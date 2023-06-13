@@ -1,6 +1,7 @@
-/0002 {
+/allow-content-html {
 	/type "allow"
 	/method "GET"
 	/path "/content/*"
 	/extensions "html"
+	/selectors ""
 }

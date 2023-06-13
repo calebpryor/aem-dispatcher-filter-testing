@@ -14,7 +14,8 @@
       }
     }
     /filter {
-      /0001 { /type "deny" /url "*" }
+      /default-deny { /type "deny" /url "*" }
+      /default-container-allow-404 { /type "allow" /method "GET" /url "/404.html" /extension "html" /selectors "" /suffix "" }
       $include "/etc/httpd/conf.dispatcher.d/filters/*.any"
     }
   }
