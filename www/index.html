@@ -1,0 +1,95 @@
+<html>
+    <head>
+        <style>
+            #main-title {
+                padding-top: 10px;
+                text-align: center;
+                font-family: 'Lato', sans-serif;
+            }
+            #main-title h1 {
+                font-size: 30px;
+                background-color: #565656;
+                color: transparent;
+                font-weight: bold;
+                text-shadow: 2px 2px 3px rgba(255, 255, 255, 0.5);
+                -webkit-background-clip: text;
+                -moz-background-clip: text;
+                background-clip: text;
+                padding-left: 15px;
+                margin-top: -10px;
+            }
+            #main-title p {
+                margin-top: -20px;
+            }
+            #adobe-logo-square {
+                background-color: #ff0000;
+                padding: 10px;
+                width: 60px;
+                height: 50px;
+            }
+
+            #adobe-logo {
+                height: 50px;
+                overflow: hidden;
+                position: relative;
+                width: 58px;
+            }
+
+            #adobe-logo * {
+                position: absolute;
+            }
+
+            .adobe-logo-part1,
+            .adobe-logo-part2,
+            .adobe-logo-part3 {
+                background: #fff;
+            }
+
+            .adobe-logo-part1 {
+                height: 61px;
+                left: 11px;
+                top: -5px;
+                transform: rotate(23deg);
+                width: 14px;
+            }
+
+            .adobe-logo-part2 {
+                height: 61px;
+                left: 32px;
+                top: -5px;
+                transform: rotate(-23deg);
+                width: 14px;
+            }
+
+            .adobe-logo-part3 {
+                height: 10px;
+                left: 12px;
+                top: 40px;
+                transform: skewx(22deg);
+                width: 18px;
+            }
+        </style>
+        <title>ALLOWED</title>
+    </head>
+    <body>
+        <table>
+            <tr>
+                <td>
+                    <div id="adobe-logo-square">
+                        <div id="adobe-logo">
+                            <div class="adobe-logo-part1"></div>
+                            <div class="adobe-logo-part2"></div>
+                            <div class="adobe-logo-part3"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div id="main-title">
+                        <h1>YOUR FILTERS ALLOWED YOU THROUGH</h1>
+                        <p>This is a test page that AEM would have served up</p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

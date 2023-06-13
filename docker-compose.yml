@@ -2,11 +2,10 @@ version: '3'
 services:
   dispatcher:
     environment:
-     - DISP_VER=4.3.3
-    image: pryor/aem-dispatcher-filter-testing:centos8
+     - DISP_VER=4.3.5
+    image: pryor/aem-dispatcher-filter-testing:rockylinux8
     ports:
     - "80:80"
-    - "443:443"
     volumes:
       - ./filters/:/etc/httpd/conf.dispatcher.d/filters/
       - ./dispatcher/:/etc/httpd/modules/dispatcher/
