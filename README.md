@@ -19,9 +19,9 @@ https://docs.adobe.com/content/help/en/experience-manager-dispatcher/using/confi
 
 # Demo
 
-![Starting Container](https://raw.githubusercontent.com/calebpryor/aem-dispatcher-filter-testing/main/dispatcher-filter-testing-compose.gif)
+![Starting Container](https://raw.githubusercontent.com/calebpryor/aem-dispatcher-filter-testing/master/dispatcher-filter-testing-compose.gif)
 
-![Browser Testing Filters](https://raw.githubusercontent.com/calebpryor/aem-dispatcher-filter-testing/main/dispatcher-filter-testing-examples.gif)
+![Browser Testing Filters](https://raw.githubusercontent.com/calebpryor/aem-dispatcher-filter-testing/master/dispatcher-filter-testing-examples.gif)
 
 # What do I need?
 
