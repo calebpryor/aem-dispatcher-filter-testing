@@ -1,6 +1,6 @@
 #!/bin/bash
 MODULE_VER=${1:-4.3.5}
-CPU_ARCH=$(lscpu | grep Architecture | awk '{ print $2 }')
+CPU_ARCH=$(uname -m)
 
 if [ ! -z "$CPU_ARCH" ];then
 	case $MODULE_VER in
