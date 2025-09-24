@@ -52,10 +52,10 @@ This file will get mapped to your workstation so you can make changes and re-run
 
 There are different methods to use, docker run or docker-compose
 
-### docker-compose (Easier)
+### docker compose (Easier)
 
 ```
-docker-compose up
+docker compose up
 ```
 
 ### docker pull or build
