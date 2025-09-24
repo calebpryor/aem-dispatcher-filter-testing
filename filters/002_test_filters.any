@@ -1,0 +1,16 @@
+/AMS_PUB_ALLOW_CONTENT_PATH_HTML { /type "allow" /method '(GET|POST)' /extension "html" /path "/content/*" /url "/content/*.html*" }
+/AMS_PUB_ALLOW_CONTENT_PATH_ASSETS { /type "allow" /method "GET" /extension '(jpeg|jpg|png|mp3|mp4|mov|mpeg|mpg|gif|swf|svg|ttf|gltf|stl|obj|usdz|glb)' /path "/content/dam/*" }
+/AMS_PUB_ALLOW_CLIENTLIBS { /type "allow" /method "GET" /extension '(css|eot|gif|ico|jpeg|jpg|js|png|svg|swf|ttf|woff|woff2)' /path "/etc/clientlibs/*" }
+/AMS_PUB_ALLOW_CLIENTLIBS_PROXY { /type "allow" /method "GET" /url "/etc.clientlibs/*" /suffix '.*\\.(css|eot|gif|ico|jpeg|jpg|js|gif|png|svg|swf|ttf|woff|woff2)$' }
+/AMS_PUB_ALLOW_CSRF { /type "allow" /method "GET" /url '/libs/granite/csrf/token.json' /path "/libs/granite/csrf/*" /extension 'json' } 
+/AMS_PUB_ALLOW_PERSONALIZATION { /type "allow" /method "GET" /path "/libs/cq/personalization/*" }
+/AMS_PUB_DENY_GREEDY_QUERIES { /type "deny" /selectors '(feed|rss|pages|languages|blueprint|infinity|tidy|sysview|docview|query|[0-9-]+|jcr:content)' /extension '(json|xml|html|feed|pdf)' }
+/AMS_PUB_DENY_DEBUG { /type "deny" /method "GET" /query '(.*&debug=.*|debug=.*)' }
+/AMS_PUB_DENY_WCMMODE { /type "deny" /method "GET" /query '(.*&wcmmode=.*|wcmmode=.*)' }
+/AMS_PUB_DENY_HEALTHCHECK { /type "deny" /path '(/content/ams/healthcheck/.*|/system/health.*)' }
+/AMS_PUB_DENY_REGENT { /type "deny" /url "/content/regent.html" }
+/AMS_PUB_DENY_DOTDOTSEMI { /type "deny" /url '.*/[.][.];/.*' }
+/AMS_PUB_DENY_BRACKET_PIVOTS { /type "deny" /url '.*(\\[|]).*' }
+/AMS_PUB_DENY_AMSSEC033 { /type "deny" /suffix '(.*infinity.*|.*children.*|.*tidy.*)' }
+/AMS_PUB_DENY_CONTENT_PATH_SUFFIXES { /type "deny" /url "/content*" /suffix "*" }
+/AMS_PUB_DENY_CONTENT_PATH_SELECTORS { /type "deny" /url "/content*" /selectors "*" }

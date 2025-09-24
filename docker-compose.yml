@@ -1,11 +1,11 @@
-version: '3'
 services:
   dispatcher:
     environment:
-     - DISP_VER=4.3.5
+     - DISP_VER=4.3.7
     image: pryor/aem-dispatcher-filter-testing:rockylinux8
     ports:
     - "80:80"
     volumes:
       - ./filters/:/etc/httpd/conf.dispatcher.d/filters/
       - ./dispatcher/:/etc/httpd/modules/dispatcher/
+      - ./logs/:/var/log/httpd/
