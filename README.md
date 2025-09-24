@@ -77,5 +77,13 @@ docker build -t pryor/aem-dispatcher-filter-testing:rockylinux8 .
 #### docker run
 
 ```
-docker run -p 80:80 -v /DIR_YOU_CLONED_TO/filters/:/etc/httpd/conf.dispatcher.d/filters/ pryor/aem-dispatcher-filter-testing:rockylinux8
+docker run -p 80:80 -v /DIR_YOU_CLONED_TO/filters/:/etc/httpd/conf.dispatcher.d/filters/ -v /DIR_YOU_CLONED_TO/logs/:/var/log/httpd/ pryor/aem-dispatcher-filter-testing:rockylinux8
 ```
+
+Now you can tail the log files
+
+```
+tail -f logs/filter-test.log
+```
+
+As you visit your browser you'll see the relevant log entries for allows and denies for the filters

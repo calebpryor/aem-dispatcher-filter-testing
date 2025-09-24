@@ -14,9 +14,9 @@
       }
     }
     /filter {
-      /default-deny { /type "deny" /url "*" }
-      /default-container-allow-404 { /type "allow" /method "GET" /url "/container-404.html" /extension "html" /selectors "" /suffix "" }
-      /default-container-allow-favicon { /type "allow" /method "GET" /url "/favicon.ico" /extension "ico" /selectors "" /suffix "" }
+      /default-test-container-deny { /type "deny" /url "*" }
+      /default-test-container-allow-404 { /type "allow" /method "GET" /url "/container-404.html" /extension "html" /selectors "" /suffix "" }
+      /default-test-container-allow-favicon { /type "allow" /method "GET" /url "/favicon.ico" /extension "ico" /selectors "" /suffix "" }
       $include "/etc/httpd/conf.dispatcher.d/filters/*.any"
     }
   }
