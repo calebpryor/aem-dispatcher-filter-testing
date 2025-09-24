@@ -1,5 +1,5 @@
 #!/bin/bash
-MODULE_VER=${1:-4.3.5}
+MODULE_VER=${1:-4.3.7}
 CPU_ARCH=$(uname -m)
 
 if [ ! -z "$CPU_ARCH" ];then
@@ -12,6 +12,12 @@ if [ ! -z "$CPU_ARCH" ];then
 			;;
 		4.3.5)
 			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.5.tar.gz
+			;;
+		4.3.6)
+			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.6.tar.gz
+			;;
+		4.3.7)
+			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.7.tar.gz
 			;;
 		*)
 			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.5.tar.gz
@@ -30,6 +36,14 @@ if [ ! -z "$CPU_ARCH" ];then
 		echo "Existing dispatcher modules found"
 	fi
 
+	# Start file watcher for filter changes in background
+	echo "Starting filter file watcher..."
+	/usr/local/bin/watch_filters.sh &
+	
+	# Start filter log extractor in background
+	echo "Starting filter log extractor..."
+	/usr/local/bin/filter_log_extractor.sh &
+	
 	/usr/bin/supervisord -j /var/run/supervisor/supervisord.pid
 else
 	echo "UNKNOWN CPU ARCH.  ABORTING"

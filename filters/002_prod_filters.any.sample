@@ -1,7 +1,0 @@
-/allow-dam-images {
-	/type "allow"
-	/method "GET"
-	/path "/content/dam/*"
-	/extensions '(jpg|jpeg|gif|png|tiff)'
-	/url '/content/dam/.*\.(jpg|jpeg|gif|png|tiff)'
-}
