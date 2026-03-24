@@ -1,51 +1,15 @@
 #!/bin/bash
-MODULE_VER=${1:-4.3.7}
-CPU_ARCH=$(uname -m)
+# mod_dispatcher.so is not downloaded at container start. Install it only from the
+# control panel (download_dispatcher.sh via /api/dispatcher-version). Httpd processes
+# wait in wait_httpd.sh until the module file is valid.
 
-if [ ! -z "$CPU_ARCH" ];then
-	case $MODULE_VER in
-		4.3.3)
-			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.3.tar.gz
-			;;
-		4.3.4)
-			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.4.tar.gz
-			;;
-		4.3.5)
-			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.5.tar.gz
-			;;
-		4.3.6)
-			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.6.tar.gz
-			;;
-		4.3.7)
-			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.7.tar.gz
-			;;
-		*)
-			DOWNLOAD_URL=https://download.macromedia.com/dispatcher/download/dispatcher-apache2.4-linux-$CPU_ARCH-4.3.5.tar.gz
-			;;
-	esac		
+CP="${CONTROL_PORT:-59173}"
+echo "Dispatcher module: use the control UI at http://127.0.0.1:${CP} (Download & switch module). Apache will start after the .so is installed."
 
-	if [ ! -f /etc/httpd/modules/dispatcher/mod_dispatcher.so ];then
-		cd /tmp
-		echo "downloading dispatcher module from url $DOWNLOAD_URL"
-		wget $DOWNLOAD_URL
-		echo "extracting .so to /etc/httpd/modules/dispatcher/"
-		tar -xvf dispatcher-apache2.4-linux-*.tar.gz --wildcards --no-anchored '*.so'
-		tar xzf dispatcher-apache2.4-*.tar.gz
-		cp -v dispatcher-*.so /etc/httpd/modules/dispatcher/mod_dispatcher.so
-	else
-		echo "Existing dispatcher modules found"
-	fi
+echo "Starting filter file watcher..."
+/usr/local/bin/watch_filters.sh &
 
-	# Start file watcher for filter changes in background
-	echo "Starting filter file watcher..."
-	/usr/local/bin/watch_filters.sh &
-	
-	# Start filter log extractor in background
-	echo "Starting filter log extractor..."
-	/usr/local/bin/filter_log_extractor.sh &
-	
-	/usr/bin/supervisord -j /var/run/supervisor/supervisord.pid
-else
-	echo "UNKNOWN CPU ARCH.  ABORTING"
-	exit
-fi
+echo "Starting filter log extractor..."
+/usr/local/bin/filter_log_extractor.sh &
+
+/usr/bin/supervisord -j /var/run/supervisor/supervisord.pid

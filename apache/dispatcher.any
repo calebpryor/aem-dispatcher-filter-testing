@@ -19,5 +19,13 @@
       /default-test-container-allow-favicon { /type "allow" /method "GET" /url "/favicon.ico" /extension "ico" /selectors "" /suffix "" }
       $include "/etc/httpd/conf.dispatcher.d/filters/*.any"
     }
+    /cache {
+      /rules {
+        /0000 {
+          /glob "*"
+          /type "deny"
+        }
+      }
+    }
   }
 }

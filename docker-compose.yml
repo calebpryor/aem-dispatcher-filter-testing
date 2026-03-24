@@ -1,11 +1,28 @@
+name: aem-dispatcher-filter-testing
+
 services:
   dispatcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
-     - DISP_VER=4.3.7
+     - CONTROL_PORT=${CONTROL_PORT:-59173}
+     - TEST_URL_BASE=${TEST_URL_BASE:-http://127.0.0.1}
     image: pryor/aem-dispatcher-filter-testing:rockylinux8
+    # If the pulled image arch does not match your host (arm64 vs amd64), run:
+    #   docker compose build --no-cache
+    # or uncomment one line below to pin the architecture you need.
+    # platform: linux/amd64
+    # platform: linux/arm64
     ports:
     - "80:80"
+    # Loopback-only; set CONTROL_PORT in .env if this port is already in use on the host.
+    - "127.0.0.1:${CONTROL_PORT:-59173}:${CONTROL_PORT:-59173}"
     volumes:
       - ./filters/:/etc/httpd/conf.dispatcher.d/filters/
-      - ./dispatcher/:/etc/httpd/modules/dispatcher/
+      # Do not mount ./dispatcher by default: an empty or wrong-arch mod_dispatcher.so on
+      # the host breaks httpd (see disp_module_valid.sh). To use a vendor .so, add:
+      #   - ./dispatcher/mod_dispatcher.so:/etc/httpd/modules/dispatcher/mod_dispatcher.so:ro
       - ./logs/:/var/log/httpd/
+      # Default good/bad request paths for the control UI test form (JSON: good_paths, bad_paths).
+      - ./tests/default_test_paths.json:/usr/local/share/default_test_paths.json:ro

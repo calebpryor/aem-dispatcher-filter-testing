@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Log stream — dispatcher sandbox</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      line-height: 1.45;
+      color: #1a1a1a;
+      background: #f4f5f7;
+    }
+    body { margin: 0; padding: 0.75rem 1rem 1.5rem; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
+    h1 { font-size: 1.1rem; margin: 0 0 0.5rem; font-weight: 650; }
+    .nav { font-size: 0.88rem; margin-bottom: 0.5rem; }
+    .nav a { color: #1f7aad; }
+    .meta { font-size: 0.82rem; color: #555; margin-bottom: 0.5rem; }
+    pre#out {
+      flex: 1;
+      margin: 0;
+      padding: 0.65rem 0.75rem;
+      background: #0d1117;
+      color: #e6edf3;
+      font-size: 0.78rem;
+      line-height: 1.35;
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      min-height: 12rem;
+    }
+    .err { color: #f85149; background: #fff5f5; padding: 0.5rem; border-radius: 6px; font-size: 0.88rem; }
+  </style>
+</head>
+<body>
+  <p class="nav"><a href="/">← Control panel</a></p>
+  <h1 id="title">Log stream</h1>
+  <p class="meta" id="meta"></p>
+  <pre id="out" aria-live="polite"></pre>
+  <p id="banner" class="err" hidden></p>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var name = params.get("name");
+      var title = document.getElementById("title");
+      var meta = document.getElementById("meta");
+      var out = document.getElementById("out");
+      var banner = document.getElementById("banner");
+
+      if (!name || !/^[a-zA-Z0-9._-]+$/.test(name)) {
+        banner.hidden = false;
+        banner.textContent = "Missing or invalid ?name= (allowed: letters, digits, dot, underscore, hyphen).";
+        return;
+      }
+
+      title.textContent = "Log: " + name;
+      meta.textContent = "Live stream via Server-Sent Events. Leave this page open; new lines append as they are written.";
+
+      var url = "/api/log-stream?name=" + encodeURIComponent(name);
+      var es = new EventSource(url);
+
+      es.addEventListener("error", function (e) {
+        if (es.readyState === EventSource.CLOSED) {
+          out.textContent += "\n[stream closed]\n";
+        }
+      });
+
+      es.onmessage = function (e) {
+        try {
+          var o = JSON.parse(e.data);
+          if (o.error) {
+            banner.hidden = false;
+            banner.textContent = o.error;
+            es.close();
+            return;
+          }
+          if (o.line !== undefined && o.line !== null) {
+            out.textContent += o.line + "\n";
+            out.scrollTop = out.scrollHeight;
+          }
+        } catch (err) {
+          out.textContent += e.data + "\n";
+          out.scrollTop = out.scrollHeight;
+        }
+      };
+    })();
+  </script>
+</body>
+</html>

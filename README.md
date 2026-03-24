@@ -50,13 +50,55 @@ This file will get mapped to your workstation so you can make changes and re-run
 
 ## Get and run the container
 
-There are different methods to use, docker run or docker-compose
+There are different methods to use: Docker or Podman, `compose` or plain `run`.
+
+The Compose file is `docker-compose.yml` (only one file — having both `compose.yaml` and `docker-compose.yml` makes Compose warn and pick one arbitrarily).
 
 ### docker compose (Easier)
 
+From a clone of this repo, build and run so you get the current Dockerfile (including the control UI on **`CONTROL_PORT`, default 59173**):
+
 ```
-docker compose up
+docker compose up --build
 ```
+
+Optional: copy `.env.example` to `.env` and set `CONTROL_PORT` to any high, unused port if your Mac, VPN, or corporate stack blocks localhost on specific numbers.
+
+To use a pre-pulled image only (no local build), omit `--build` (Hub tags may be older than this repository).
+
+### Dispatcher module (`mod_dispatcher.so`)
+
+The Adobe module is **not** baked into the image and is **not** downloaded at container start. After `compose up`, open the **control UI** (`http://127.0.0.1` and your `CONTROL_PORT`, default **59173**) and use **Download & switch module** to fetch `mod_dispatcher.so`. Apache waits until that step completes.
+
+**Do not** leave an empty or macOS / wrong-CPU file under `./dispatcher/` and mount it — that can make Apache fail to load the module. Default Compose mounts **filters** and **logs** only; see `dispatcher/README.md` if you need to supply your own Linux `mod_dispatcher.so`.
+
+### Podman Desktop / Podman (compatible)
+
+This project uses a standard Compose file and OCI builds, so you can use [Podman Desktop](https://podman-desktop.io/) or the Podman CLI the same way:
+
+```
+podman compose up
+```
+
+Build from source:
+
+```
+podman build -f Dockerfile -t pryor/aem-dispatcher-filter-testing:rockylinux8 .
+```
+
+Pull from Docker Hub (fully qualified name works everywhere):
+
+```
+podman pull docker.io/pryor/aem-dispatcher-filter-testing:rockylinux8
+```
+
+Run without Compose:
+
+```
+podman run -p 80:80 -p 127.0.0.1:59173:59173 -e CONTROL_PORT=59173 -v /DIR_YOU_CLONED_TO/filters/:/etc/httpd/conf.dispatcher.d/filters/ -v /DIR_YOU_CLONED_TO/logs/:/var/log/httpd/ docker.io/pryor/aem-dispatcher-filter-testing:rockylinux8
+```
+
+**Podman Desktop tips:** Enable **Docker compatibility** in Podman Desktop settings if you rely on a `docker` CLI alias to existing scripts. On **Linux rootless** Podman, binding host ports **below 1024** (e.g. `80:80`) may be blocked by your system; either allow unprivileged low ports for your user or change the published ports (for example map `9080:80` for the dispatcher and `127.0.0.1:59173:59173` for the control UI). If **SELinux** denies volume access on Fedora/RHEL-style hosts, append `:z` to each bind mount in the Compose file (e.g. `./filters/:/etc/httpd/conf.dispatcher.d/filters/:z`).
 
 ### docker pull or build
 
@@ -77,7 +119,7 @@ docker build -t pryor/aem-dispatcher-filter-testing:rockylinux8 .
 #### docker run
 
 ```
-docker run -p 80:80 -v /DIR_YOU_CLONED_TO/filters/:/etc/httpd/conf.dispatcher.d/filters/ -v /DIR_YOU_CLONED_TO/logs/:/var/log/httpd/ pryor/aem-dispatcher-filter-testing:rockylinux8
+docker run -p 80:80 -p 127.0.0.1:59173:59173 -e CONTROL_PORT=59173 -v /DIR_YOU_CLONED_TO/filters/:/etc/httpd/conf.dispatcher.d/filters/ -v /DIR_YOU_CLONED_TO/logs/:/var/log/httpd/ pryor/aem-dispatcher-filter-testing:rockylinux8
 ```
 
 Now you can tail the log files
@@ -87,3 +129,34 @@ tail -f logs/filter-test.log
 ```
 
 As you visit your browser you'll see the relevant log entries for allows and denies for the filters
+
+### Control UI (default `http://127.0.0.1:59173`)
+
+The control panel is a small Python HTTP server inside the container (not Apache).
+
+**Why 59173:** Low “well-known” ports (80, 8080, …) and even some high defaults (e.g. 55555) can already be in use locally. The default **`CONTROL_PORT=59173`** is an uncommon high port; override in `.env` if this one is also taken (`address already in use`). Compose publishes it on **loopback only** (`127.0.0.1:59173:59173`) so traffic stays on your machine.
+
+**Platform mismatch:** If Compose warns that the image platform (e.g. `linux/arm64`) does not match the host (`linux/amd64`), run **`docker compose build --no-cache`** on **this** machine so the image matches your CPU, or uncomment **`platform: linux/amd64`** or **`platform: linux/arm64`** in `docker-compose.yml` to match your host.
+
+**Outbound checks are misleading:** `curl portquiz.net:8080` only proves **outbound** internet access on port 8080. It says nothing about whether **Docker can publish** a port on `127.0.0.1` on your machine.
+
+**If you still get connection reset / refused:**
+
+1. Confirm the container is up: `docker compose ps` and `docker compose logs` (look for `Control panel listening on 0.0.0.0:59173`).
+2. **`bind: address already in use`** — copy `.env.example` to `.env`, set `CONTROL_PORT=` to a free port (try `49821`), then `docker compose up --build` again.
+3. Prefer **`http://127.0.0.1:…`** in the browser (avoids IPv6 / `localhost` oddities).
+4. Rebuild so you are not on an old Hub image without the control server:
+
+```
+docker compose build --no-cache
+docker compose up
+```
+
+Quick checks:
+
+```
+curl -sS http://127.0.0.1:59173/api/health
+curl -I http://127.0.0.1:59173/
+```
+
+Use **`curl` GET** (or open the URL in a browser). `curl -I` sends **HEAD**, which is implemented; older images may only support GET.

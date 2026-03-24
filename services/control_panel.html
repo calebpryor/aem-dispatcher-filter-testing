@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dispatcher sandbox — control</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      line-height: 1.45;
+      color: #1a1a1a;
+      background: #f4f5f7;
+    }
+    body { margin: 0; padding: 1.25rem 1.5rem 2rem; max-width: 56rem; }
+    h1 { font-size: 1.35rem; margin: 0 0 0.35rem; font-weight: 650; }
+    h1.page-section-title { font-size: 1.2rem; margin: 1.35rem 0 0.4rem; font-weight: 650; color: #111; }
+    h1.page-section-title:first-of-type { margin-top: 0; }
+    hr.section-rule {
+      border: none;
+      border-top: 1px solid #cfd4dc;
+      margin: 0 0 1rem;
+    }
+    section p a { color: #1f7aad; }
+    section {
+      background: #fff;
+      border: 1px solid #e2e4e9;
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    h2 { font-size: 0.95rem; margin: 0 0 0.65rem; font-weight: 650; color: #222; }
+    h3 { font-size: 0.85rem; margin: 1rem 0 0.5rem; font-weight: 650; color: #333; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 0.25rem; }
+    select, textarea, button, input[type="number"] {
+      font: inherit;
+      border-radius: 6px;
+    }
+    select { padding: 0.35rem 0.5rem; min-width: 10rem; border: 1px solid #ccd; background: #fff; }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 6.5rem;
+      padding: 0.5rem 0.6rem;
+      border: 1px solid #ccd;
+      resize: vertical;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: flex-end; margin-bottom: 0.75rem; }
+    .row:last-child { margin-bottom: 0; }
+    .row.align-center { align-items: center; }
+    button {
+      padding: 0.45rem 0.85rem;
+      border: 1px solid #2a6f9c;
+      background: #1f7aad;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { background: #1a6b99; }
+    button.secondary {
+      border-color: #999;
+      background: #fff;
+      color: #222;
+    }
+    button.secondary:hover { background: #f0f0f0; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .hint { font-size: 0.8rem; color: #666; margin-top: 0.35rem; }
+    pre.out, pre.action-out {
+      margin: 0.5rem 0 0;
+      padding: 0.65rem 0.75rem;
+      background: #0d1117;
+      color: #e6edf3;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      overflow: auto;
+      max-height: 16rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    table.results {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      margin-top: 0.5rem;
+    }
+    table.results th, table.results td {
+      border: 1px solid #dfe3e8;
+      padding: 0.35rem 0.5rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    table.results th { background: #f0f2f5; font-weight: 600; }
+    table.results td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    table.results tbody tr.row-pass { background: #c8f0d4; }
+    table.results tbody tr.row-fail { background: #ffc9c9; }
+    table.results tbody tr.row-pass td,
+    table.results tbody tr.row-fail td { color: #1a1a1a; }
+    table.results tbody tr.row-pass td .muted,
+    table.results tbody tr.row-fail td .muted { color: #333; }
+    table.results td a { color: #1a1a1a; text-decoration: underline; }
+    table.results td a:hover { color: #000; }
+    table.results td a code { text-decoration: inherit; }
+    .filter-list {
+      font-size: 0.82rem;
+      margin: 0.35rem 0 0;
+      padding-left: 1.2rem;
+      color: #333;
+    }
+    .filter-list li { margin: 0.15rem 0; }
+    ul.log-links { margin: 0.5rem 0 0; padding-left: 1.2rem; font-size: 0.9rem; }
+    ul.log-links li { margin: 0.4rem 0; }
+    ul.log-links a { color: #1f7aad; }
+    .muted { color: #666; font-size: 0.8rem; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
+    label.inline { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 500; margin: 0; }
+    table.results td code { font-size: 0.88em; }
+    .module-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      box-sizing: border-box;
+    }
+    .module-modal[hidden] { display: none !important; }
+    .module-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .module-modal-dialog {
+      position: relative;
+      z-index: 1;
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.35rem 1.5rem;
+      max-width: 28rem;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      border: 1px solid #e2e4e9;
+    }
+    .module-modal-dialog h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .module-modal-dialog .row { margin-bottom: 1rem; }
+    #modalMsg { margin-top: 0.75rem; max-height: 10rem; }
+    body.module-modal-open { overflow: hidden; }
+    body.module-modal-open > *:not(#moduleModal) {
+      pointer-events: none;
+      user-select: none;
+    }
+    #moduleModal { pointer-events: auto; }
+  </style>
+</head>
+<body>
+  <div id="moduleModal" class="module-modal" role="dialog" aria-modal="true" aria-labelledby="moduleModalTitle" hidden>
+    <div class="module-modal-backdrop" aria-hidden="true"></div>
+    <div class="module-modal-dialog">
+      <h2 id="moduleModalTitle">Install dispatcher module</h2>
+      <p class="hint" style="margin-top:0">
+        <code>mod_dispatcher.so</code> is not loaded yet. Apache is waiting. Choose the Adobe-published Linux tarball version, then confirm to download and switch.
+      </p>
+      <div class="row">
+        <div>
+          <label for="verModal">Version</label>
+          <select id="verModal" aria-label="Dispatcher version for install"></select>
+        </div>
+      </div>
+      <button type="button" id="btnModalOk">OK — Download &amp; switch module</button>
+      <pre class="action-out" id="modalMsg" hidden></pre>
+    </div>
+  </div>
+
+  <h1 class="page-section-title">HTTPD/Dispatcher controls</h1>
+  <hr class="section-rule" />
+  <section>
+    <p class="hint" style="margin-top:0">
+      Control UI listens on <strong>CONTROL_PORT</strong> (default <strong>59173</strong>), not through the dispatcher. Dispatcher vhost is port <strong>80</strong>.
+    </p>
+    <h2>Dispatcher module version</h2>
+    <p class="hint">
+      Versions match Adobe-published Linux tarballs. The module is downloaded only from this page (nothing proprietary is baked into the image).
+    </p>
+    <div class="row">
+      <div>
+        <label for="ver">Version</label>
+        <select id="ver" aria-label="Dispatcher version"></select>
+      </div>
+      <button type="button" id="btnSwitch">Download &amp; switch module</button>
+      <button type="button" id="btnRestart" class="secondary">Restart dispatcher (httpd)</button>
+    </div>
+    <p class="hint">Switching downloads the selected <code>.so</code> and restarts both Apache processes (dispatcher on 80 and renderer on 4503).</p>
+    <pre class="action-out" id="actionOut" hidden></pre>
+  </section>
+
+  <h1 class="page-section-title">Testing</h1>
+  <hr class="section-rule" />
+  <section>
+    <h2>Request paths</h2>
+    <p class="hint" style="margin-top:0">
+      Filter fragments are loaded from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order). The list below is refreshed when you run tests.
+      Default good/bad lines are loaded from <code>tests/default_test_paths.json</code> on the host (mounted into the container at startup).
+    </p>
+    <p class="muted" id="filterFilesStatic">Filter files: …</p>
+    <label for="good">Good request paths (one per line) — expect HTTP 200</label>
+    <textarea id="good" placeholder="/content/dam/logo.png"></textarea>
+    <label for="bad">Bad request paths (one per line) — expect HTTP 404</label>
+    <textarea id="bad" placeholder="/system/console"></textarea>
+    <div class="row" style="margin-top:0.75rem">
+      <button type="button" id="btnTest">Run tests</button>
+    </div>
+    <p id="testErr" class="muted" hidden style="color:#b00020"></p>
+
+    <div id="testResults" hidden>
+      <h3>Results</h3>
+      <p class="muted" id="filterFilesAtTest">Filter files at time of test:</p>
+      <ul class="filter-list" id="filterFilesList"></ul>
+      <h3>Good paths <span class="muted">(expect 200)</span></h3>
+      <table class="results" id="tableGood" aria-label="Good path results"></table>
+      <h3>Bad paths <span class="muted">(expect 404)</span></h3>
+      <table class="results" id="tableBad" aria-label="Bad path results"></table>
+      <div class="toolbar">
+        <button type="button" id="btnExportJson" class="secondary">Export JSON</button>
+        <button type="button" id="btnExportCsv" class="secondary">Export CSV</button>
+      </div>
+    </div>
+  </section>
+
+  <h1 class="page-section-title">Logs</h1>
+  <hr class="section-rule" />
+  <section>
+    <p class="hint" style="margin-top:0">
+      Open a log to stream it in real time (Server-Sent Events + <code>tail -F</code> under <code>/var/log/httpd/</code>). Each link opens in a new tab. If a log is attached to container stdout/stderr, streaming may not apply — use <code>docker compose logs</code> for those streams.
+    </p>
+    <ul class="log-links">
+      <li><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a> — Dispatcher module (trace)</li>
+      <li><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a> — Filter extractor output</li>
+      <li><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a> — Dispatcher httpd (may be stderr)</li>
+      <li><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a> — May be stdout</li>
+      <li><a href="/logs/view?name=renderer_error_log" target="_blank" rel="noopener noreferrer">renderer_error_log</a></li>
+      <li><a href="/logs/view?name=renderer_access_log" target="_blank" rel="noopener noreferrer">renderer_access_log</a></li>
+    </ul>
+  </section>
+
+  <script>
+    (function () {
+      const ver = document.getElementById("ver");
+      const btnSwitch = document.getElementById("btnSwitch");
+      const btnRestart = document.getElementById("btnRestart");
+      const good = document.getElementById("good");
+      const bad = document.getElementById("bad");
+      const actionOut = document.getElementById("actionOut");
+      const moduleModal = document.getElementById("moduleModal");
+      const verModal = document.getElementById("verModal");
+      const btnModalOk = document.getElementById("btnModalOk");
+      const modalMsg = document.getElementById("modalMsg");
+      const testResults = document.getElementById("testResults");
+      const tableGood = document.getElementById("tableGood");
+      const tableBad = document.getElementById("tableBad");
+      const filterFilesList = document.getElementById("filterFilesList");
+      const filterFilesStatic = document.getElementById("filterFilesStatic");
+      const filterFilesAtTest = document.getElementById("filterFilesAtTest");
+      const btnExportJson = document.getElementById("btnExportJson");
+      const btnExportCsv = document.getElementById("btnExportCsv");
+      const testErr = document.getElementById("testErr");
+
+      let lastTestPayload = null;
+
+      function setBusy(b) {
+        btnSwitch.disabled = b;
+        btnRestart.disabled = b;
+        btnModalOk.disabled = b;
+        document.getElementById("btnTest").disabled = b;
+        if (verModal) verModal.disabled = b;
+      }
+
+      async function updateModuleGate() {
+        try {
+          var r = await fetch("/api/module-status");
+          var j = await r.json();
+          var installed = !!(j && j.installed);
+          if (moduleModal) {
+            moduleModal.hidden = installed;
+          }
+          document.body.classList.toggle("module-modal-open", !installed);
+          return installed;
+        } catch (e) {
+          if (moduleModal) moduleModal.hidden = false;
+          document.body.classList.add("module-modal-open");
+          return false;
+        }
+      }
+
+      function syncModalVersionFromMain() {
+        if (ver && verModal && ver.value) verModal.value = ver.value;
+      }
+
+      function showActionOut(text) {
+        actionOut.textContent = text;
+        actionOut.hidden = false;
+      }
+
+      function escCell(s) {
+        const t = String(s ?? "");
+        if (/[",\n\r]/.test(t)) return '"' + t.replace(/"/g, '""') + '"';
+        return t;
+      }
+
+      function escapeAttr(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function pathCellHtml(row) {
+        var p = row.path != null ? String(row.path) : "";
+        var u = row.url != null ? String(row.url) : "";
+        if (u) {
+          return (
+            "<a href=\"" +
+            escapeAttr(u) +
+            "\" target=\"_blank\" rel=\"noopener noreferrer\"><code>" +
+            escapeHtml(p) +
+            "</code></a>"
+          );
+        }
+        return "<code>" + escapeHtml(p) + "</code>";
+      }
+
+      function buildTable(tableEl, rows, expectLabel) {
+        var thead = "<thead><tr><th>OK</th><th>HTTP</th><th>Expected</th><th>Path</th></tr></thead>";
+        var body = "<tbody>";
+        (rows || []).forEach(function (row) {
+          var ok = row.ok ? "yes" : "no";
+          var st = row.status === null || row.status === undefined ? "—" : String(row.status);
+          var rowClass = row.ok ? "row-pass" : "row-fail";
+          body += "<tr class=\"" + rowClass + "\"><td>" + ok + "</td><td class=\"num\">" + st + "</td><td class=\"num\">" + expectLabel + "</td><td>" + pathCellHtml(row) + "</td></tr>";
+        });
+        body += "</tbody>";
+        if (!rows || !rows.length) {
+          body = "<tbody><tr><td colspan=\"4\" class=\"muted\">No paths in this group.</td></tr></tbody>";
+        }
+        tableEl.innerHTML = thead + body;
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function renderTestResults(j) {
+        lastTestPayload = j;
+        testResults.hidden = false;
+        var files = j.filter_files || [];
+        filterFilesList.innerHTML = "";
+        if (files.length) {
+          files.forEach(function (f) {
+            var li = document.createElement("li");
+            li.textContent = f;
+            filterFilesList.appendChild(li);
+          });
+          filterFilesAtTest.textContent = "Filter files at time of test (" + files.length + " file(s), same order as $include glob):";
+        } else {
+          var li = document.createElement("li");
+          li.className = "muted";
+          li.textContent = "(no .any files in filters directory)";
+          filterFilesList.appendChild(li);
+          filterFilesAtTest.textContent = "Filter files at time of test:";
+        }
+        buildTable(tableGood, j.good, 200);
+        buildTable(tableBad, j.bad, 404);
+      }
+
+      function downloadText(filename, text, mime) {
+        var blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      function exportCsv(j) {
+        var lines = [];
+        lines.push(["type", "group", "ok", "http_status", "expect", "path"].map(escCell).join(","));
+        (j.filter_files || []).forEach(function (f) {
+          lines.push(["filter", "", "", "", "", f].map(escCell).join(","));
+        });
+        (j.good || []).forEach(function (row) {
+          var ok = row.ok ? "yes" : "no";
+          var st = row.status === null || row.status === undefined ? "" : String(row.status);
+          lines.push(["test", "good", ok, st, "200", row.path || ""].map(escCell).join(","));
+        });
+        (j.bad || []).forEach(function (row) {
+          var ok = row.ok ? "yes" : "no";
+          var st = row.status === null || row.status === undefined ? "" : String(row.status);
+          lines.push(["test", "bad", ok, st, "404", row.path || ""].map(escCell).join(","));
+        });
+        downloadText("dispatcher-url-tests.csv", lines.join("\r\n") + "\r\n", "text/csv;charset=utf-8");
+      }
+
+      function exportJsonForDownload(j) {
+        function rowOut(row) {
+          var o = {
+            path: row.path || "",
+            ok: !!row.ok,
+            status: row.status,
+            expect: row.expect,
+          };
+          if (row.error) o.error = row.error;
+          return o;
+        }
+        return {
+          filter_files: j.filter_files || [],
+          filter_rules: j.filter_rules || [],
+          good: (j.good || []).map(rowOut),
+          bad: (j.bad || []).map(rowOut),
+        };
+      }
+
+      async function refreshFilterFilesStatic() {
+        try {
+          var r = await fetch("/api/filter-files");
+          var j = await r.json();
+          var files = j.files || [];
+          filterFilesStatic.textContent = files.length
+            ? "Filter files on disk: " + files.join(", ")
+            : "Filter files on disk: (none — add *_filters.any under filters/)";
+        } catch (e) {
+          filterFilesStatic.textContent = "Filter files: (could not load)";
+        }
+      }
+
+      async function loadDefaultTestPaths() {
+        try {
+          var r = await fetch("/api/default-test-paths");
+          var j = await r.json();
+          var gp = j.good_paths || [];
+          var bp = j.bad_paths || [];
+          if (gp.length) good.value = gp.join("\n");
+          if (bp.length) bad.value = bp.join("\n");
+        } catch (e) {
+          /* keep textarea placeholders */
+        }
+      }
+
+      async function loadVersions() {
+        var r = await fetch("/api/versions");
+        var j = await r.json();
+        var list = j.versions || [];
+        ver.innerHTML = "";
+        if (verModal) verModal.innerHTML = "";
+        list.forEach(function (v) {
+          var o = document.createElement("option");
+          o.value = v;
+          o.textContent = v;
+          ver.appendChild(o);
+          if (verModal) {
+            var om = document.createElement("option");
+            om.value = v;
+            om.textContent = v;
+            verModal.appendChild(om);
+          }
+        });
+        var want = new URLSearchParams(location.search).get("ver");
+        if (want && list.indexOf(want) >= 0) {
+          ver.value = want;
+        } else if (list.length) {
+          ver.selectedIndex = 0;
+        }
+        syncModalVersionFromMain();
+        if (btnModalOk) btnModalOk.disabled = list.length === 0;
+        await updateModuleGate();
+        await refreshFilterFilesStatic();
+        await loadDefaultTestPaths();
+        if (moduleModal && !moduleModal.hidden) {
+          try {
+            btnModalOk.focus();
+          } catch (e2) {}
+        }
+      }
+
+      btnRestart.addEventListener("click", async function () {
+        setBusy(true);
+        try {
+          var r = await fetch("/api/restart-dispatcher", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+          var j = await r.json();
+          showActionOut(JSON.stringify(j, null, 2));
+          await updateModuleGate();
+        } catch (e) {
+          showActionOut(String(e));
+        } finally {
+          setBusy(false);
+        }
+      });
+
+      btnSwitch.addEventListener("click", async function () {
+        setBusy(true);
+        try {
+          var r = await fetch("/api/dispatcher-version", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ version: ver.value }),
+          });
+          var j = await r.json();
+          showActionOut(JSON.stringify(j, null, 2));
+          syncModalVersionFromMain();
+          await updateModuleGate();
+        } catch (e) {
+          showActionOut(String(e));
+        } finally {
+          setBusy(false);
+        }
+      });
+
+      btnModalOk.addEventListener("click", async function () {
+        modalMsg.hidden = true;
+        modalMsg.textContent = "";
+        setBusy(true);
+        try {
+          var r = await fetch("/api/dispatcher-version", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ version: verModal.value }),
+          });
+          var text = await r.text();
+          var j;
+          try {
+            j = JSON.parse(text);
+          } catch (pe) {
+            modalMsg.textContent = "Invalid response: " + text.slice(0, 800);
+            modalMsg.hidden = false;
+            return;
+          }
+          if (!r.ok) {
+            modalMsg.textContent = JSON.stringify(j, null, 2);
+            modalMsg.hidden = false;
+            return;
+          }
+          ver.value = verModal.value;
+          showActionOut(JSON.stringify(j, null, 2));
+          await updateModuleGate();
+        } catch (e) {
+          modalMsg.textContent = String(e);
+          modalMsg.hidden = false;
+        } finally {
+          setBusy(false);
+        }
+      });
+
+      document.getElementById("btnTest").addEventListener("click", async function () {
+        setBusy(true);
+        testErr.hidden = true;
+        testErr.textContent = "";
+        var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+        var badLines = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+        try {
+          var r = await fetch("/api/test-urls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ good_paths: goodLines, bad_paths: badLines }),
+          });
+          var text = await r.text();
+          var j;
+          try {
+            j = JSON.parse(text);
+          } catch (parseErr) {
+            lastTestPayload = null;
+            testResults.hidden = true;
+            testErr.textContent = "Invalid response (" + r.status + "): " + text.slice(0, 500);
+            testErr.hidden = false;
+            return;
+          }
+          if (!r.ok) {
+            lastTestPayload = null;
+            testResults.hidden = true;
+            testErr.textContent = "Request failed (" + r.status + "): " + (j && j.error ? j.error : text.slice(0, 500));
+            testErr.hidden = false;
+            return;
+          }
+          renderTestResults(j);
+          await refreshFilterFilesStatic();
+        } catch (e) {
+          lastTestPayload = null;
+          testResults.hidden = true;
+          testErr.textContent = "Test request failed: " + e;
+          testErr.hidden = false;
+        } finally {
+          setBusy(false);
+        }
+      });
+
+      btnExportJson.addEventListener("click", function () {
+        if (!lastTestPayload) return;
+        downloadText(
+          "dispatcher-url-tests.json",
+          JSON.stringify(exportJsonForDownload(lastTestPayload), null, 2),
+          "application/json;charset=utf-8"
+        );
+      });
+
+      btnExportCsv.addEventListener("click", function () {
+        if (!lastTestPayload) return;
+        exportCsv(lastTestPayload);
+      });
+
+      ver.addEventListener("change", syncModalVersionFromMain);
+
+      loadVersions().catch(function (e) {
+        showActionOut("Failed to load versions: " + e);
+      });
+    })();
+  </script>
+</body>
+</html>

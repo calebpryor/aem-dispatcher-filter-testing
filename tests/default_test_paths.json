@@ -1,0 +1,10 @@
+{
+  "good_paths": [
+    "/index.html",
+    "/image.png"
+  ],
+  "bad_paths": [
+    "/system/console",
+    "/denied-by-filter"
+  ]
+}

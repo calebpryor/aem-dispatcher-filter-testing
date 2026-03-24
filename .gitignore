@@ -1,0 +1,19 @@
+# Local secrets / overrides
+.env
+
+# Editor & local AI context (not shared)
+.cursor/
+.ai/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# HTTPD / dispatcher runtime logs (Compose bind-mount)
+logs/*
+!logs/README.md
+
+# OS
+.DS_Store
+Thumbs.db
