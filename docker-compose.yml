@@ -8,11 +8,11 @@ services:
     environment:
      - CONTROL_PORT=${CONTROL_PORT:-59173}
      - TEST_URL_BASE=${TEST_URL_BASE:-http://127.0.0.1}
-    image: pryor/aem-dispatcher-filter-testing:rockylinux8
-    # If the pulled image arch does not match your host (arm64 vs amd64), run:
-    #   docker compose build --no-cache
-    # or uncomment one line below to pin the architecture you need.
-    # platform: linux/amd64
+    image: pryor/aem-dispatcher-filter-testing:rockylinux8v2
+    # The aarch64 (arm64) build of mod_dispatcher.so requires GLIBC_2.32, which is not
+    # available on Rocky/RHEL 8 (glibc 2.28). Pin to amd64 so the x86_64 dispatcher
+    # binary is downloaded — this matches the RHEL 8 production build and loads cleanly.
+    platform: linux/amd64
     # platform: linux/arm64
     ports:
     - "80:80"

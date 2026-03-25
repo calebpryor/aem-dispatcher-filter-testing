@@ -39,4 +39,15 @@ tar -xvf dispatcher-apache2.4-linux-*.tar.gz --wildcards --no-anchored '*.so'
 tar xzf dispatcher-apache2.4-*.tar.gz
 cp -v dispatcher-*.so "$TARGET"
 
+# Verify the module is loadable on this system (catches glibc version mismatches)
+ldd_out=$(ldd "$TARGET" 2>&1)
+if echo "$ldd_out" | grep -q "not found"; then
+	echo "ERROR: mod_dispatcher.so ${MODULE_VER} is not compatible with this system:" >&2
+	echo "$ldd_out" >&2
+	echo "Hint: dispatcher 4.3.7+ may require glibc >= 2.32 (RHEL/Rocky 9+)." >&2
+	echo "Try an older version such as 4.3.5 or 4.3.6, which should work on RHEL/Rocky 8." >&2
+	rm -f "$TARGET"
+	exit 1
+fi
+
 echo "Installed ${TARGET} (version ${MODULE_VER})"

@@ -11,14 +11,20 @@ echo "$desc" | grep -q "ELF" || exit 1
 echo "$desc" | grep -q "shared object" || exit 1
 case "$CPU_ARCH" in
 	x86_64)
-		echo "$desc" | grep -q "x86-64" && exit 0
-		exit 1
+		echo "$desc" | grep -q "x86-64" || exit 1
 		;;
 	aarch64)
-		echo "$desc" | grep -q "aarch64" && exit 0
-		exit 1
+		echo "$desc" | grep -q "aarch64" || exit 1
 		;;
 	*)
-		exit 0
 		;;
 esac
+# Check shared library dependencies — catches glibc version mismatches
+# (e.g. module built for RHEL9 requiring GLIBC_2.32 run on RHEL/Rocky 8)
+ldd_out=$(ldd "$MOD" 2>&1)
+if echo "$ldd_out" | grep -q "not found"; then
+	echo "Library dependency check failed for $MOD:" >&2
+	echo "$ldd_out" >&2
+	exit 1
+fi
+exit 0
