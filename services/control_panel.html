@@ -11,16 +11,72 @@
       color: #1a1a1a;
       background: #f4f5f7;
     }
-    body { margin: 0; padding: 1.25rem 1.5rem 2rem; max-width: 56rem; }
-    h1 { font-size: 1.35rem; margin: 0 0 0.35rem; font-weight: 650; }
-    h1.page-section-title { font-size: 1.2rem; margin: 1.35rem 0 0.4rem; font-weight: 650; color: #111; }
-    h1.page-section-title:first-of-type { margin-top: 0; }
-    hr.section-rule {
-      border: none;
-      border-top: 1px solid #cfd4dc;
-      margin: 0 0 1rem;
+    body { margin: 0; padding: 0 0 2rem; max-width: 60rem; }
+    header {
+      padding: 0.9rem 1.5rem 0.75rem;
+      border-bottom: 1px solid #e2e4e9;
+      background: #fff;
+      margin-bottom: 0;
     }
-    section p a { color: #1f7aad; }
+    header h1 { font-size: 1.15rem; margin: 0; font-weight: 700; color: #111; }
+    header p { font-size: 0.8rem; color: #666; margin: 0.2rem 0 0; }
+
+    /* ── Sandbox mode bar ── */
+    .mode-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.5rem;
+      background: #f0f2f5;
+      border-radius: 4px;
+      flex-wrap: wrap;
+    }
+    .mode-label { font-size: 0.8rem; font-weight: 600; color: #555; white-space: nowrap; }
+    .mode-btn {
+      padding: 0.3rem 0.85rem;
+      border: 1px solid #ccd;
+      border-radius: 5px;
+      background: #fff;
+      color: #444;
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mode-btn:hover { background: #e8eaf0; }
+    .mode-btn.active-deny  { background: #fdd; border-color: #c00; color: #900; }
+    .mode-btn.active-allow { background: #d4f5e2; border-color: #0a6633; color: #0a6633; }
+    .mode-hint { font-size: 0.78rem; color: #666; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid #e2e4e9;
+      padding: 0 1.1rem;
+      gap: 0;
+    }
+    .tab-btn {
+      padding: 0.65rem 1rem;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      background: transparent;
+      color: #555;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 0;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #111; background: #f4f5f7; }
+    .tab-btn.active { color: #1f7aad; border-bottom-color: #1f7aad; }
+    .tab-panel { display: none; padding: 1.25rem 1.5rem 0; }
+    .tab-panel.active { display: block; }
+
+    /* ── Sections ── */
     section {
       background: #fff;
       border: 1px solid #e2e4e9;
@@ -29,65 +85,73 @@
       margin-bottom: 1rem;
       box-shadow: 0 1px 2px rgba(0,0,0,.04);
     }
-    h2 { font-size: 0.95rem; margin: 0 0 0.65rem; font-weight: 650; color: #222; }
+    h2 { font-size: 0.95rem; margin: 0 0 0.65rem; font-weight: 700; color: #222; }
     h3 { font-size: 0.85rem; margin: 1rem 0 0.5rem; font-weight: 650; color: #333; }
+    section p a { color: #1f7aad; }
+
+    /* ── Forms ── */
     label { display: block; font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 0.25rem; }
-    select, textarea, button, input[type="number"] {
-      font: inherit;
-      border-radius: 6px;
-    }
+    select, textarea, button, input[type="number"] { font: inherit; border-radius: 6px; }
     select { padding: 0.35rem 0.5rem; min-width: 10rem; border: 1px solid #ccd; background: #fff; }
     textarea {
-      width: 100%;
-      box-sizing: border-box;
-      min-height: 6.5rem;
-      padding: 0.5rem 0.6rem;
-      border: 1px solid #ccd;
-      resize: vertical;
+      width: 100%; box-sizing: border-box; min-height: 8rem;
+      padding: 0.5rem 0.6rem; border: 1px solid #ccd; resize: vertical;
+      font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+      font-size: 0.82rem;
     }
     .row { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: flex-end; margin-bottom: 0.75rem; }
     .row:last-child { margin-bottom: 0; }
-    .row.align-center { align-items: center; }
     button {
-      padding: 0.45rem 0.85rem;
-      border: 1px solid #2a6f9c;
-      background: #1f7aad;
-      color: #fff;
-      cursor: pointer;
-      font-weight: 600;
+      padding: 0.45rem 0.85rem; border: 1px solid #2a6f9c;
+      background: #1f7aad; color: #fff; cursor: pointer; font-weight: 600;
     }
     button:hover { background: #1a6b99; }
-    button.secondary {
-      border-color: #999;
-      background: #fff;
-      color: #222;
-    }
+    button.secondary { border-color: #999; background: #fff; color: #222; }
     button.secondary:hover { background: #f0f0f0; }
+    button.danger { border-color: #c0392b; background: #e74c3c; color: #fff; }
+    button.danger:hover { background: #c0392b; }
     button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .hint { font-size: 0.8rem; color: #666; margin-top: 0.35rem; }
-    pre.out, pre.action-out {
-      margin: 0.5rem 0 0;
-      padding: 0.65rem 0.75rem;
-      background: #0d1117;
-      color: #e6edf3;
-      border-radius: 6px;
-      font-size: 0.78rem;
-      overflow: auto;
-      max-height: 16rem;
-      white-space: pre-wrap;
-      word-break: break-word;
+    .hint { font-size: 0.8rem; color: #666; margin: 0 0 0.6rem; }
+    .muted { color: #666; font-size: 0.8rem; }
+    .err { color: #b00020; font-size: 0.82rem; }
+
+    /* ── Code output ── */
+    pre.action-out {
+      margin: 0.5rem 0 0; padding: 0.65rem 0.75rem;
+      background: #0d1117; color: #e6edf3;
+      border-radius: 6px; font-size: 0.78rem;
+      overflow: auto; max-height: 16rem;
+      white-space: pre-wrap; word-break: break-word;
     }
+
+    /* ── Status pill ── */
+    .pill {
+      display: inline-block; padding: 0.15rem 0.6rem;
+      border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+    }
+    .pill-ok { background: #d4f5e2; color: #0a6633; }
+    .pill-warn { background: #fff3cd; color: #856404; }
+
+    /* ── Filter table ── */
+    table.filters {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.8rem; margin-top: 0.6rem;
+    }
+    table.filters th, table.filters td {
+      border: 1px solid #dfe3e8; padding: 0.3rem 0.5rem;
+      text-align: left; vertical-align: top;
+    }
+    table.filters th { background: #f0f2f5; font-weight: 700; }
+    table.filters td code { font-size: 0.82em; font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace; word-break: break-all; }
+
+    /* ── Test results table ── */
     table.results {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.82rem;
-      margin-top: 0.5rem;
+      width: 100%; border-collapse: collapse;
+      font-size: 0.82rem; margin-top: 0.5rem;
     }
     table.results th, table.results td {
-      border: 1px solid #dfe3e8;
-      padding: 0.35rem 0.5rem;
-      text-align: left;
-      vertical-align: top;
+      border: 1px solid #dfe3e8; padding: 0.35rem 0.5rem;
+      text-align: left; vertical-align: top;
     }
     table.results th { background: #f0f2f5; font-weight: 600; }
     table.results td.num { text-align: right; font-variant-numeric: tabular-nums; }
@@ -95,69 +159,54 @@
     table.results tbody tr.row-fail { background: #ffc9c9; }
     table.results tbody tr.row-pass td,
     table.results tbody tr.row-fail td { color: #1a1a1a; }
-    table.results tbody tr.row-pass td .muted,
-    table.results tbody tr.row-fail td .muted { color: #333; }
     table.results td a { color: #1a1a1a; text-decoration: underline; }
     table.results td a:hover { color: #000; }
     table.results td a code { text-decoration: inherit; }
-    .filter-list {
-      font-size: 0.82rem;
-      margin: 0.35rem 0 0;
-      padding-left: 1.2rem;
-      color: #333;
-    }
+    table.results td code { font-size: 0.88em; }
+    .filter-note { font-size: 0.75rem; margin-top: 0.3rem; padding: 0.2rem 0.4rem; border-radius: 4px; display: inline-block; }
+    .filter-note-warn { background: #fff3cd; color: #856404; }
+    .filter-note-info { background: #d1ecf1; color: #0c5460; }
+
+    /* ── Misc ── */
+    .filter-list { font-size: 0.82rem; margin: 0.35rem 0 0; padding-left: 1.2rem; color: #333; }
     .filter-list li { margin: 0.15rem 0; }
     ul.log-links { margin: 0.5rem 0 0; padding-left: 1.2rem; font-size: 0.9rem; }
     ul.log-links li { margin: 0.4rem 0; }
     ul.log-links a { color: #1f7aad; }
-    .muted { color: #666; font-size: 0.8rem; }
     .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
     label.inline { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 500; margin: 0; }
-    table.results td code { font-size: 0.88em; }
+
+    /* ── Module install modal ── */
     .module-modal {
-      position: fixed;
-      inset: 0;
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      box-sizing: border-box;
+      position: fixed; inset: 0; z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem; box-sizing: border-box;
     }
     .module-modal[hidden] { display: none !important; }
-    .module-modal-backdrop {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-    }
+    .module-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
     .module-modal-dialog {
-      position: relative;
-      z-index: 1;
-      background: #fff;
-      border-radius: 10px;
-      padding: 1.35rem 1.5rem;
-      max-width: 28rem;
-      width: 100%;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+      position: relative; z-index: 1; background: #fff;
+      border-radius: 10px; padding: 1.35rem 1.5rem;
+      max-width: 28rem; width: 100%;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
       border: 1px solid #e2e4e9;
     }
     .module-modal-dialog h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
     .module-modal-dialog .row { margin-bottom: 1rem; }
     #modalMsg { margin-top: 0.75rem; max-height: 10rem; }
     body.module-modal-open { overflow: hidden; }
-    body.module-modal-open > *:not(#moduleModal) {
-      pointer-events: none;
-      user-select: none;
-    }
+    body.module-modal-open > *:not(#moduleModal) { pointer-events: none; user-select: none; }
     #moduleModal { pointer-events: auto; }
   </style>
 </head>
 <body>
+
+  <!-- ── Module install modal ── -->
   <div id="moduleModal" class="module-modal" role="dialog" aria-modal="true" aria-labelledby="moduleModalTitle" hidden>
     <div class="module-modal-backdrop" aria-hidden="true"></div>
     <div class="module-modal-dialog">
       <h2 id="moduleModalTitle">Install dispatcher module</h2>
-      <p class="hint" style="margin-top:0">
+      <p class="hint">
         <code>mod_dispatcher.so</code> is not loaded yet. Apache is waiting. Choose the Adobe-published Linux tarball version, then confirm to download and switch.
       </p>
       <div class="row">
@@ -171,448 +220,840 @@
     </div>
   </div>
 
-  <h1 class="page-section-title">HTTPD/Dispatcher controls</h1>
-  <hr class="section-rule" />
-  <section>
-    <p class="hint" style="margin-top:0">
-      Control UI listens on <strong>CONTROL_PORT</strong> (default <strong>59173</strong>), not through the dispatcher. Dispatcher vhost is port <strong>80</strong>.
-    </p>
-    <h2>Dispatcher module version</h2>
-    <p class="hint">
-      Versions match Adobe-published Linux tarballs. The module is downloaded only from this page (nothing proprietary is baked into the image).
-    </p>
-    <div class="row">
-      <div>
-        <label for="ver">Version</label>
-        <select id="ver" aria-label="Dispatcher version"></select>
+  <!-- ── Page header ── -->
+  <header>
+    <h1>Dispatcher sandbox</h1>
+    <p>Control UI on <strong>CONTROL_PORT</strong> (default 59173) · Dispatcher vhost on port <strong>80</strong></p>
+  </header>
+
+  <!-- ── Tab bar ── -->
+  <nav class="tabs" role="tablist" aria-label="Control sections">
+    <button class="tab-btn" role="tab" data-tab="server"  aria-controls="tab-server">1. Server Controls</button>
+    <button class="tab-btn" role="tab" data-tab="version" aria-controls="tab-version">2. Module Version</button>
+    <button class="tab-btn" role="tab" data-tab="filters" aria-controls="tab-filters">3. Filters</button>
+    <button class="tab-btn" role="tab" data-tab="testing" aria-controls="tab-testing">4. Testing</button>
+    <button class="tab-btn" role="tab" data-tab="logs"    aria-controls="tab-logs">5. Logs</button>
+  </nav>
+
+  <!-- ════════════════════════════════════════
+       TAB: Server Controls
+  ════════════════════════════════════════ -->
+  <div id="tab-server" class="tab-panel" role="tabpanel">
+    <section>
+      <h2>Status</h2>
+      <p class="hint">Module status is checked every 5 seconds. Restart applies to both Apache processes (dispatcher on :80, renderer on :4503).</p>
+      <div class="row align-center" style="margin-bottom:0.75rem">
+        <span>Module:</span>
+        <span id="statusPill" class="pill pill-warn">checking…</span>
       </div>
-      <button type="button" id="btnSwitch">Download &amp; switch module</button>
-      <button type="button" id="btnRestart" class="secondary">Restart dispatcher (httpd)</button>
-    </div>
-    <p class="hint">Switching downloads the selected <code>.so</code> and restarts both Apache processes (dispatcher on 80 and renderer on 4503).</p>
-    <pre class="action-out" id="actionOut" hidden></pre>
-  </section>
-
-  <h1 class="page-section-title">Testing</h1>
-  <hr class="section-rule" />
-  <section>
-    <h2>Request paths</h2>
-    <p class="hint" style="margin-top:0">
-      Filter fragments are loaded from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order). The list below is refreshed when you run tests.
-      Default good/bad lines are loaded from <code>tests/default_test_paths.json</code> on the host (mounted into the container at startup).
-    </p>
-    <p class="muted" id="filterFilesStatic">Filter files: …</p>
-    <label for="good">Good request paths (one per line) — expect HTTP 200</label>
-    <textarea id="good" placeholder="/content/dam/logo.png"></textarea>
-    <label for="bad">Bad request paths (one per line) — expect HTTP 404</label>
-    <textarea id="bad" placeholder="/system/console"></textarea>
-    <div class="row" style="margin-top:0.75rem">
-      <button type="button" id="btnTest">Run tests</button>
-    </div>
-    <p id="testErr" class="muted" hidden style="color:#b00020"></p>
-
-    <div id="testResults" hidden>
-      <h3>Results</h3>
-      <p class="muted" id="filterFilesAtTest">Filter files at time of test:</p>
-      <ul class="filter-list" id="filterFilesList"></ul>
-      <h3>Good paths <span class="muted">(expect 200)</span></h3>
-      <table class="results" id="tableGood" aria-label="Good path results"></table>
-      <h3>Bad paths <span class="muted">(expect 404)</span></h3>
-      <table class="results" id="tableBad" aria-label="Bad path results"></table>
-      <div class="toolbar">
-        <button type="button" id="btnExportJson" class="secondary">Export JSON</button>
-        <button type="button" id="btnExportCsv" class="secondary">Export CSV</button>
+      <div class="row">
+        <button type="button" id="btnRestart" class="secondary">Restart dispatcher (httpd)</button>
       </div>
-    </div>
-  </section>
+      <pre class="action-out" id="serverOut" hidden></pre>
+    </section>
+  </div>
 
-  <h1 class="page-section-title">Logs</h1>
-  <hr class="section-rule" />
-  <section>
-    <p class="hint" style="margin-top:0">
-      Open a log to stream it in real time (Server-Sent Events + <code>tail -F</code> under <code>/var/log/httpd/</code>). Each link opens in a new tab. If a log is attached to container stdout/stderr, streaming may not apply — use <code>docker compose logs</code> for those streams.
-    </p>
-    <ul class="log-links">
-      <li><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a> — Dispatcher module (trace)</li>
-      <li><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a> — Filter extractor output</li>
-      <li><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a> — Dispatcher httpd (may be stderr)</li>
-      <li><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a> — May be stdout</li>
-      <li><a href="/logs/view?name=renderer_error_log" target="_blank" rel="noopener noreferrer">renderer_error_log</a></li>
-      <li><a href="/logs/view?name=renderer_access_log" target="_blank" rel="noopener noreferrer">renderer_access_log</a></li>
-    </ul>
-  </section>
+  <!-- ════════════════════════════════════════
+       TAB: Module Version
+  ════════════════════════════════════════ -->
+  <div id="tab-version" class="tab-panel" role="tabpanel">
+    <section>
+      <h2>Dispatcher module version</h2>
+      <p class="hint">
+        Versions match Adobe-published Linux tarballs. The module is downloaded only from this page — nothing proprietary is baked into the image.
+        Switching downloads the selected <code>.so</code> and restarts both Apache processes.
+      </p>
+      <div class="row align-center" style="margin-bottom:0.75rem">
+        <span style="font-size:0.82rem;color:#555">Currently installed:</span>
+        <span id="installedVersion" class="pill pill-warn">checking…</span>
+      </div>
+      <div class="row">
+        <div>
+          <label for="ver">Switch to version</label>
+          <select id="ver" aria-label="Dispatcher version"></select>
+        </div>
+        <button type="button" id="btnSwitch">Download &amp; switch module</button>
+      </div>
+      <pre class="action-out" id="actionOut" hidden></pre>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: Filters
+  ════════════════════════════════════════ -->
+  <div id="tab-filters" class="tab-panel" role="tabpanel">
+
+    <section>
+      <h2>Default policy</h2>
+      <p class="hint">Sets the sandbox catch-all rule. In <strong>Deny all</strong> mode, write allow rules for paths that should pass. In <strong>Allow all</strong> mode, write deny rules for paths that should be blocked.</p>
+      <div class="mode-bar">
+        <span class="mode-label">Default policy:</span>
+        <button type="button" class="mode-btn" id="btnModeDeny" data-mode="deny_all">
+          Deny all (test allow rules)
+        </button>
+        <button type="button" class="mode-btn" id="btnModeAllow" data-mode="allow_all">
+          Allow all (test deny rules)
+        </button>
+        <span class="mode-hint" id="modeHint"></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Active filter rules</h2>
+      <p class="hint">Parsed from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order). Built-in container rules in <code>dispatcher.any</code> are not shown here.</p>
+      <div class="row">
+        <button type="button" id="btnRefreshFilters" class="secondary">Refresh</button>
+      </div>
+      <div id="filterTableWrap">
+        <p class="muted">Loading…</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Edit <code>002_web_filters.any</code></h2>
+      <p class="hint">
+        Paste or type dispatcher filter rules below and click <strong>Save</strong>.
+        Rules are written to <code>filters/002_web_filters.any</code> on the container filesystem (also reflected on the host via the volume mount).
+        Restart the dispatcher after saving to apply changes.
+      </p>
+      <label for="filterEditor">Filter rules</label>
+      <textarea id="filterEditor" rows="12" placeholder='/0001 { /type "allow" /method "GET" /url "/content/*" }
+/0002 { /type "allow" /method "GET" /url "/etc/designs/*" }
+/9999 { /type "deny" /glob "*" }'></textarea>
+      <div class="row" style="margin-top:0.75rem">
+        <button type="button" id="btnSaveFilters">Save</button>
+        <button type="button" id="btnSaveAndRestart">Save &amp; Restart</button>
+        <button type="button" id="btnLoadFilterEditor" class="secondary">Load current file</button>
+      </div>
+      <p id="filterSaveMsg" class="muted" hidden></p>
+      <pre class="action-out" id="filterSaveOut" hidden></pre>
+    </section>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: Testing
+  ════════════════════════════════════════ -->
+  <div id="tab-testing" class="tab-panel" role="tabpanel">
+    <section>
+      <h2>Request paths</h2>
+      <p class="hint">
+        Filter fragments are loaded from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order).
+        Default good/bad paths are loaded from <code>tests/default_test_paths.json</code> on the host.
+      </p>
+      <p class="muted" id="filterFilesStatic">Filter files: …</p>
+
+      <label for="good">Good request paths (one per line) — expect HTTP 200</label>
+      <textarea id="good" rows="6" placeholder="/content/dam/logo.png"></textarea>
+
+      <label for="bad" style="margin-top:0.65rem">Bad request paths (one per line) — expect HTTP 404</label>
+      <textarea id="bad" rows="6" placeholder="/system/console"></textarea>
+
+      <div class="row" style="margin-top:0.75rem">
+        <button type="button" id="btnTest">Run tests</button>
+      </div>
+      <p id="testErr" class="err" hidden></p>
+
+      <div id="testResults" hidden>
+        <h3>Results</h3>
+        <p class="muted" id="filterFilesAtTest">Filter files at time of test:</p>
+        <ul class="filter-list" id="filterFilesList"></ul>
+        <h3>Good paths <span class="muted">(expect 200)</span></h3>
+        <table class="results" id="tableGood" aria-label="Good path results"></table>
+        <h3>Bad paths <span class="muted">(expect 404)</span></h3>
+        <table class="results" id="tableBad" aria-label="Bad path results"></table>
+        <div class="toolbar">
+          <button type="button" id="btnExportJson" class="secondary">Export JSON</button>
+          <button type="button" id="btnExportCsv" class="secondary">Export CSV</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: Logs
+  ════════════════════════════════════════ -->
+  <div id="tab-logs" class="tab-panel" role="tabpanel">
+    <section>
+      <h2>Log streams</h2>
+      <p class="hint">
+        Each link opens a live-streaming view (Server-Sent Events + <code>tail -F</code> under <code>/var/log/httpd/</code>).
+        If a log is linked to container stdout/stderr, use <code>docker compose logs</code> instead.
+      </p>
+      <ul class="log-links">
+        <li><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a> — Dispatcher module (trace)</li>
+        <li><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a> — Filter extractor output</li>
+        <li><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a> — Dispatcher httpd (may be stderr)</li>
+        <li><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a> — May be stdout</li>
+        <li><a href="/logs/view?name=renderer_error_log" target="_blank" rel="noopener noreferrer">renderer_error_log</a></li>
+        <li><a href="/logs/view?name=renderer_access_log" target="_blank" rel="noopener noreferrer">renderer_access_log</a></li>
+      </ul>
+    </section>
+  </div>
 
   <script>
-    (function () {
-      const ver = document.getElementById("ver");
-      const btnSwitch = document.getElementById("btnSwitch");
-      const btnRestart = document.getElementById("btnRestart");
-      const good = document.getElementById("good");
-      const bad = document.getElementById("bad");
-      const actionOut = document.getElementById("actionOut");
-      const moduleModal = document.getElementById("moduleModal");
-      const verModal = document.getElementById("verModal");
-      const btnModalOk = document.getElementById("btnModalOk");
-      const modalMsg = document.getElementById("modalMsg");
-      const testResults = document.getElementById("testResults");
-      const tableGood = document.getElementById("tableGood");
-      const tableBad = document.getElementById("tableBad");
-      const filterFilesList = document.getElementById("filterFilesList");
-      const filterFilesStatic = document.getElementById("filterFilesStatic");
-      const filterFilesAtTest = document.getElementById("filterFilesAtTest");
-      const btnExportJson = document.getElementById("btnExportJson");
-      const btnExportCsv = document.getElementById("btnExportCsv");
-      const testErr = document.getElementById("testErr");
+  (function () {
+    /* ── Tab routing ── */
+    const TAB_IDS = ['server', 'version', 'filters', 'testing', 'logs'];
+    const tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
+    const tabPanels = {};
+    TAB_IDS.forEach(function (id) { tabPanels[id] = document.getElementById('tab-' + id); });
 
-      let lastTestPayload = null;
+    var activeTab = null;
+    function activateTab(name, push) {
+      if (!TAB_IDS.includes(name)) name = 'server';
+      if (name === activeTab) return;
+      activeTab = name;
+      tabBtns.forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+      TAB_IDS.forEach(function (id) {
+        tabPanels[id].style.display = (id === name) ? 'block' : 'none';
+      });
+      if (push !== false) history.replaceState(null, '', '#' + name);
+      if (name === 'filters') onFiltersTabOpen();
+    }
 
-      function setBusy(b) {
-        btnSwitch.disabled = b;
-        btnRestart.disabled = b;
-        btnModalOk.disabled = b;
-        document.getElementById("btnTest").disabled = b;
-        if (verModal) verModal.disabled = b;
+    tabBtns.forEach(function (b) {
+      b.addEventListener('click', function () { activateTab(b.dataset.tab); });
+    });
+
+    window.addEventListener('hashchange', function () {
+      var h = location.hash.replace('#', '');
+      activateTab(TAB_IDS.includes(h) ? h : 'server', false);
+    });
+
+    /* ── Keyboard shortcuts: Alt+1–5 ── */
+    document.addEventListener('keydown', function (e) {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      var idx = parseInt(e.key, 10);
+      if (idx >= 1 && idx <= TAB_IDS.length) {
+        e.preventDefault();
+        activateTab(TAB_IDS[idx - 1]);
       }
+    });
 
-      async function updateModuleGate() {
-        try {
-          var r = await fetch("/api/module-status");
-          var j = await r.json();
-          var installed = !!(j && j.installed);
-          if (moduleModal) {
-            moduleModal.hidden = installed;
-          }
-          document.body.classList.toggle("module-modal-open", !installed);
-          return installed;
-        } catch (e) {
-          if (moduleModal) moduleModal.hidden = false;
-          document.body.classList.add("module-modal-open");
-          return false;
-        }
-      }
+    var initHash = location.hash.replace('#', '');
+    activateTab(TAB_IDS.includes(initHash) ? initHash : 'server', false);
 
-      function syncModalVersionFromMain() {
-        if (ver && verModal && ver.value) verModal.value = ver.value;
-      }
+    /* ── Element refs ── */
+    var ver         = document.getElementById('ver');
+    var btnSwitch   = document.getElementById('btnSwitch');
+    var btnRestart  = document.getElementById('btnRestart');
+    var actionOut   = document.getElementById('actionOut');
+    var serverOut   = document.getElementById('serverOut');
+    var moduleModal = document.getElementById('moduleModal');
+    var verModal    = document.getElementById('verModal');
+    var btnModalOk  = document.getElementById('btnModalOk');
+    var modalMsg    = document.getElementById('modalMsg');
+    var good        = document.getElementById('good');
+    var bad         = document.getElementById('bad');
+    var testResults = document.getElementById('testResults');
+    var tableGood   = document.getElementById('tableGood');
+    var tableBad    = document.getElementById('tableBad');
+    var filterFilesList    = document.getElementById('filterFilesList');
+    var filterFilesStatic  = document.getElementById('filterFilesStatic');
+    var filterFilesAtTest  = document.getElementById('filterFilesAtTest');
+    var btnExportJson = document.getElementById('btnExportJson');
+    var btnExportCsv  = document.getElementById('btnExportCsv');
+    var testErr       = document.getElementById('testErr');
+    var statusPill    = document.getElementById('statusPill');
+    var filterTableWrap    = document.getElementById('filterTableWrap');
+    var btnRefreshFilters  = document.getElementById('btnRefreshFilters');
+    var filterEditor       = document.getElementById('filterEditor');
+    var btnSaveFilters     = document.getElementById('btnSaveFilters');
+    var btnSaveAndRestart  = document.getElementById('btnSaveAndRestart');
+    var btnLoadFilterEditor = document.getElementById('btnLoadFilterEditor');
+    var filterSaveMsg = document.getElementById('filterSaveMsg');
+    var filterSaveOut = document.getElementById('filterSaveOut');
+    var installedVersion = document.getElementById('installedVersion');
+    var btnModeDeny  = document.getElementById('btnModeDeny');
+    var btnModeAllow = document.getElementById('btnModeAllow');
+    var modeHint     = document.getElementById('modeHint');
+    var currentSandboxMode = 'deny_all';
 
-      function showActionOut(text) {
-        actionOut.textContent = text;
-        actionOut.hidden = false;
-      }
+    var lastTestPayload = null;
+    var filtersLoaded = false;
 
-      function escCell(s) {
-        const t = String(s ?? "");
-        if (/[",\n\r]/.test(t)) return '"' + t.replace(/"/g, '""') + '"';
-        return t;
-      }
+    /* ── Busy state ── */
+    function setBusy(b) {
+      [btnSwitch, btnRestart, btnModalOk, document.getElementById('btnTest'),
+       btnSaveFilters, btnSaveAndRestart].forEach(function (el) {
+        if (el) el.disabled = b;
+      });
+      if (verModal) verModal.disabled = b;
+    }
 
-      function escapeAttr(s) {
-        return String(s)
-          .replace(/&/g, "&amp;")
-          .replace(/"/g, "&quot;");
-      }
+    /* ── Sandbox mode ── */
+    function applySandboxModeUI(mode) {
+      currentSandboxMode = mode;
+      btnModeDeny.className  = 'mode-btn' + (mode === 'deny_all'  ? ' active-deny'  : '');
+      btnModeAllow.className = 'mode-btn' + (mode === 'allow_all' ? ' active-allow' : '');
+      modeHint.textContent = mode === 'deny_all'
+        ? 'Default: block everything — write allow rules for paths that should pass'
+        : 'Default: pass everything — write deny rules for paths that should be blocked';
+    }
 
-      function pathCellHtml(row) {
-        var p = row.path != null ? String(row.path) : "";
-        var u = row.url != null ? String(row.url) : "";
-        if (u) {
-          return (
-            "<a href=\"" +
-            escapeAttr(u) +
-            "\" target=\"_blank\" rel=\"noopener noreferrer\"><code>" +
-            escapeHtml(p) +
-            "</code></a>"
-          );
-        }
-        return "<code>" + escapeHtml(p) + "</code>";
-      }
-
-      function buildTable(tableEl, rows, expectLabel) {
-        var thead = "<thead><tr><th>OK</th><th>HTTP</th><th>Expected</th><th>Path</th></tr></thead>";
-        var body = "<tbody>";
-        (rows || []).forEach(function (row) {
-          var ok = row.ok ? "yes" : "no";
-          var st = row.status === null || row.status === undefined ? "—" : String(row.status);
-          var rowClass = row.ok ? "row-pass" : "row-fail";
-          body += "<tr class=\"" + rowClass + "\"><td>" + ok + "</td><td class=\"num\">" + st + "</td><td class=\"num\">" + expectLabel + "</td><td>" + pathCellHtml(row) + "</td></tr>";
-        });
-        body += "</tbody>";
-        if (!rows || !rows.length) {
-          body = "<tbody><tr><td colspan=\"4\" class=\"muted\">No paths in this group.</td></tr></tbody>";
-        }
-        tableEl.innerHTML = thead + body;
-      }
-
-      function escapeHtml(s) {
-        return String(s)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;");
-      }
-
-      function renderTestResults(j) {
-        lastTestPayload = j;
-        testResults.hidden = false;
-        var files = j.filter_files || [];
-        filterFilesList.innerHTML = "";
-        if (files.length) {
-          files.forEach(function (f) {
-            var li = document.createElement("li");
-            li.textContent = f;
-            filterFilesList.appendChild(li);
-          });
-          filterFilesAtTest.textContent = "Filter files at time of test (" + files.length + " file(s), same order as $include glob):";
-        } else {
-          var li = document.createElement("li");
-          li.className = "muted";
-          li.textContent = "(no .any files in filters directory)";
-          filterFilesList.appendChild(li);
-          filterFilesAtTest.textContent = "Filter files at time of test:";
-        }
-        buildTable(tableGood, j.good, 200);
-        buildTable(tableBad, j.bad, 404);
-      }
-
-      function downloadText(filename, text, mime) {
-        var blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
-        var a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      }
-
-      function exportCsv(j) {
-        var lines = [];
-        lines.push(["type", "group", "ok", "http_status", "expect", "path"].map(escCell).join(","));
-        (j.filter_files || []).forEach(function (f) {
-          lines.push(["filter", "", "", "", "", f].map(escCell).join(","));
-        });
-        (j.good || []).forEach(function (row) {
-          var ok = row.ok ? "yes" : "no";
-          var st = row.status === null || row.status === undefined ? "" : String(row.status);
-          lines.push(["test", "good", ok, st, "200", row.path || ""].map(escCell).join(","));
-        });
-        (j.bad || []).forEach(function (row) {
-          var ok = row.ok ? "yes" : "no";
-          var st = row.status === null || row.status === undefined ? "" : String(row.status);
-          lines.push(["test", "bad", ok, st, "404", row.path || ""].map(escCell).join(","));
-        });
-        downloadText("dispatcher-url-tests.csv", lines.join("\r\n") + "\r\n", "text/csv;charset=utf-8");
-      }
-
-      function exportJsonForDownload(j) {
-        function rowOut(row) {
-          var o = {
-            path: row.path || "",
-            ok: !!row.ok,
-            status: row.status,
-            expect: row.expect,
-          };
-          if (row.error) o.error = row.error;
-          return o;
-        }
-        return {
-          filter_files: j.filter_files || [],
-          filter_rules: j.filter_rules || [],
-          good: (j.good || []).map(rowOut),
-          bad: (j.bad || []).map(rowOut),
-        };
-      }
-
-      async function refreshFilterFilesStatic() {
-        try {
-          var r = await fetch("/api/filter-files");
-          var j = await r.json();
-          var files = j.files || [];
-          filterFilesStatic.textContent = files.length
-            ? "Filter files on disk: " + files.join(", ")
-            : "Filter files on disk: (none — add *_filters.any under filters/)";
-        } catch (e) {
-          filterFilesStatic.textContent = "Filter files: (could not load)";
-        }
-      }
-
-      async function loadDefaultTestPaths() {
-        try {
-          var r = await fetch("/api/default-test-paths");
-          var j = await r.json();
-          var gp = j.good_paths || [];
-          var bp = j.bad_paths || [];
-          if (gp.length) good.value = gp.join("\n");
-          if (bp.length) bad.value = bp.join("\n");
-        } catch (e) {
-          /* keep textarea placeholders */
-        }
-      }
-
-      async function loadVersions() {
-        var r = await fetch("/api/versions");
+    async function loadSandboxMode() {
+      try {
+        var r = await fetch('/api/sandbox-mode');
         var j = await r.json();
-        var list = j.versions || [];
-        ver.innerHTML = "";
-        if (verModal) verModal.innerHTML = "";
-        list.forEach(function (v) {
-          var o = document.createElement("option");
-          o.value = v;
-          o.textContent = v;
-          ver.appendChild(o);
-          if (verModal) {
-            var om = document.createElement("option");
-            om.value = v;
-            om.textContent = v;
-            verModal.appendChild(om);
-          }
+        applySandboxModeUI(j.mode || 'deny_all');
+      } catch (e) { applySandboxModeUI('deny_all'); }
+    }
+
+    async function setSandboxMode(mode) {
+      setBusy(true);
+      try {
+        var r = await fetch('/api/sandbox-mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: mode })
         });
-        var want = new URLSearchParams(location.search).get("ver");
-        if (want && list.indexOf(want) >= 0) {
-          ver.value = want;
-        } else if (list.length) {
-          ver.selectedIndex = 0;
+        var j = await r.json();
+        if (j.ok) {
+          applySandboxModeUI(mode);
+        } else {
+          serverOut.textContent = JSON.stringify(j, null, 2);
+          serverOut.hidden = false;
         }
-        syncModalVersionFromMain();
-        if (btnModalOk) btnModalOk.disabled = list.length === 0;
-        await updateModuleGate();
-        await refreshFilterFilesStatic();
-        await loadDefaultTestPaths();
-        if (moduleModal && !moduleModal.hidden) {
-          try {
-            btnModalOk.focus();
-          } catch (e2) {}
+      } catch (e) {
+        serverOut.textContent = String(e);
+        serverOut.hidden = false;
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    btnModeDeny.addEventListener('click',  function () { setSandboxMode('deny_all'); });
+    btnModeAllow.addEventListener('click', function () { setSandboxMode('allow_all'); });
+
+    /* ── Installed version ── */
+    async function refreshInstalledVersion() {
+      try {
+        var r = await fetch('/api/installed-version');
+        var j = await r.json();
+        if (j.version) {
+          installedVersion.textContent = j.version;
+          installedVersion.className = 'pill pill-ok';
+        } else {
+          installedVersion.textContent = 'none';
+          installedVersion.className = 'pill pill-warn';
         }
+      } catch (e) {
+        installedVersion.textContent = 'unknown';
+        installedVersion.className = 'pill pill-warn';
+      }
+    }
+
+    /* ── Module gate modal ── */
+    async function updateModuleGate() {
+      try {
+        var r = await fetch('/api/module-status');
+        var j = await r.json();
+        var installed = !!(j && j.installed);
+        moduleModal.hidden = installed;
+        document.body.classList.toggle('module-modal-open', !installed);
+        statusPill.textContent = installed ? 'installed' : 'not installed';
+        statusPill.className = 'pill ' + (installed ? 'pill-ok' : 'pill-warn');
+        return installed;
+      } catch (e) {
+        moduleModal.hidden = false;
+        document.body.classList.add('module-modal-open');
+        statusPill.textContent = 'unknown';
+        statusPill.className = 'pill pill-warn';
+        return false;
+      }
+    }
+
+    function syncModalVersionFromMain() {
+      if (ver && verModal && ver.value) verModal.value = ver.value;
+    }
+
+    /* ── Filter rule extractor — returns raw rule blocks, no parsing ── */
+    function extractRawRules(filename, content) {
+      var rules = [];
+      var pos = 0;
+
+      while (pos < content.length) {
+        // Find next /name {
+        var nameRe = /\/(\S+)\s*\{/g;
+        nameRe.lastIndex = pos;
+        var m = nameRe.exec(content);
+        if (!m) break;
+
+        var blockStart = m.index + m[0].length;
+
+        // Find balanced closing brace (skip quoted strings)
+        var depth = 1, i = blockStart, inStr = false;
+        while (i < content.length && depth > 0) {
+          var c = content[i];
+          if (c === '"') { inStr = !inStr; }
+          else if (!inStr) {
+            if (c === '{') depth++;
+            else if (c === '}') depth--;
+          }
+          if (depth > 0) i++;
+        }
+
+        var body = content.slice(blockStart, i);
+
+        // Skip container blocks (body contains nested /name { ... })
+        if (/\/\w+\s*\{/.test(body)) {
+          pos = m.index + 1;
+          continue;
+        }
+
+        // Reconstruct raw rule: collapse whitespace for single-line display
+        var raw = (m[0].slice(0, -1).trim() + ' {' + body + '}')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        rules.push({ raw: raw, file: filename });
+        pos = i + 1;
+      }
+      return rules;
+    }
+
+    /* ── Filters tab ── */
+    async function loadFilterRules() {
+      filterTableWrap.innerHTML = '<p class="muted">Loading…</p>';
+      try {
+        var r = await fetch('/api/filter-rules');
+        var j = await r.json();
+        var fileRules = j.rules || [];
+        renderFilterTable(fileRules);
+        return fileRules;
+      } catch (e) {
+        filterTableWrap.innerHTML = '<p class="err">Could not load filter rules: ' + escHtml(String(e)) + '</p>';
+        return [];
+      }
+    }
+
+    function renderFilterTable(fileRules) {
+      if (!fileRules.length) {
+        filterTableWrap.innerHTML = '<p class="muted">No filter files found in <code>filters/*.any</code>.</p>';
+        return;
       }
 
-      btnRestart.addEventListener("click", async function () {
-        setBusy(true);
-        try {
-          var r = await fetch("/api/restart-dispatcher", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-          var j = await r.json();
-          showActionOut(JSON.stringify(j, null, 2));
-          await updateModuleGate();
-        } catch (e) {
-          showActionOut(String(e));
-        } finally {
-          setBusy(false);
-        }
+      var allRules = [];
+      fileRules.forEach(function (f) {
+        extractRawRules(f.file, f.content).forEach(function (rule) {
+          allRules.push(rule);
+        });
       });
 
-      btnSwitch.addEventListener("click", async function () {
-        setBusy(true);
-        try {
-          var r = await fetch("/api/dispatcher-version", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ version: ver.value }),
-          });
-          var j = await r.json();
-          showActionOut(JSON.stringify(j, null, 2));
-          syncModalVersionFromMain();
-          await updateModuleGate();
-        } catch (e) {
-          showActionOut(String(e));
-        } finally {
-          setBusy(false);
-        }
+      if (!allRules.length) {
+        filterTableWrap.innerHTML = '<p class="muted">Filter files present but no rules found.</p>';
+        return;
+      }
+
+      var html = '<table class="filters" aria-label="Filter rules">'
+        + '<thead><tr><th>#</th><th>Rule</th><th>File</th></tr></thead><tbody>';
+
+      allRules.forEach(function (rule, idx) {
+        html += '<tr>'
+          + '<td class="num muted">' + (idx + 1) + '</td>'
+          + '<td><code>' + escHtml(rule.raw) + '</code></td>'
+          + '<td><span class="muted">' + escHtml(rule.file) + '</span></td>'
+          + '</tr>';
       });
 
-      btnModalOk.addEventListener("click", async function () {
-        modalMsg.hidden = true;
-        modalMsg.textContent = "";
-        setBusy(true);
+      html += '</tbody></table>';
+      html += '<p class="muted" style="margin-top:0.5rem">' + allRules.length + ' rule(s) across ' + fileRules.length + ' file(s)</p>';
+      filterTableWrap.innerHTML = html;
+    }
+
+    async function loadFilterEditorContent(fileRules) {
+      if (!fileRules) {
         try {
-          var r = await fetch("/api/dispatcher-version", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ version: verModal.value }),
-          });
-          var text = await r.text();
-          var j;
-          try {
-            j = JSON.parse(text);
-          } catch (pe) {
-            modalMsg.textContent = "Invalid response: " + text.slice(0, 800);
-            modalMsg.hidden = false;
-            return;
-          }
-          if (!r.ok) {
-            modalMsg.textContent = JSON.stringify(j, null, 2);
-            modalMsg.hidden = false;
-            return;
-          }
-          ver.value = verModal.value;
-          showActionOut(JSON.stringify(j, null, 2));
-          await updateModuleGate();
-        } catch (e) {
-          modalMsg.textContent = String(e);
+          var r = await fetch('/api/filter-rules');
+          var j = await r.json();
+          fileRules = j.rules || [];
+        } catch (e) { return; }
+      }
+      var f = fileRules.find(function (x) { return x.file === '002_web_filters.any'; });
+      filterEditor.value = f ? f.content : '';
+    }
+
+    var filtersTabEverOpened = false;
+    async function onFiltersTabOpen() {
+      var fileRules = await loadFilterRules();
+      if (!filtersTabEverOpened) {
+        filtersTabEverOpened = true;
+        await loadFilterEditorContent(fileRules);
+      }
+    }
+
+    btnRefreshFilters.addEventListener('click', async function () {
+      var fileRules = await loadFilterRules();
+      await loadFilterEditorContent(fileRules);
+    });
+
+    btnLoadFilterEditor.addEventListener('click', async function () {
+      await loadFilterEditorContent(null);
+    });
+
+    async function doSaveFilters() {
+      filterSaveMsg.hidden = true;
+      filterSaveOut.hidden = true;
+      var content = filterEditor.value;
+      try {
+        var r = await fetch('/api/save-filters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: content })
+        });
+        var j = await r.json();
+        if (j.ok) {
+          filterSaveMsg.textContent = 'Saved to 002_web_filters.any';
+          filterSaveMsg.className = 'muted';
+          filterSaveMsg.hidden = false;
+          filtersTabEverOpened = false; // force editor reload next open
+        } else {
+          filterSaveOut.textContent = JSON.stringify(j, null, 2);
+          filterSaveOut.hidden = false;
+        }
+        return j.ok;
+      } catch (e) {
+        filterSaveOut.textContent = String(e);
+        filterSaveOut.hidden = false;
+        return false;
+      }
+    }
+
+    btnSaveFilters.addEventListener('click', doSaveFilters);
+
+    btnSaveAndRestart.addEventListener('click', async function () {
+      setBusy(true);
+      try {
+        var saved = await doSaveFilters();
+        if (!saved) return;
+        var r = await fetch('/api/restart-dispatcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        var j = await r.json();
+        filterSaveOut.textContent = JSON.stringify(j, null, 2);
+        filterSaveOut.hidden = false;
+        await updateModuleGate();
+      } catch (e) {
+        filterSaveOut.textContent = String(e);
+        filterSaveOut.hidden = false;
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    /* ── Server controls ── */
+    btnRestart.addEventListener('click', async function () {
+      setBusy(true);
+      serverOut.hidden = true;
+      try {
+        var r = await fetch('/api/restart-dispatcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        var j = await r.json();
+        serverOut.textContent = JSON.stringify(j, null, 2);
+        serverOut.hidden = false;
+        await updateModuleGate();
+      } catch (e) {
+        serverOut.textContent = String(e);
+        serverOut.hidden = false;
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    /* ── Module version ── */
+    btnSwitch.addEventListener('click', async function () {
+      setBusy(true);
+      try {
+        var r = await fetch('/api/dispatcher-version', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: ver.value })
+        });
+        var j = await r.json();
+        actionOut.textContent = JSON.stringify(j, null, 2);
+        actionOut.hidden = false;
+        syncModalVersionFromMain();
+        await updateModuleGate();
+        await refreshInstalledVersion();
+      } catch (e) {
+        actionOut.textContent = String(e);
+        actionOut.hidden = false;
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    /* ── Modal install ── */
+    btnModalOk.addEventListener('click', async function () {
+      modalMsg.hidden = true;
+      modalMsg.textContent = '';
+      setBusy(true);
+      try {
+        var r = await fetch('/api/dispatcher-version', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: verModal.value })
+        });
+        var text = await r.text();
+        var j;
+        try { j = JSON.parse(text); } catch (pe) {
+          modalMsg.textContent = 'Invalid response: ' + text.slice(0, 800);
           modalMsg.hidden = false;
-        } finally {
-          setBusy(false);
+          return;
         }
-      });
-
-      document.getElementById("btnTest").addEventListener("click", async function () {
-        setBusy(true);
-        testErr.hidden = true;
-        testErr.textContent = "";
-        var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
-        var badLines = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
-        try {
-          var r = await fetch("/api/test-urls", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ good_paths: goodLines, bad_paths: badLines }),
-          });
-          var text = await r.text();
-          var j;
-          try {
-            j = JSON.parse(text);
-          } catch (parseErr) {
-            lastTestPayload = null;
-            testResults.hidden = true;
-            testErr.textContent = "Invalid response (" + r.status + "): " + text.slice(0, 500);
-            testErr.hidden = false;
-            return;
-          }
-          if (!r.ok) {
-            lastTestPayload = null;
-            testResults.hidden = true;
-            testErr.textContent = "Request failed (" + r.status + "): " + (j && j.error ? j.error : text.slice(0, 500));
-            testErr.hidden = false;
-            return;
-          }
-          renderTestResults(j);
-          await refreshFilterFilesStatic();
-        } catch (e) {
-          lastTestPayload = null;
-          testResults.hidden = true;
-          testErr.textContent = "Test request failed: " + e;
-          testErr.hidden = false;
-        } finally {
-          setBusy(false);
+        if (!r.ok) {
+          modalMsg.textContent = JSON.stringify(j, null, 2);
+          modalMsg.hidden = false;
+          return;
         }
-      });
+        ver.value = verModal.value;
+        actionOut.textContent = JSON.stringify(j, null, 2);
+        actionOut.hidden = false;
+        await updateModuleGate();
+        await refreshInstalledVersion();
+      } catch (e) {
+        modalMsg.textContent = String(e);
+        modalMsg.hidden = false;
+      } finally {
+        setBusy(false);
+      }
+    });
 
-      btnExportJson.addEventListener("click", function () {
-        if (!lastTestPayload) return;
-        downloadText(
-          "dispatcher-url-tests.json",
-          JSON.stringify(exportJsonForDownload(lastTestPayload), null, 2),
-          "application/json;charset=utf-8"
-        );
-      });
+    /* ── Testing ── */
+    async function refreshFilterFilesStatic() {
+      try {
+        var r = await fetch('/api/filter-files');
+        var j = await r.json();
+        var files = j.files || [];
+        filterFilesStatic.textContent = files.length
+          ? 'Filter files on disk: ' + files.join(', ')
+          : 'Filter files on disk: (none — add *.any under filters/)';
+      } catch (e) {
+        filterFilesStatic.textContent = 'Filter files: (could not load)';
+      }
+    }
 
-      btnExportCsv.addEventListener("click", function () {
-        if (!lastTestPayload) return;
-        exportCsv(lastTestPayload);
-      });
+    async function loadDefaultTestPaths() {
+      try {
+        var r = await fetch('/api/default-test-paths');
+        var j = await r.json();
+        if ((j.good_paths || []).length) good.value = j.good_paths.join('\n');
+        if ((j.bad_paths  || []).length) bad.value  = j.bad_paths.join('\n');
+      } catch (e) { /* keep placeholders */ }
+    }
 
-      ver.addEventListener("change", syncModalVersionFromMain);
+    function escCell(s) {
+      var t = String(s != null ? s : '');
+      if (/[",\n\r]/.test(t)) return '"' + t.replace(/"/g, '""') + '"';
+      return t;
+    }
 
-      loadVersions().catch(function (e) {
-        showActionOut("Failed to load versions: " + e);
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function escAttr(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    }
+
+    function pathCellHtml(row) {
+      var p = row.path != null ? String(row.path) : '';
+      var u = row.url  != null ? String(row.url)  : '';
+      if (u) {
+        return '<a href="' + escAttr(u) + '" target="_blank" rel="noopener noreferrer"><code>'
+          + escHtml(p) + '</code></a>';
+      }
+      return '<code>' + escHtml(p) + '</code>';
+    }
+
+    var DEFAULT_RULE_RE = /\/(sandbox-default|default-test-container-deny)\b/;
+
+    function buildTable(tableEl, rows, expectLabel, sandboxMode, group) {
+      var thead = '<thead><tr><th>OK</th><th>HTTP</th><th>Expected</th><th>Path</th><th>Filter match</th></tr></thead>';
+      var body = '<tbody>';
+      (rows || []).forEach(function (row) {
+        var ok  = row.ok ? 'yes' : 'no';
+        var st  = (row.status == null) ? '—' : String(row.status);
+        var cls = row.ok ? 'row-pass' : 'row-fail';
+        var fl  = row.filter_log || null;
+
+        // Detect whether the default sandbox rule fired
+        var isDefaultRule = fl && DEFAULT_RULE_RE.test(fl);
+        var defaultBlocked = isDefaultRule && fl.indexOf('blocked') === 0;
+        var defaultAllowed = isDefaultRule && fl.indexOf('allowed') === 0;
+
+        var filterCell;
+        if (fl) {
+          var display = fl.length > 80 ? fl.slice(0, 80) + '…' : fl;
+          var coloured = display
+            .replace(/^(blocked)/, '<span style="color:#900;font-weight:700">$1</span>')
+            .replace(/^(allowed)/, '<span style="color:#0a6633;font-weight:700">$1</span>');
+          filterCell = '<code title="' + escAttr(fl) + '">' + coloured + '</code>';
+        } else {
+          filterCell = '<span class="muted">—</span>';
+        }
+
+        // Build advisory note
+        var note = '';
+        if (defaultBlocked && group === 'good') {
+          note = '<div class="filter-note filter-note-warn">No allow rule matched — create a rule to let this through</div>';
+        } else if (defaultBlocked && group === 'bad') {
+          note = '<div class="filter-note filter-note-info">You don\'t have a rule that blocks this — it was blocked by the sandbox default</div>';
+        } else if (defaultAllowed && group === 'bad') {
+          note = '<div class="filter-note filter-note-warn">No deny rule is blocking this — it\'s passing through the sandbox default allow</div>';
+        } else if (defaultAllowed && group === 'good') {
+          note = '<div class="filter-note filter-note-info">No explicit allow rule — passing through the sandbox default allow</div>';
+        }
+
+        body += '<tr class="' + cls + '"><td>' + ok + '</td><td class="num">' + st
+          + '</td><td class="num">' + expectLabel + '</td><td>' + pathCellHtml(row)
+          + (note ? '<br>' + note : '')
+          + '</td><td>' + filterCell + '</td></tr>';
       });
-    })();
+      if (!rows || !rows.length) {
+        body = '<tbody><tr><td colspan="5" class="muted">No paths in this group.</td></tr></tbody>';
+      }
+      tableEl.innerHTML = thead + body + '</tbody>';
+    }
+
+    function renderTestResults(j) {
+      lastTestPayload = j;
+      testResults.hidden = false;
+      var files = j.filter_files || [];
+      filterFilesList.innerHTML = '';
+      if (files.length) {
+        files.forEach(function (f) {
+          var li = document.createElement('li'); li.textContent = f; filterFilesList.appendChild(li);
+        });
+        filterFilesAtTest.textContent = 'Filter files at time of test (' + files.length + ' file(s)):';
+      } else {
+        var li = document.createElement('li'); li.className = 'muted';
+        li.textContent = '(no .any files in filters directory)'; filterFilesList.appendChild(li);
+        filterFilesAtTest.textContent = 'Filter files at time of test:';
+      }
+      var sm = j.sandbox_mode || 'deny_all';
+      applySandboxModeUI(sm);
+      buildTable(tableGood, j.good, 200, sm, 'good');
+      buildTable(tableBad,  j.bad,  404, sm, 'bad');
+    }
+
+    function downloadText(filename, text, mime) {
+      var blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function exportCsv(j) {
+      var lines = [['type','group','ok','http_status','expect','path'].map(escCell).join(',')];
+      (j.filter_files || []).forEach(function (f) {
+        lines.push(['filter','','','','',f].map(escCell).join(','));
+      });
+      (j.good || []).forEach(function (row) {
+        lines.push(['test','good', row.ok ? 'yes':'no',
+          row.status != null ? String(row.status) : '', '200', row.path||''].map(escCell).join(','));
+      });
+      (j.bad || []).forEach(function (row) {
+        lines.push(['test','bad', row.ok ? 'yes':'no',
+          row.status != null ? String(row.status) : '', '404', row.path||''].map(escCell).join(','));
+      });
+      downloadText('dispatcher-url-tests.csv', lines.join('\r\n') + '\r\n', 'text/csv;charset=utf-8');
+    }
+
+    function exportJsonForDownload(j) {
+      function rowOut(row) {
+        var o = { path: row.path||'', ok: !!row.ok, status: row.status, expect: row.expect };
+        if (row.error) o.error = row.error;
+        return o;
+      }
+      return {
+        filter_files: j.filter_files || [],
+        filter_rules: j.filter_rules || [],
+        good: (j.good || []).map(rowOut),
+        bad:  (j.bad  || []).map(rowOut)
+      };
+    }
+
+    document.getElementById('btnTest').addEventListener('click', async function () {
+      setBusy(true);
+      testErr.hidden = true; testErr.textContent = '';
+      var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      var badLines  = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      try {
+        var r = await fetch('/api/test-urls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ good_paths: goodLines, bad_paths: badLines })
+        });
+        var text = await r.text();
+        var j;
+        try { j = JSON.parse(text); } catch (pe) {
+          lastTestPayload = null; testResults.hidden = true;
+          testErr.textContent = 'Invalid response (' + r.status + '): ' + text.slice(0, 500);
+          testErr.hidden = false; return;
+        }
+        if (!r.ok) {
+          lastTestPayload = null; testResults.hidden = true;
+          testErr.textContent = 'Request failed (' + r.status + '): ' + (j && j.error ? j.error : text.slice(0, 500));
+          testErr.hidden = false; return;
+        }
+        renderTestResults(j);
+        await refreshFilterFilesStatic();
+      } catch (e) {
+        lastTestPayload = null; testResults.hidden = true;
+        testErr.textContent = 'Test request failed: ' + e; testErr.hidden = false;
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    btnExportJson.addEventListener('click', function () {
+      if (!lastTestPayload) return;
+      downloadText('dispatcher-url-tests.json',
+        JSON.stringify(exportJsonForDownload(lastTestPayload), null, 2),
+        'application/json;charset=utf-8');
+    });
+    btnExportCsv.addEventListener('click', function () {
+      if (lastTestPayload) exportCsv(lastTestPayload);
+    });
+
+    ver.addEventListener('change', syncModalVersionFromMain);
+
+    /* ── Init ── */
+    async function loadVersions() {
+      var r = await fetch('/api/versions');
+      var j = await r.json();
+      var list = j.versions || [];
+      ver.innerHTML = ''; verModal.innerHTML = '';
+      list.forEach(function (v) {
+        var o = document.createElement('option'); o.value = v; o.textContent = v; ver.appendChild(o);
+        var om = document.createElement('option'); om.value = v; om.textContent = v; verModal.appendChild(om);
+      });
+      var want = new URLSearchParams(location.search).get('ver');
+      if (want && list.indexOf(want) >= 0) ver.value = want;
+      else if (list.length) ver.selectedIndex = 0;
+      syncModalVersionFromMain();
+      if (btnModalOk) btnModalOk.disabled = list.length === 0;
+      await updateModuleGate();
+      await refreshInstalledVersion();
+      await loadSandboxMode();
+      await refreshFilterFilesStatic();
+      await loadDefaultTestPaths();
+      if (moduleModal && !moduleModal.hidden) {
+        try { btnModalOk.focus(); } catch (e2) {}
+      }
+    }
+
+    // Poll module status every 5 seconds
+    setInterval(updateModuleGate, 5000);
+
+    loadVersions().catch(function (e) {
+      actionOut.textContent = 'Failed to load versions: ' + e;
+      actionOut.hidden = false;
+    });
+  })();
   </script>
 </body>
 </html>

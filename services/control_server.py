@@ -13,9 +13,11 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import stat
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -33,6 +35,21 @@ DOWNLOAD_SCRIPT = Path(
 MODULE_VALID_SCRIPT = Path(
     os.environ.get("DISP_MODULE_VALID_SCRIPT", "/usr/local/bin/disp_module_valid.sh")
 )
+MODULE_VERSION_FILE = Path("/etc/httpd/modules/dispatcher/installed_version.txt")
+DISPATCHER_LOG = Path("/var/log/httpd/dispatcher.log")
+SANDBOX_POLICY_FILE = Path("/etc/httpd/conf.dispatcher.d/sandbox_policy.any")
+_SANDBOX_DENY  = '# mode: deny_all\n/sandbox-default { /type "deny" /url "*" }\n'
+_SANDBOX_ALLOW = '# mode: allow_all\n/sandbox-default { /type "allow" /url "*" }\n'
+
+
+def _read_sandbox_mode() -> str:
+    try:
+        text = SANDBOX_POLICY_FILE.read_text(encoding="utf-8")
+        if "mode: allow_all" in text:
+            return "allow_all"
+    except OSError:
+        pass
+    return "deny_all"
 PANEL_HTML = Path(os.environ.get("CONTROL_PANEL_HTML", "/usr/local/share/control_panel.html"))
 LOGS_VIEW_HTML = Path(os.environ.get("LOGS_VIEW_HTML", "/usr/local/share/logs_view.html"))
 # Prepended to request paths from /api/test-urls (no trailing slash).
@@ -311,6 +328,55 @@ def _module_installed() -> bool:
         return False
 
 
+def _dispatcher_log_pos() -> int:
+    """Return the current byte offset at the end of dispatcher.log, or 0."""
+    try:
+        st = DISPATCHER_LOG.stat()
+        if stat.S_ISREG(st.st_mode):
+            return st.st_size
+    except OSError:
+        pass
+    return 0
+
+
+def _read_filter_decision(log_pos: int, request_path: str) -> Optional[str]:
+    """
+    Grep new dispatcher.log lines since log_pos for a Filter rule entry line
+    referencing request_path, e.g.:
+      Filter rule entry /default-test-container-deny blocked 'GET /admin HTTP/1.1'
+    Returns "<decision> — <rule>" or None if not found.
+    """
+    try:
+        st = DISPATCHER_LOG.stat()
+        if not stat.S_ISREG(st.st_mode):
+            return None
+    except OSError:
+        return None
+
+    time.sleep(0.12)  # let the dispatcher flush its log buffer
+
+    try:
+        with DISPATCHER_LOG.open("rb") as f:
+            f.seek(log_pos)
+            raw = f.read(131072)
+    except OSError:
+        return None
+
+    # Match: Filter rule entry <rule-name> blocked|allowed 'METHOD /path...'
+    pattern = re.compile(
+        r"Filter rule entry\s+(\S+)\s+(blocked|allowed)\s+'[A-Z]+\s+"
+        + re.escape(request_path),
+        re.IGNORECASE,
+    )
+
+    for line in raw.decode("utf-8", errors="replace").splitlines():
+        m = pattern.search(line)
+        if m:
+            return f"{m.group(2).lower()} — {m.group(1)}"
+
+    return None
+
+
 def _restart_httpd_processes() -> None:
     subprocess.run(
         ["/usr/bin/supervisorctl", "restart", "dispatcher", "renderer"],
@@ -321,9 +387,13 @@ def _restart_httpd_processes() -> None:
     )
 
 
+_TEST_USER_AGENT = "aem-dispatcher-filter-tester"
+
+
 def _fetch_status(url: str) -> Tuple[int, Optional[str]]:
     try:
         req = urllib.request.Request(url, method="GET")
+        req.add_header("User-Agent", _TEST_USER_AGENT)
         with urllib.request.urlopen(req, timeout=20) as resp:
             return int(resp.status), None
     except urllib.error.HTTPError as e:
@@ -388,6 +458,21 @@ class ControlHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/filter-files":
             _json_response(self, 200, {"files": _list_filter_files()})
+            return
+        if path == "/api/filter-rules":
+            _json_response(self, 200, {"rules": _read_filter_rules()})
+            return
+        if path == "/api/sandbox-mode":
+            _json_response(self, 200, {"mode": _read_sandbox_mode()})
+            return
+        if path == "/api/installed-version":
+            ver: Optional[str] = None
+            if MODULE_VERSION_FILE.is_file():
+                try:
+                    ver = MODULE_VERSION_FILE.read_text(encoding="utf-8").strip() or None
+                except OSError:
+                    pass
+            _json_response(self, 200, {"version": ver})
             return
         if path == "/api/default-test-paths":
             _json_response(self, 200, _read_default_test_paths())
@@ -574,6 +659,51 @@ class ControlHandler(BaseHTTPRequestHandler):
             _json_response(self, 200, {"ok": True, "version": ver})
             return
 
+        if path == "/api/sandbox-mode":
+            data = _read_json_body(self)
+            if not data:
+                _json_response(self, 400, {"ok": False, "error": "Invalid JSON body"})
+                return
+            mode = data.get("mode")
+            if mode not in ("deny_all", "allow_all"):
+                _json_response(self, 400, {"ok": False, "error": "mode must be 'deny_all' or 'allow_all'"})
+                return
+            content = _SANDBOX_ALLOW if mode == "allow_all" else _SANDBOX_DENY
+            try:
+                SANDBOX_POLICY_FILE.write_text(content, encoding="utf-8")
+            except OSError as e:
+                _json_response(self, 500, {"ok": False, "error": str(e)})
+                return
+            try:
+                _restart_httpd_processes()
+            except subprocess.CalledProcessError as e:
+                _json_response(self, 500, {"ok": False, "error": "policy saved but restart failed",
+                                           "detail": (e.stderr or e.stdout or str(e))[:2000]})
+                return
+            _json_response(self, 200, {"ok": True, "mode": mode})
+            return
+
+        if path == "/api/save-filters":
+            data = _read_json_body(self)
+            if not data:
+                _json_response(self, 400, {"ok": False, "error": "Invalid JSON body"})
+                return
+            content = data.get("content")
+            if not isinstance(content, str):
+                _json_response(self, 400, {"ok": False, "error": "Missing content"})
+                return
+            if len(content) > 512_000:
+                _json_response(self, 400, {"ok": False, "error": "Content too large (max 512 KB)"})
+                return
+            target = FILTERS_DIR / "002_web_filters.any"
+            try:
+                target.write_text(content, encoding="utf-8")
+            except OSError as e:
+                _json_response(self, 500, {"ok": False, "error": str(e)})
+                return
+            _json_response(self, 200, {"ok": True, "file": "002_web_filters.any"})
+            return
+
         if path == "/api/test-urls":
             data = _read_json_body(self)
             if not data:
@@ -628,6 +758,7 @@ class ControlHandler(BaseHTTPRequestHandler):
                             }
                         )
                         continue
+                    log_pos = _dispatcher_log_pos()
                     code, err = _fetch_status(url)
                     ok = code == expect and err is None
                     row: Dict[str, Any] = {
@@ -639,12 +770,16 @@ class ControlHandler(BaseHTTPRequestHandler):
                     }
                     if err:
                         row["error"] = err
+                    filter_decision = _read_filter_decision(log_pos, norm)
+                    if filter_decision is not None:
+                        row["filter_log"] = filter_decision
                     out.append(row)
                 return out
 
             payload = {
                 "ok": True,
                 "test_url_base": TEST_URL_BASE,
+                "sandbox_mode": _read_sandbox_mode(),
                 "filter_files": _list_filter_files(),
                 "filter_rules": _read_filter_rules(),
                 "good": run_group(good_raw, 200),

@@ -50,4 +50,5 @@ if echo "$ldd_out" | grep -q "not found"; then
 	exit 1
 fi
 
+echo "${MODULE_VER}" > "$(dirname "$TARGET")/installed_version.txt"
 echo "Installed ${TARGET} (version ${MODULE_VER})"

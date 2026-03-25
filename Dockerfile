@@ -8,9 +8,8 @@ RUN mkdir -p /run/httpd && \
     mkdir -p /etc/httpd/conf.dispatcher.d/filters && \
     mkdir -p /etc/httpd/modules/dispatcher && \
     mkdir -p /var/www/renderer && \
-    ln -sf /dev/stdout /var/log/httpd/access_log && \
-    ln -sf /dev/stderr /var/log/supervisord.log && \
-    ln -sf /dev/stderr /var/log/httpd/error_log
+    mkdir -p /var/log/httpd && \
+    ln -sf /dev/stderr /var/log/supervisord.log
 RUN setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd && \
     setcap 'cap_net_bind_service=+ep' /usr/bin/supervisord
 ADD services/start.sh /usr/local/bin/start.sh

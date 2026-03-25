@@ -9,84 +9,289 @@
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       line-height: 1.45;
       color: #1a1a1a;
-      background: #f4f5f7;
+      background: #0d1117;
     }
-    body { margin: 0; padding: 0.75rem 1rem 1.5rem; display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
-    h1 { font-size: 1.1rem; margin: 0 0 0.5rem; font-weight: 650; }
-    .nav { font-size: 0.88rem; margin-bottom: 0.5rem; }
-    .nav a { color: #1f7aad; }
-    .meta { font-size: 0.82rem; color: #555; margin-bottom: 0.5rem; }
-    pre#out {
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      padding: 0.5rem 0.85rem;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      flex-shrink: 0;
+    }
+    .toolbar a {
+      color: #58a6ff;
+      font-size: 0.82rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .toolbar a:hover { text-decoration: underline; }
+    .toolbar .sep { color: #484f58; }
+    .spacer { flex: 1; }
+
+    /* Log selector */
+    #logSelect {
+      background: #21262d;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+      border-radius: 5px;
+      padding: 0.25rem 0.5rem;
+      font: inherit;
+      font-size: 0.82rem;
+      cursor: pointer;
+      min-width: 14rem;
+    }
+    #logSelect:focus { outline: 1px solid #58a6ff; }
+
+    /* Status dot */
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #3fb950; flex-shrink: 0;
+      box-shadow: 0 0 5px #3fb950;
+    }
+    .status-dot.closed { background: #484f58; box-shadow: none; }
+    #statusLabel { font-size: 0.78rem; color: #8b949e; white-space: nowrap; }
+
+    /* Auto-scroll toggle */
+    .autoscroll-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .autoscroll-wrap input[type="checkbox"] {
+      width: 15px; height: 15px; cursor: pointer;
+      accent-color: #3fb950;
+    }
+    .autoscroll-wrap label {
+      font-size: 0.8rem;
+      color: #8b949e;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .autoscroll-wrap input:checked + label { color: #3fb950; }
+
+    /* Toolbar buttons */
+    button.toolbar-btn {
+      padding: 0.25rem 0.6rem;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #c9d1d9;
+      border-radius: 5px;
+      font: inherit;
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button.toolbar-btn:hover { background: #30363d; }
+
+    /* ── Log area ── */
+    #out {
       flex: 1;
       margin: 0;
-      padding: 0.65rem 0.75rem;
+      padding: 0.65rem 0.85rem 1rem;
       background: #0d1117;
       color: #e6edf3;
       font-size: 0.78rem;
-      line-height: 1.35;
-      overflow: auto;
+      line-height: 1.5;
+      overflow-y: scroll;
       white-space: pre-wrap;
       word-break: break-word;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-      min-height: 12rem;
+      border: none;
+      outline: none;
+      min-height: 0;
     }
-    .err { color: #f85149; background: #fff5f5; padding: 0.5rem; border-radius: 6px; font-size: 0.88rem; }
+    .err-banner {
+      margin: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      background: #2d1117;
+      color: #f85149;
+      border: 1px solid #f8514940;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
-  <p class="nav"><a href="/">← Control panel</a></p>
-  <h1 id="title">Log stream</h1>
-  <p class="meta" id="meta"></p>
-  <pre id="out" aria-live="polite"></pre>
-  <p id="banner" class="err" hidden></p>
+
+  <div class="toolbar">
+    <a href="/">← Control panel</a>
+    <span class="sep">|</span>
+    <select id="logSelect" aria-label="Select log file"></select>
+    <span class="spacer"></span>
+    <span class="status-dot" id="statusDot" class="closed"></span>
+    <span id="statusLabel">connecting…</span>
+    <span class="sep">|</span>
+    <span class="autoscroll-wrap">
+      <input type="checkbox" id="chkAutoScroll" checked />
+      <label for="chkAutoScroll">Auto-scroll</label>
+    </span>
+    <button type="button" class="toolbar-btn" id="btnClear">Clear</button>
+  </div>
+
+  <pre id="out" aria-live="polite" aria-label="Log output"></pre>
+  <p id="errBanner" class="err-banner" hidden></p>
 
   <script>
     (function () {
-      var params = new URLSearchParams(location.search);
-      var name = params.get("name");
-      var title = document.getElementById("title");
-      var meta = document.getElementById("meta");
-      var out = document.getElementById("out");
-      var banner = document.getElementById("banner");
+      var LOG_FILES = [
+        { name: 'dispatcher.log',       label: 'dispatcher.log — Dispatcher module (trace)' },
+        { name: 'filter-test.log',      label: 'filter-test.log — Filter extractor' },
+        { name: 'error_log',            label: 'error_log — Dispatcher httpd' },
+        { name: 'access_log',           label: 'access_log — Dispatcher access' },
+        { name: 'renderer_error_log',   label: 'renderer_error_log — Renderer httpd' },
+        { name: 'renderer_access_log',  label: 'renderer_access_log — Renderer access' },
+      ];
 
-      if (!name || !/^[a-zA-Z0-9._-]+$/.test(name)) {
-        banner.hidden = false;
-        banner.textContent = "Missing or invalid ?name= (allowed: letters, digits, dot, underscore, hyphen).";
-        return;
+      var logSelect   = document.getElementById('logSelect');
+      var out         = document.getElementById('out');
+      var errBanner   = document.getElementById('errBanner');
+      var statusDot   = document.getElementById('statusDot');
+      var statusLabel = document.getElementById('statusLabel');
+      var chkAutoScroll = document.getElementById('chkAutoScroll');
+      var btnClear    = document.getElementById('btnClear');
+
+      var currentEs = null;
+
+      // Populate dropdown
+      LOG_FILES.forEach(function (f) {
+        var opt = document.createElement('option');
+        opt.value = f.name;
+        opt.textContent = f.label;
+        logSelect.appendChild(opt);
+      });
+
+      // Pick initial log from ?name= or default to first
+      var params = new URLSearchParams(location.search);
+      var initName = params.get('name');
+      var validNames = LOG_FILES.map(function (f) { return f.name; });
+      if (!initName || !validNames.includes(initName)) initName = LOG_FILES[0].name;
+      logSelect.value = initName;
+
+      function setStatus(state) {
+        if (state === 'live') {
+          statusDot.className = 'status-dot';
+          statusLabel.textContent = 'live';
+        } else if (state === 'reconnecting') {
+          statusDot.className = 'status-dot closed';
+          statusLabel.textContent = 'reconnecting…';
+        } else if (state === 'closed') {
+          statusDot.className = 'status-dot closed';
+          statusLabel.textContent = 'closed';
+        } else if (state === 'error') {
+          statusDot.className = 'status-dot closed';
+          statusLabel.textContent = 'error';
+        } else {
+          statusDot.className = 'status-dot closed';
+          statusLabel.textContent = state;
+        }
       }
 
-      title.textContent = "Log: " + name;
-      meta.textContent = "Live stream via Server-Sent Events. Leave this page open; new lines append as they are written.";
+      function scrollToBottom() {
+        out.scrollTop = out.scrollHeight;
+      }
 
-      var url = "/api/log-stream?name=" + encodeURIComponent(name);
-      var es = new EventSource(url);
+      function appendLine(text) {
+        out.textContent += text + '\n';
+        if (chkAutoScroll.checked) scrollToBottom();
+      }
 
-      es.addEventListener("error", function (e) {
-        if (es.readyState === EventSource.CLOSED) {
-          out.textContent += "\n[stream closed]\n";
+      out.addEventListener('scroll', function () {
+        var atBottom = out.scrollTop + out.clientHeight >= out.scrollHeight - 8;
+        if (!atBottom && chkAutoScroll.checked) {
+          chkAutoScroll.checked = false;
+        } else if (atBottom && !chkAutoScroll.checked) {
+          chkAutoScroll.checked = true;
         }
       });
 
-      es.onmessage = function (e) {
-        try {
-          var o = JSON.parse(e.data);
-          if (o.error) {
-            banner.hidden = false;
-            banner.textContent = o.error;
-            es.close();
-            return;
-          }
-          if (o.line !== undefined && o.line !== null) {
-            out.textContent += o.line + "\n";
-            out.scrollTop = out.scrollHeight;
-          }
-        } catch (err) {
-          out.textContent += e.data + "\n";
-          out.scrollTop = out.scrollHeight;
+      chkAutoScroll.addEventListener('change', function () {
+        if (chkAutoScroll.checked) scrollToBottom();
+      });
+
+      btnClear.addEventListener('click', function () {
+        out.textContent = '';
+      });
+
+      function startStream(name) {
+        // Close any existing stream
+        if (currentEs) {
+          currentEs.close();
+          currentEs = null;
         }
-      };
+
+        errBanner.hidden = true;
+        errBanner.textContent = '';
+        out.textContent = '';
+        setStatus('connecting…');
+
+        document.title = name + ' — dispatcher sandbox';
+        history.pushState(null, '', '/logs/view?name=' + encodeURIComponent(name));
+
+        var es = new EventSource('/api/log-stream?name=' + encodeURIComponent(name));
+        currentEs = es;
+
+        es.addEventListener('open', function () {
+          setStatus('live');
+        });
+
+        es.addEventListener('error', function () {
+          if (es.readyState === EventSource.CLOSED) {
+            setStatus('closed');
+            appendLine('\n[stream closed]');
+          } else {
+            setStatus('reconnecting');
+          }
+        });
+
+        es.onmessage = function (e) {
+          try {
+            var o = JSON.parse(e.data);
+            if (o.error) {
+              errBanner.hidden = false;
+              errBanner.textContent = o.error;
+              setStatus('error');
+              es.close();
+              return;
+            }
+            if (o.line !== undefined && o.line !== null) {
+              appendLine(o.line);
+            }
+          } catch (err) {
+            appendLine(e.data);
+          }
+        };
+      }
+
+      logSelect.addEventListener('change', function () {
+        startStream(logSelect.value);
+      });
+
+      // Handle browser back/forward
+      window.addEventListener('popstate', function () {
+        var p = new URLSearchParams(location.search).get('name');
+        if (p && validNames.includes(p) && p !== logSelect.value) {
+          logSelect.value = p;
+          startStream(p);
+        }
+      });
+
+      startStream(initName);
     })();
   </script>
 </body>

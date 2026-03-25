@@ -1,10 +1,89 @@
 {
   "good_paths": [
-    "/index.html",
-    "/image.png"
+    "/content/mysite/en.html",
+    "/content/mysite/en/about-us.html",
+    "/content/dam/mysite/images/hero.jpg",
+    "/etc/designs/mysite/clientlibs/main.css",
+    "/etc/designs/mysite/clientlibs/main.js",
+    "/etc/designs/mysite/images/logo.png",
+    "/libs/wcm/stats/tracker.js",
+    "/libs/granite/csrf/token.json",
+    "/libs/cq/security/userinfo.json",
+    "/libs/granite/security/currentuser.json"
   ],
   "bad_paths": [
+    "/admin",
+    "/admin.html",
+    "/admin/",
+
+    "/crx",
+    "/crx/",
+    "/crx/de",
+    "/crx/de.html",
+    "/crx/de/index.jsp",
+    "/crx/explorer",
+    "/crx/explorer/browser/index.jsp",
+    "/crx/packmgr",
+    "/crx/packmgr/index.jsp",
+    "/crx/repository",
+    "/dav/crx.default",
+    "/bin/crxde/logs",
+
     "/system/console",
-    "/denied-by-filter"
+    "/system/console/bundles",
+    "/system/console/components",
+    "/system/console/configMgr",
+    "/system/console/users",
+    "/system/console/memoryusage",
+    "/system/console/jmx",
+    "/system/sling/login",
+
+    "/libs/cq/core/content/login.html",
+    "/libs/cq/core/content/login.json",
+    "/libs/cq/core/content/login.infinity.json",
+    "/libs/opensocial/proxy",
+
+    "/apps",
+    "/apps/",
+    "/apps/geometrixx",
+    "/bin/querybuilder",
+    "/bin/querybuilder.json",
+    "/bin/querybuilder.json?path=/content",
+    "/libs/dam/merge/metadata",
+
+    "/etc/replication.xml",
+    "/etc/replication.infinity.json",
+    "/etc/replication/agents.publish.html",
+    "/etc/reports",
+    "/etc/reports/diskusage.html",
+    "/etc/map",
+    "/etc/map.infinity.json",
+
+    "/jcr:system/jcr:versionStorage.json",
+    "/_jcr_system/_jcr_versionStorage.json",
+
+    "/content/geometrixx/en.infinity.json",
+    "/content/dam.tidy.json",
+    "/content/mysite/en.docview.xml",
+    "/content/mysite/en.query.json",
+    "/content/mysite/en.feed",
+    "/content/mysite/en.rss",
+    "/content/mysite/en.pages.json",
+    "/content/mysite/en.languages.json",
+    "/content/mysite/en.blueprint.json",
+    "/content/mysite/en.sysview.xml",
+    "/content/mysite/en.-1.json",
+
+    "/content/geometrixx/en.html?debug=layout",
+    "/content/mysite/en.html?wcmmode=edit",
+    "/content/mysite/en.html?wcmmode=design",
+
+    "/content/usergenerated",
+    "/content/usergenerated/",
+    "/home/users",
+    "/home/users.json",
+    "/home/users.infinity.json",
+    "/home/groups",
+    "/home/groups.json"
   ]
 }
