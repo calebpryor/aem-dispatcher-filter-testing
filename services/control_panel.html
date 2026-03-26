@@ -1687,8 +1687,12 @@ DELETE /content/dam/sensitive"></textarea>
         .replace(/\*/g,   'example');
       // Append extension when path has no extension suffix
       if ((path || glob) && ext && ext !== '' && ext !== '*') {
-        if (!/\.[a-z0-9]+$/i.test(base)) {
-          base = base.replace(/\/example\/?$/, '') + '/example.' + ext;
+        // If ext is a regex alternation like (jpg|png), resolve to the first concrete value
+        var concreteExt = hasRegexSyntax(ext)
+          ? (ext.match(/[a-z0-9]+/i) || [null])[0]
+          : ext;
+        if (concreteExt && !/\.[a-z0-9]+$/i.test(base)) {
+          base = base.replace(/\/example\/?$/, '') + '/example.' + concreteExt;
         }
       }
       if (!base.startsWith('/')) base = '/' + base;
