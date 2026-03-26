@@ -1787,11 +1787,13 @@ DELETE /content/dam/sensitive"></textarea>
           if ([url, path, glob].some(function (v) { return v && hasRegexSyntax(v); })) continue;
           var exPath = buildExamplePath(url, path, ext, glob, selectors);
           if (!exPath) continue;
-          var entry = (method && method !== '' && method !== '*')
-            ? method.toUpperCase() + ' ' + exPath
-            : exPath;
-          if (type === 'allow') goodPaths.push(entry);
-          else if (type === 'deny') badPaths.push(entry);
+          // If method is a regex like (GET|POST), pick the first concrete value
+          var concreteMethod = method && method !== '' && method !== '*'
+            ? (hasRegexSyntax(method) ? (method.match(/[A-Z]+/i) || [null])[0] : method.toUpperCase())
+            : null;
+          var entry = concreteMethod ? concreteMethod + ' ' + exPath : exPath;
+          var targetList = type === 'allow' ? goodPaths : type === 'deny' ? badPaths : null;
+          if (targetList && targetList.indexOf(entry) < 0) targetList.push(entry);
         }
       });
 
