@@ -1479,6 +1479,10 @@ DELETE /content/dam/sensitive"></textarea>
       return m ? m[1] : null;
     }
 
+    function hasRegexSyntax(str) {
+      return /[\^$()[\]{}+|\\]/.test(str);
+    }
+
     function buildExamplePath(url, path, ext, glob) {
       var base = url || path || glob;
       if (!base || base === '*' || base === '.*') return null;
@@ -1532,6 +1536,7 @@ DELETE /content/dam/sensitive"></textarea>
           var ext    = extractAnyField(body, 'extension');
           var glob   = extractAnyField(body, 'glob');
           if (!type) continue;
+          if ([url, path, glob].some(function (v) { return v && hasRegexSyntax(v); })) continue;
           var exPath = buildExamplePath(url, path, ext, glob);
           if (!exPath) continue;
           var entry = (method && method !== '' && method !== '*')
@@ -1547,10 +1552,9 @@ DELETE /content/dam/sensitive"></textarea>
         return;
       }
 
-      var existingGood = good.value.trim();
-      var existingBad  = bad.value.trim();
-      good.value = existingGood ? existingGood + '\n' + goodPaths.join('\n') : goodPaths.join('\n');
-      bad.value  = existingBad  ? existingBad  + '\n' + badPaths.join('\n')  : badPaths.join('\n');
+      var existingBad = bad.value.trim();
+      good.value = goodPaths.join('\n');
+      bad.value  = existingBad ? existingBad + '\n' + badPaths.join('\n') : badPaths.join('\n');
     });
 
     btnClearGen.addEventListener('click', function () {
