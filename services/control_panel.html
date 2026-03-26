@@ -379,10 +379,10 @@
         <div class="step-num">3</div>
         <div>
           <h2>Add or generate your filters</h2>
-          <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are rejected (returning 404). Rules live in <code>.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
+          <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are rejected (returning 404). Rules live in <code>_filters.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
           <p class="hint"><strong>How:</strong> Go to the <strong>Filters</strong> tab:</p>
           <ul class="hint">
-            <li>Pick a <strong>Default policy</strong> first. <em>Deny all</em> is the realistic production setting — blocks everything unless you explicitly allow it. <em>Allow all</em> is useful for testing deny rules in isolation.</li>
+            <li>Pick a <strong>Default policy</strong> first. <em>Deny all</em> is the realistic production setting — rejects everything unless you explicitly allow it. <em>Allow all</em> is useful for testing deny rules in isolation.</li>
             <li><strong>Paste rules directly</strong> into the editor — use this if you already have a <code>_filters.any</code> file from your production environment (typically found in <code>/etc/httpd/conf.dispatcher.d/filters/</code>).</li>
             <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
           </ul>
@@ -397,7 +397,7 @@
         <div class="step-num">4</div>
         <div>
           <h2>Test your filters and share the results</h2>
-          <p class="hint"><strong>What:</strong> Each path in <strong>Good paths</strong> is expected to return HTTP 200 (the dispatcher should allow it). Each path in <strong>Bad paths</strong> is expected to return HTTP 404 (the dispatcher should block it). Tests hit the live running dispatcher — no mocking.</p>
+          <p class="hint"><strong>What:</strong> Each path in <strong>Good paths</strong> is expected to return HTTP 200 (the dispatcher should allow it). Each path in <strong>Bad paths</strong> is expected to return HTTP 404 (the dispatcher should reject it). Tests hit the live running dispatcher — no mocking.</p>
           <p class="hint"><strong>How:</strong> Go to the <strong>Testing</strong> tab. Click <strong>Generate tests from filters</strong> to auto-populate both lists from your current rules, or paste in real paths from your site. Click <strong>Run tests</strong> and review the colour-coded results table. Use <strong>Export JSON</strong> or <strong>Export CSV</strong> to share results with your team or save a baseline for future comparisons.</p>
           <button type="button" class="secondary" onclick="_gotoTab('testing')">Go to Testing →</button>
         </div>
@@ -418,7 +418,7 @@
       <h2>Bonus: reading the logs</h2>
       <p class="hint">The <strong>Logs</strong> tab links to live-streaming views for all processes. Here is what each log tells you:</p>
       <ul class="hint" style="margin:0.3rem 0 0.5rem;padding-left:1.3rem">
-        <li><strong><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a></strong> — The most useful log. With trace logging enabled you will see every filter rule evaluated per request. Look for <code>Filter</code> lines to trace exactly why a request was allowed or blocked.</li>
+        <li><strong><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a></strong> — The most useful log. With trace logging enabled you will see every filter rule evaluated per request. Look for <code>Filter</code> lines to trace exactly why a request was allowed or rejected.</li>
         <li><strong><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a></strong> — Output from the filter parser script. Check this if rules are not appearing in the <em>Active filter rules</em> view.</li>
         <li><strong><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a></strong> — Apache / dispatcher startup and runtime errors. First stop when the dispatcher fails to start.</li>
         <li><strong><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a></strong> — Every HTTP request that reached Apache. Useful for confirming your test client is actually hitting the dispatcher.</li>
@@ -477,8 +477,8 @@
   <div id="tab-filters" class="tab-panel" role="tabpanel">
 
     <section>
-      <h2>Default policy <span class="help-tip" data-tip="The catch-all rule applied when no filter matches a request. Deny all is the most realistic production setting — everything is blocked by default and you write allow rules for paths that should pass. Allow all passes everything and you write deny rules for paths to block. Switch between them without restarting; a dispatcher reload happens automatically.">?</span></h2>
-      <p class="hint">Sets the sandbox catch-all rule. In <strong>Deny all</strong> mode, write allow rules for paths that should pass. In <strong>Allow all</strong> mode, write deny rules for paths that should be blocked.</p>
+      <h2>Default policy <span class="help-tip" data-tip="The catch-all rule applied when no filter matches a request. Deny all is the most realistic production setting — everything is rejected by default and you write allow rules for paths that should pass. Allow all passes everything and you write deny rules for paths to reject. Switch between them without restarting; a dispatcher reload happens automatically.">?</span></h2>
+      <p class="hint">Sets the sandbox catch-all rule. In <strong>Deny all</strong> mode, write allow rules for paths that should pass. In <strong>Allow all</strong> mode, write deny rules for paths that should be rejected.</p>
       <div class="mode-bar">
         <span class="mode-label">Default policy:</span>
         <button type="button" class="mode-btn" id="btnModeDeny" data-mode="deny_all">
@@ -550,7 +550,7 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
   ════════════════════════════════════════ -->
   <div id="tab-testing" class="tab-panel" role="tabpanel">
     <section>
-      <h2>Request paths <span class="help-tip" data-tip="Tests paths live against the running dispatcher — no mocking. Good paths should return HTTP 200 (the dispatcher allows the request to reach the renderer). Bad paths should return HTTP 404 (the dispatcher blocks it). Generate tests from filters auto-populates both lists from your current rules. Export results to share with your team or save a test baseline.">?</span></h2>
+      <h2>Request paths <span class="help-tip" data-tip="Tests paths live against the running dispatcher — no mocking. Good paths should return HTTP 200 (the dispatcher allows the request to reach the renderer). Bad paths should return HTTP 404 (the dispatcher rejects it). Generate tests from filters auto-populates both lists from your current rules. Export results to share with your team or save a test baseline.">?</span></h2>
       <p class="hint">
         Filter fragments are loaded from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order).
         Default good/bad paths are loaded from <code>tests/default_test_paths.json</code> on the host.
@@ -731,8 +731,8 @@ DELETE /content/dam/sensitive"></textarea>
       btnModeDeny.className  = 'mode-btn' + (mode === 'deny_all'  ? ' active-deny'  : '');
       btnModeAllow.className = 'mode-btn' + (mode === 'allow_all' ? ' active-allow' : '');
       modeHint.textContent = mode === 'deny_all'
-        ? 'Default: block everything — write allow rules for paths that should pass'
-        : 'Default: pass everything — write deny rules for paths that should be blocked';
+        ? 'Default: reject everything — write allow rules for paths that should pass'
+        : 'Default: pass everything — write deny rules for paths that should be rejected';
     }
 
     async function loadSandboxMode() {
@@ -1166,9 +1166,9 @@ DELETE /content/dam/sensitive"></textarea>
         if (defaultBlocked && group === 'good') {
           note = '<div class="filter-note filter-note-warn">No allow rule matched — create a rule to let this through</div>';
         } else if (defaultBlocked && group === 'bad') {
-          note = '<div class="filter-note filter-note-info">You don\'t have a rule that blocks this — it was blocked by the sandbox default</div>';
+          note = '<div class="filter-note filter-note-info">You don\'t have a rule that rejects this — it was rejected by the sandbox default</div>';
         } else if (defaultAllowed && group === 'bad') {
-          note = '<div class="filter-note filter-note-warn">No deny rule is blocking this — it\'s passing through the sandbox default allow</div>';
+          note = '<div class="filter-note filter-note-warn">No deny rule is rejecting this — it\'s passing through the sandbox default allow</div>';
         } else if (defaultAllowed && group === 'good') {
           note = '<div class="filter-note filter-note-info">No explicit allow rule — passing through the sandbox default allow</div>';
         }
