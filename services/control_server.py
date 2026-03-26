@@ -432,13 +432,26 @@ def _get_service_health() -> List[Dict[str, str]]:
 
 
 def _restart_httpd_processes() -> None:
-    subprocess.run(
+    # supervisorctl restart exits non-zero when processes pass through intermediate
+    # ERROR/stopped states while cycling — even when they ultimately come up fine.
+    # Ignore the exit code and verify the final running state instead.
+    result = subprocess.run(
         ["/usr/bin/supervisorctl", "restart", "dispatcher", "renderer"],
-        check=True,
         capture_output=True,
         text=True,
         timeout=120,
     )
+    health = _get_service_health()
+    not_running = [
+        s["name"] for s in health
+        if s.get("name") in ("dispatcher", "renderer")
+        and s.get("state", "").upper() != "RUNNING"
+    ]
+    if not_running:
+        raise subprocess.CalledProcessError(
+            result.returncode, result.args,
+            output=result.stdout, stderr=result.stderr,
+        )
 
 
 _TEST_USER_AGENT = "aem-dispatcher-filter-tester"
