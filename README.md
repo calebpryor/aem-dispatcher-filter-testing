@@ -1,162 +1,187 @@
-# Adobe Experience Manager Dispatcher filter testing Docker image
-This image is located in docker hub here:
-https://hub.docker.com/r/pryor/aem-dispatcher-filter-testing
+# AEM Dispatcher Filter Sandbox
 
-This repo is the Dockerfile source and dependent files to make this work.
-Instructions are here and in docker hub for convenience.
+A local sandbox for writing and testing [Adobe Experience Manager](https://business.adobe.com/products/experience-manager/adobe-experience-manager.html) Dispatcher filter rules — no AEM licence or cloud account required.
 
-# What is this?
-Adobe Experience Manager is an Adobe product that uses Apache Sling.  Apache Sling is powerful and weird.
-With each deployment of AEM it's normally fronted with a different webserver that uses a module written specifically for AEM.  It's an intelligent proxy / cache / access control web tier.
+> **Image on Docker Hub:** [pryor/aem-dispatcher-filter-testing](https://hub.docker.com/r/pryor/aem-dispatcher-filter-testing)
 
-Writing filters for the dispatcher can be challenging and there isn't an easy sandbox for people to sharpen their skills with.  This docker image stands up a fake backend renderer to act as AEM and an Apache Webserver that uses the dispatcher handler .so file and base configuration farm to make it work.
+---
 
-This way you can stand up a quick box to create a new filter rule for and get it to work and tear it down quickly.
+## What is this?
 
-# What is the point?
-One challenge is writing good dispatcher filter rules from the documentation listed here:
-https://docs.adobe.com/content/help/en/experience-manager-dispatcher/using/configuring/dispatcher-configuration.html#configuring-access-to-content-filter
+Adobe Experience Manager (AEM) is a content management platform that is almost always fronted by the **AEM Dispatcher** — an Apache web server module that acts as a proxy, cache, and access-control layer between the internet and your AEM author/publish instances.
 
-# Demo
+Dispatcher **filter rules** control which HTTP requests are allowed through and which are blocked. Getting them right matters for security and performance, but testing them normally requires a full AEM environment.
 
-![Starting Container](https://raw.githubusercontent.com/calebpryor/aem-dispatcher-filter-testing/master/dispatcher-filter-testing-compose.gif)
+This project gives you a self-contained sandbox:
 
-![Browser Testing Filters](https://raw.githubusercontent.com/calebpryor/aem-dispatcher-filter-testing/master/dispatcher-filter-testing-examples.gif)
+- A **fake AEM renderer** (a simple Apache vhost on port 4503) that acts as the backend
+- A real **Apache + mod_dispatcher.so** setup so your filter rules are evaluated exactly as they would be in production
+- A **browser-based control panel** for managing filter rules, running tests, viewing live logs, and switching dispatcher module versions
 
-# What do I need?
+You can spin it up in a few minutes, write rules, run path tests, and tear it down when you're done.
 
-## Docker
+---
 
-Create an account on [hub.docker.com](https://hub.docker.com/signup) you'll need it for pulling down public docker images.
+## Demo
 
-Use your favorite installation to get Docker running on your machine.
+**Starting the container and installing the dispatcher module:**
 
-The easiest option is `Docker Desktop` and you can get the installation media from [here](https://www.docker.com/products/docker-desktop/)
+![Starting Container](https://raw.githubusercontent.com/calebpryor/aem-dispatcher-filter-testing/v.2/dispatcher-filter-testing-compose.gif)
 
-Run through the standard installation wizard and login to the client with your docker account.
+**Using the control panel to test filter rules:**
 
-## Clone this repo
+![Browser Testing Filters](https://raw.githubusercontent.com/calebpryor/aem-dispatcher-filter-testing/v.2/dispatcher-filter-testing-examples.gif)
 
-```
+---
+
+## What do you need?
+
+1. **Docker or Podman** installed on your machine (see the guides below)
+2. **Git** to clone this repository
+3. A terminal (Terminal.app on Mac, PowerShell or WSL on Windows, any shell on Linux)
+
+You do **not** need an Adobe account to use this sandbox. The dispatcher module (`mod_dispatcher.so`) is downloaded from Adobe's public CDN through the control panel after the container starts.
+
+---
+
+## Quick Start (recommended)
+
+The fastest path is Docker Compose. This pulls the pre-built image and starts everything in one command.
+
+**1. Clone this repo**
+
+```bash
 git clone https://github.com/calebpryor/aem-dispatcher-filter-testing.git
 cd aem-dispatcher-filter-testing
 ```
 
-## Create your own filter files
+**2. Start the container**
 
-Then create any filters files you want with a .any extension with your filter rules you want to test.
-Drop those files in the filters directory.
-This file will get mapped to your workstation so you can make changes and re-run your docker image and it will pick up the changes.
-
-## Get and run the container
-
-There are different methods to use: Docker or Podman, `compose` or plain `run`.
-
-The Compose file is `docker-compose.yml` (only one file — having both `compose.yaml` and `docker-compose.yml` makes Compose warn and pick one arbitrarily).
-
-### docker compose (Easier)
-
-From a clone of this repo, build and run so you get the current Dockerfile (including the control UI on **`CONTROL_PORT`, default 59173**):
-
-```
-docker compose up --build
-```
-
-Optional: copy `.env.example` to `.env` and set `CONTROL_PORT` to any high, unused port if your Mac, VPN, or corporate stack blocks localhost on specific numbers.
-
-To use a pre-pulled image only (no local build), omit `--build` (Hub tags may be older than this repository).
-
-### Dispatcher module (`mod_dispatcher.so`)
-
-The Adobe module is **not** baked into the image and is **not** downloaded at container start. After `compose up`, open the **control UI** (`http://127.0.0.1` and your `CONTROL_PORT`, default **59173**) and use **Download & switch module** to fetch `mod_dispatcher.so`. Apache waits until that step completes.
-
-**Do not** leave an empty or macOS / wrong-CPU file under `./dispatcher/` and mount it — that can make Apache fail to load the module. Default Compose mounts **filters** and **logs** only; see `dispatcher/README.md` if you need to supply your own Linux `mod_dispatcher.so`.
-
-### Podman Desktop / Podman (compatible)
-
-This project uses a standard Compose file and OCI builds, so you can use [Podman Desktop](https://podman-desktop.io/) or the Podman CLI the same way:
-
-```
-podman compose up
-```
-
-Build from source:
-
-```
-podman build -f Dockerfile -t pryor/aem-dispatcher-filter-testing:rockylinux8 .
-```
-
-Pull from Docker Hub (fully qualified name works everywhere):
-
-```
-podman pull docker.io/pryor/aem-dispatcher-filter-testing:rockylinux8
-```
-
-Run without Compose:
-
-```
-podman run -p 80:80 -p 127.0.0.1:59173:59173 -e CONTROL_PORT=59173 -v /DIR_YOU_CLONED_TO/filters/:/etc/httpd/conf.dispatcher.d/filters/ -v /DIR_YOU_CLONED_TO/logs/:/var/log/httpd/ docker.io/pryor/aem-dispatcher-filter-testing:rockylinux8
-```
-
-**Podman Desktop tips:** Enable **Docker compatibility** in Podman Desktop settings if you rely on a `docker` CLI alias to existing scripts. On **Linux rootless** Podman, binding host ports **below 1024** (e.g. `80:80`) may be blocked by your system; either allow unprivileged low ports for your user or change the published ports (for example map `9080:80` for the dispatcher and `127.0.0.1:59173:59173` for the control UI). If **SELinux** denies volume access on Fedora/RHEL-style hosts, append `:z` to each bind mount in the Compose file (e.g. `./filters/:/etc/httpd/conf.dispatcher.d/filters/:z`).
-
-### docker pull or build
-
-You can pull the published image from [hub.docker.com](https://hub.docker.com/r/pryor/aem-dispatcher-filter-testing):
-
-```
-docker pull pryor/aem-dispatcher-filter-testing:rockylinux8
-```
-
-Or if you want you can also build it yourself from the source in this repo so you can trust there isn't anything snuck in on the prebuild image.
-
-Use this method if you want to make any alterations to the image as well.
-
-```
-docker build -t pryor/aem-dispatcher-filter-testing:rockylinux8 .
-```
-
-#### docker run
-
-```
-docker run -p 80:80 -p 127.0.0.1:59173:59173 -e CONTROL_PORT=59173 -v /DIR_YOU_CLONED_TO/filters/:/etc/httpd/conf.dispatcher.d/filters/ -v /DIR_YOU_CLONED_TO/logs/:/var/log/httpd/ pryor/aem-dispatcher-filter-testing:rockylinux8
-```
-
-Now you can tail the log files
-
-```
-tail -f logs/filter-test.log
-```
-
-As you visit your browser you'll see the relevant log entries for allows and denies for the filters
-
-### Control UI (default `http://127.0.0.1:59173`)
-
-The control panel is a small Python HTTP server inside the container (not Apache).
-
-**Why 59173:** Low “well-known” ports (80, 8080, …) and even some high defaults (e.g. 55555) can already be in use locally. The default **`CONTROL_PORT=59173`** is an uncommon high port; override in `.env` if this one is also taken (`address already in use`). Compose publishes it on **loopback only** (`127.0.0.1:59173:59173`) so traffic stays on your machine.
-
-**Platform mismatch:** If Compose warns that the image platform (e.g. `linux/arm64`) does not match the host (`linux/amd64`), run **`docker compose build --no-cache`** on **this** machine so the image matches your CPU, or uncomment **`platform: linux/amd64`** or **`platform: linux/arm64`** in `docker-compose.yml` to match your host.
-
-**Outbound checks are misleading:** `curl portquiz.net:8080` only proves **outbound** internet access on port 8080. It says nothing about whether **Docker can publish** a port on `127.0.0.1` on your machine.
-
-**If you still get connection reset / refused:**
-
-1. Confirm the container is up: `docker compose ps` and `docker compose logs` (look for `Control panel listening on 0.0.0.0:59173`).
-2. **`bind: address already in use`** — copy `.env.example` to `.env`, set `CONTROL_PORT=` to a free port (try `49821`), then `docker compose up --build` again.
-3. Prefer **`http://127.0.0.1:…`** in the browser (avoids IPv6 / `localhost` oddities).
-4. Rebuild so you are not on an old Hub image without the control server:
-
-```
-docker compose build --no-cache
+```bash
 docker compose up
 ```
 
-Quick checks:
+**3. Open the control panel and install the dispatcher module**
+
+Open **[http://127.0.0.1:59173](http://127.0.0.1:59173)** in your browser.
+
+On the **Module Version** tab, select a version and click **Download & switch module**. Apache waits for this step — the dispatcher will not start until the module file is downloaded.
+
+That's it. Once the module is installed, your dispatcher is live on **[http://localhost](http://localhost)**.
+
+---
+
+## Installation Guides
+
+Choose the guide that matches your setup:
+
+| Method | Guide |
+|---|---|
+| **Docker** — Compose (recommended) | [docs/docker.md#docker-compose](docs/docker.md#docker-compose) |
+| **Docker** — Pull pre-built image + `docker run` | [docs/docker.md#pull-and-run](docs/docker.md#pull-and-run) |
+| **Docker** — Build from source + `docker run` | [docs/docker.md#build-and-run](docs/docker.md#build-and-run) |
+| **Podman** — Compose | [docs/podman.md#podman-compose](docs/podman.md#podman-compose) |
+| **Podman** — `podman run` | [docs/podman.md#podman-run](docs/podman.md#podman-run) |
+
+---
+
+## After Starting
+
+### Install the dispatcher module
+
+The `mod_dispatcher.so` Apache module is **not** bundled in the image. After the container starts:
+
+1. Open the control panel at **http://127.0.0.1:59173**
+2. Go to the **Module Version** tab
+3. Select a version from the dropdown and click **Download & switch module**
+4. Wait for the download and restart to complete (a spinner shows progress)
+
+Apache will not respond on port 80 until this step is done — this is by design so the module file is always the correct architecture for the container.
+
+### Control panel tabs
+
+| Tab | What it does |
+|---|---|
+| **Server Controls** | View service health, restart Apache |
+| **Module Version** | Download and switch `mod_dispatcher.so` versions |
+| **Filters** | View active rules, edit `002_web_filters.any`, set default policy (deny-all / allow-all) |
+| **Testing** | Run HTTP requests against the dispatcher and see which rule allowed or blocked each one |
+| **Logs** | Live-streaming log viewer for all httpd and dispatcher logs |
+
+**Keyboard shortcut:** `Ctrl+Shift+1` through `Ctrl+Shift+5` jumps between tabs.
+
+---
+
+## Filter Files
+
+Filter files live in the `filters/` directory in this repo, which is bind-mounted into the container at `/etc/httpd/conf.dispatcher.d/filters/`. Any `.any` file in that folder is picked up automatically.
+
+Name files with a numeric prefix to control load order:
 
 ```
-curl -sS http://127.0.0.1:59173/api/health
-curl -I http://127.0.0.1:59173/
+filters/
+  001_baseline.any      ← loaded first
+  002_web_filters.any   ← loaded second (editable from the control panel)
+  010_project.any       ← loaded third
 ```
 
-Use **`curl` GET** (or open the URL in a browser). `curl -I` sends **HEAD**, which is implemented; older images may only support GET.
+Rules are evaluated **last-match-wins** — the last rule that matches a request determines whether it is allowed or blocked.
+
+See [`filters/README.md`](filters/README.md) for more detail.
+
+---
+
+## Default Policy (Sandbox Mode)
+
+The **Filters tab** in the control panel has a **Default Policy** toggle:
+
+- **Deny all (test allow rules)** — everything is blocked by default; write `allow` rules for paths that should pass through. This is the production-safe starting point.
+- **Allow all (test deny rules)** — everything passes by default; write `deny` rules for paths that should be blocked. Useful when auditing what you need to lock down.
+
+Switching modes restarts the dispatcher automatically.
+
+---
+
+## Logs
+
+Log files are written to the `logs/` directory (bind-mounted from the container):
+
+| File | Contents |
+|---|---|
+| `dispatcher.log` | Full dispatcher trace log |
+| `filter-test.log` | Filter decisions only (auto-extracted) |
+| `access_log` | Apache access log |
+| `error_log` | Apache error log |
+| `renderer_access_log` | Renderer (fake AEM) access log |
+| `renderer_error_log` | Renderer error log |
+
+All logs are viewable live in the **Logs tab** of the control panel.
+
+---
+
+## Troubleshooting
+
+**Apache won't start / dispatcher not responding on port 80**
+The module has not been installed yet. Open the control panel at `http://127.0.0.1:59173` and install it from the Module Version tab.
+
+**Control panel not reachable (`connection refused` on 59173)**
+Check that the container started: `docker compose ps` and `docker compose logs`.
+If the port is already in use on your machine, copy `.env.example` to `.env`, change `CONTROL_PORT` to a free port (e.g. `49821`), and restart: `docker compose up`.
+
+**Port 80 already in use**
+Another process is using port 80. Stop it, or change the published port in `docker-compose.yml` from `"80:80"` to something like `"8080:80"`, then access the dispatcher at `http://localhost:8080`.
+
+**`GLIBC` errors or module fails to load**
+The image is pinned to `linux/amd64` (x86_64) in `docker-compose.yml` because the arm64 dispatcher build requires a newer glibc than Rocky Linux 8 provides. This is expected and handled automatically when you use the provided `docker-compose.yml`.
+
+**Filters not updating after saving**
+Save your filter file and click **Save & Restart** in the Filters tab, or manually restart from Server Controls. The dispatcher re-reads filter files on restart.
+
+---
+
+## Reference
+
+- [Dispatcher filter configuration docs (Adobe)](https://docs.adobe.com/content/help/en/experience-manager-dispatcher/using/configuring/dispatcher-configuration.html#configuring-access-to-content-filter)
+- [`filters/README.md`](filters/README.md) — filter file conventions
+- [`dispatcher/README.md`](dispatcher/README.md) — supplying your own `mod_dispatcher.so`
+- [Docker Hub image](https://hub.docker.com/r/pryor/aem-dispatcher-filter-testing)
