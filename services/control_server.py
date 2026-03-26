@@ -444,9 +444,9 @@ def _restart_httpd_processes() -> None:
 _TEST_USER_AGENT = "aem-dispatcher-filter-tester"
 
 
-def _fetch_status(url: str) -> Tuple[int, Optional[str]]:
+def _fetch_status(url: str, method: str = "GET") -> Tuple[int, Optional[str]]:
     try:
-        req = urllib.request.Request(url, method="GET")
+        req = urllib.request.Request(url, method=method)
         req.add_header("User-Agent", _TEST_USER_AGENT)
         with urllib.request.urlopen(req, timeout=20) as resp:
             return int(resp.status), None
@@ -805,13 +805,22 @@ class ControlHandler(BaseHTTPRequestHandler):
                 )
                 return
 
+            _HTTP_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
+
             def run_group(paths: List[Any], expect: int) -> List[Dict[str, Any]]:
                 out: List[Dict[str, Any]] = []
                 for item in paths:
                     if not isinstance(item, str) or not item.strip():
                         continue
                     raw_in = item.strip()
-                    norm = _normalize_request_path(raw_in)
+                    # Parse optional "METHOD PATH" format, e.g. "POST /api/endpoint"
+                    method = "GET"
+                    parts = raw_in.split(None, 1)
+                    if len(parts) == 2 and parts[0].upper() in _HTTP_METHODS:
+                        method, raw_path = parts[0].upper(), parts[1]
+                    else:
+                        raw_path = raw_in
+                    norm = _normalize_request_path(raw_path)
                     if not norm:
                         out.append(
                             {
@@ -822,7 +831,7 @@ class ControlHandler(BaseHTTPRequestHandler):
                                 "ok": False,
                                 "error": (
                                     "Invalid path — use request-URI only "
-                                    "(e.g. /content/page.html), not a full URL or .."
+                                    "(e.g. /content/page.html or GET /content/page.html), not a full URL or .."
                                 ),
                             }
                         )
@@ -845,10 +854,11 @@ class ControlHandler(BaseHTTPRequestHandler):
                         )
                         continue
                     log_pos = _dispatcher_log_pos()
-                    code, err = _fetch_status(url)
+                    code, err = _fetch_status(url, method)
                     ok = code == expect and err is None
                     row: Dict[str, Any] = {
                         "path": norm,
+                        "method": method,
                         "url": url,
                         "status": code,
                         "expect": expect,

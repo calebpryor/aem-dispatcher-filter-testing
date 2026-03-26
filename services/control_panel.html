@@ -210,8 +210,31 @@
     .module-modal-dialog .row { margin-bottom: 1rem; }
     #modalMsg { margin-top: 0.75rem; max-height: 10rem; }
     body.module-modal-open { overflow: hidden; }
-    body.module-modal-open > *:not(#moduleModal) { pointer-events: none; user-select: none; }
-    #moduleModal { pointer-events: auto; }
+    body.module-modal-open > *:not(.module-modal) { pointer-events: none; user-select: none; }
+    .module-modal { pointer-events: auto; }
+
+    /* ── Spinner ── */
+    .modal-spinner {
+      width: 2rem; height: 2rem;
+      border: 3px solid #e2e4e9; border-top-color: #1f7aad;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      margin: 0 auto 0.75rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Progress bar ── */
+    .progress-track { height: 8px; background: #e2e4e9; border-radius: 4px; overflow: hidden; margin-top: 0.75rem; }
+    .progress-fill  { height: 100%; background: #1f7aad; border-radius: 4px; transition: width 0.15s ease; }
+
+    /* ── Method badge ── */
+    .method-badge {
+      display: inline-block; font-size: 0.68rem; font-weight: 700;
+      padding: 0.05rem 0.35rem; border-radius: 3px; margin-right: 0.35rem;
+      background: #e8f0fe; color: #1a56c4; vertical-align: middle; font-family: inherit;
+    }
+    .method-badge.POST   { background: #fef3c7; color: #92400e; }
+    .method-badge.PUT    { background: #d1fae5; color: #065f46; }
+    .method-badge.DELETE { background: #fee2e2; color: #991b1b; }
   </style>
 </head>
 <body>
@@ -232,6 +255,27 @@
       </div>
       <button type="button" id="btnModalOk">Download module &amp; start</button>
       <pre class="action-out" id="modalMsg" hidden></pre>
+    </div>
+  </div>
+
+  <!-- ── Sandbox restart modal ── -->
+  <div id="sandboxRestartModal" class="module-modal" role="dialog" aria-modal="true" aria-label="Applying policy" hidden>
+    <div class="module-modal-backdrop" aria-hidden="true"></div>
+    <div class="module-modal-dialog" style="max-width:22rem;text-align:center">
+      <div class="modal-spinner"></div>
+      <h2>Applying policy change</h2>
+      <p class="hint" id="sandboxRestartMsg">Restarting dispatcher…</p>
+    </div>
+  </div>
+
+  <!-- ── Test progress modal ── -->
+  <div id="testProgressModal" class="module-modal" role="dialog" aria-modal="true" aria-label="Running tests" hidden>
+    <div class="module-modal-backdrop" aria-hidden="true"></div>
+    <div class="module-modal-dialog" style="max-width:28rem">
+      <h2>Running tests</h2>
+      <p id="testProgressMsg" class="hint">Preparing…</p>
+      <div class="progress-track"><div class="progress-fill" id="testProgressFill" style="width:0%"></div></div>
+      <p id="testProgressDetail" class="muted" style="font-size:0.78rem;margin-top:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></p>
     </div>
   </div>
 
@@ -331,7 +375,7 @@
       <h2>Generate rules from requests</h2>
       <p class="hint">
         Paste raw HTTP request lines (e.g. <code>GET /content/page.html</code>) — rules are generated live.
-        Click <strong>Append to editor</strong> to add them to the filter editor below.
+        Click <strong>Append to web filters</strong> to add them to the filter editor below.
       </p>
       <label for="genRequestsInput">HTTP request lines (one per line)</label>
       <textarea id="genRequestsInput" rows="6" placeholder="GET /content/home.html
@@ -342,7 +386,7 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
       <label for="genRulesOutput" style="margin-top:0.75rem">Generated rules</label>
       <textarea id="genRulesOutput" rows="10" readonly placeholder="Generated rules will appear here…" style="font-family:ui-monospace,'Cascadia Code','Source Code Pro',monospace;font-size:0.8rem;background:#0d1117;color:#e6edf3;border-color:#30363d;resize:vertical"></textarea>
       <div class="row" style="margin-top:0.75rem">
-        <button type="button" id="btnAppendGenRules">Append to editor</button>
+        <button type="button" id="btnAppendGenRules">Append to web filters</button>
         <button type="button" id="btnClearGen" class="secondary">Clear</button>
       </div>
       <p id="genMsg" class="muted" hidden></p>
@@ -382,11 +426,20 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
       </p>
       <p class="muted" id="filterFilesStatic">Filter files: …</p>
 
+      <p class="hint" style="margin-bottom:0.4rem">One path per line. Format: <code>/path</code> or <code>METHOD /path</code> (e.g. <code>POST /api/submit</code>). Method defaults to GET.</p>
+      <div class="row" style="margin-bottom:0.5rem">
+        <button type="button" id="btnGenTestsFromFilters" class="secondary">Generate tests from filters</button>
+      </div>
+
       <label for="good">Good request paths (one per line) — expect HTTP 200</label>
-      <textarea id="good" rows="6" placeholder="/content/dam/logo.png"></textarea>
+      <textarea id="good" rows="6" placeholder="/content/dam/logo.png
+GET /content/mysite/en.html
+POST /bin/receive"></textarea>
 
       <label for="bad" style="margin-top:0.65rem">Bad request paths (one per line) — expect HTTP 404</label>
-      <textarea id="bad" rows="6" placeholder="/system/console"></textarea>
+      <textarea id="bad" rows="6" placeholder="/system/console
+GET /crx/de/index.jsp
+DELETE /content/dam/sensitive"></textarea>
 
       <div class="row" style="margin-top:0.75rem">
         <button type="button" id="btnTest">Run tests</button>
@@ -518,8 +571,17 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
     var modeHint     = document.getElementById('modeHint');
     var currentSandboxMode = 'deny_all';
 
-    var lastTestPayload = null;
-    var filtersLoaded = false;
+    var sandboxRestartModal  = document.getElementById('sandboxRestartModal');
+    var sandboxRestartMsg    = document.getElementById('sandboxRestartMsg');
+    var testProgressModal    = document.getElementById('testProgressModal');
+    var testProgressMsg      = document.getElementById('testProgressMsg');
+    var testProgressFill     = document.getElementById('testProgressFill');
+    var testProgressDetail   = document.getElementById('testProgressDetail');
+    var btnGenTestsFromFilters = document.getElementById('btnGenTestsFromFilters');
+
+    var lastTestPayload  = null;
+    var filtersLoaded    = false;
+    var cachedFilterRules = [];
 
     /* ── Busy state ── */
     function setBusy(b) {
@@ -549,7 +611,11 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
     }
 
     async function setSandboxMode(mode) {
-      setBusy(true);
+      btnModeDeny.disabled  = true;
+      btnModeAllow.disabled = true;
+      sandboxRestartMsg.textContent = 'Restarting dispatcher…';
+      sandboxRestartModal.hidden = false;
+      document.body.classList.add('module-modal-open');
       try {
         var r = await fetch('/api/sandbox-mode', {
           method: 'POST',
@@ -560,14 +626,17 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
         if (j.ok) {
           applySandboxModeUI(mode);
         } else {
-          serverOut.textContent = JSON.stringify(j, null, 2);
-          serverOut.hidden = false;
+          sandboxRestartMsg.textContent = 'Error: ' + (j.error || 'unknown error');
+          await new Promise(function (res) { setTimeout(res, 2500); });
         }
       } catch (e) {
-        serverOut.textContent = String(e);
-        serverOut.hidden = false;
+        sandboxRestartMsg.textContent = 'Error: ' + String(e);
+        await new Promise(function (res) { setTimeout(res, 2500); });
       } finally {
-        setBusy(false);
+        sandboxRestartModal.hidden = true;
+        document.body.classList.remove('module-modal-open');
+        btnModeDeny.disabled  = false;
+        btnModeAllow.disabled = false;
       }
     }
 
@@ -668,6 +737,7 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
         var r = await fetch('/api/filter-rules');
         var j = await r.json();
         var fileRules = j.rules || [];
+        cachedFilterRules = fileRules;
         renderFilterTable(fileRules);
         return fileRules;
       } catch (e) {
@@ -907,13 +977,16 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
     }
 
     function pathCellHtml(row) {
-      var p = row.path != null ? String(row.path) : '';
-      var u = row.url  != null ? String(row.url)  : '';
+      var p = row.path   != null ? String(row.path)   : '';
+      var u = row.url    != null ? String(row.url)    : '';
+      var m = row.method != null ? String(row.method) : 'GET';
+      var badge = '<span class="method-badge' + (m !== 'GET' ? ' ' + m : '') + '">' + escHtml(m) + '</span>';
+      var inner = badge + escHtml(p);
       if (u) {
-        return '<a href="' + escAttr(u) + '" target="_blank" rel="noopener noreferrer"><code>'
-          + escHtml(p) + '</code></a>';
+        return '<a href="' + escAttr(u) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none"><code>'
+          + inner + '</code></a>';
       }
-      return '<code>' + escHtml(p) + '</code>';
+      return '<code>' + inner + '</code>';
     }
 
     var DEFAULT_RULE_RE = /\/(sandbox-default|default-test-container-deny)\b/;
@@ -1026,35 +1099,87 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
     }
 
     document.getElementById('btnTest').addEventListener('click', async function () {
-      setBusy(true);
       testErr.hidden = true; testErr.textContent = '';
+
       var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
       var badLines  = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
-      try {
+      var total = goodLines.length + badLines.length;
+      if (total === 0) {
+        testErr.textContent = 'No paths to test.';
+        testErr.hidden = false;
+        return;
+      }
+
+      // Show progress modal
+      testProgressMsg.textContent = 'Starting…';
+      testProgressFill.style.width = '0%';
+      testProgressDetail.textContent = '';
+      testProgressModal.hidden = false;
+      document.body.classList.add('module-modal-open');
+      document.getElementById('btnTest').disabled = true;
+
+      var goodResults = [];
+      var badResults  = [];
+      var meta        = null;
+      var done        = 0;
+
+      function updateProgress(label) {
+        done++;
+        testProgressFill.style.width = Math.round((done / total) * 100) + '%';
+        testProgressMsg.textContent = 'Testing ' + done + ' / ' + total + ' paths…';
+        testProgressDetail.textContent = label;
+      }
+
+      async function testOne(path, group) {
+        var payload = group === 'good'
+          ? { good_paths: [path], bad_paths: [] }
+          : { good_paths: [], bad_paths: [path] };
         var r = await fetch('/api/test-urls', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ good_paths: goodLines, bad_paths: badLines })
+          body: JSON.stringify(payload)
         });
-        var text = await r.text();
-        var j;
-        try { j = JSON.parse(text); } catch (pe) {
-          lastTestPayload = null; testResults.hidden = true;
-          testErr.textContent = 'Invalid response (' + r.status + '): ' + text.slice(0, 500);
-          testErr.hidden = false; return;
+        var j = await r.json();
+        if (!r.ok) throw new Error((j && j.error) || 'HTTP ' + r.status);
+        if (!meta) meta = { sandbox_mode: j.sandbox_mode, filter_files: j.filter_files, filter_rules: j.filter_rules };
+        return group === 'good' ? (j.good || [])[0] : (j.bad || [])[0];
+      }
+
+      try {
+        for (var gi = 0; gi < goodLines.length; gi++) {
+          var row = await testOne(goodLines[gi], 'good');
+          if (row) goodResults.push(row);
+          updateProgress(goodLines[gi]);
         }
-        if (!r.ok) {
-          lastTestPayload = null; testResults.hidden = true;
-          testErr.textContent = 'Request failed (' + r.status + '): ' + (j && j.error ? j.error : text.slice(0, 500));
-          testErr.hidden = false; return;
+        for (var bi = 0; bi < badLines.length; bi++) {
+          var row = await testOne(badLines[bi], 'bad');
+          if (row) badResults.push(row);
+          updateProgress(badLines[bi]);
         }
-        renderTestResults(j);
+
+        testProgressFill.style.width = '100%';
+        testProgressMsg.textContent = 'Done — ' + total + ' paths tested';
+        testProgressDetail.textContent = '';
+
+        renderTestResults({
+          ok: true,
+          sandbox_mode:  (meta || {}).sandbox_mode,
+          filter_files:  (meta || {}).filter_files  || [],
+          filter_rules:  (meta || {}).filter_rules  || [],
+          good: goodResults,
+          bad:  badResults
+        });
         await refreshFilterFilesStatic();
+
       } catch (e) {
         lastTestPayload = null; testResults.hidden = true;
-        testErr.textContent = 'Test request failed: ' + e; testErr.hidden = false;
+        testErr.textContent = 'Test failed: ' + e; testErr.hidden = false;
       } finally {
-        setBusy(false);
+        setTimeout(function () {
+          testProgressModal.hidden = true;
+          document.body.classList.remove('module-modal-open');
+          document.getElementById('btnTest').disabled = false;
+        }, 600);
       }
     });
 
@@ -1330,10 +1455,89 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
       if (!rules) return;
       var current = filterEditor.value.trimEnd();
       filterEditor.value = current ? current + '\n\n' + rules : rules;
-      genMsg.textContent = 'Rules appended to editor. Review, then Save or Save & Restart.';
+      genMsg.textContent = 'Rules appended to web filters. Review, then Save or Save & Restart.';
       genMsg.hidden = false;
-      // Scroll editor into view
       filterEditor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    /* ── Auto-generate tests from filter rules ── */
+    function extractAnyField(body, field) {
+      var re = new RegExp('/' + field + '\\s+["\']([^"\']*)["\']', 'i');
+      var m = body.match(re);
+      return m ? m[1] : null;
+    }
+
+    function buildExamplePath(url, path, ext, glob) {
+      var base = url || path || glob;
+      if (!base || base === '*' || base === '.*') return null;
+      base = base
+        .replace(/\*\*/g, 'example/sub')
+        .replace(/\.\*/g, '.example')
+        .replace(/\*/g,   'example');
+      // Append extension when path has no extension suffix
+      if ((path || glob) && ext && ext !== '' && ext !== '*') {
+        if (!/\.[a-z0-9]+$/i.test(base)) {
+          base = base.replace(/\/example\/?$/, '') + '/example.' + ext;
+        }
+      }
+      if (!base.startsWith('/')) base = '/' + base;
+      return base.length > 300 ? null : base;
+    }
+
+    btnGenTestsFromFilters.addEventListener('click', async function () {
+      var rules = cachedFilterRules;
+      if (!rules || !rules.length) {
+        // Try a quick fetch if not yet cached
+        try {
+          var r = await fetch('/api/filter-rules');
+          var j = await r.json();
+          rules = cachedFilterRules = j.rules || [];
+        } catch (e) { rules = []; }
+      }
+      if (!rules.length) {
+        alert('No filter rules found. Add rules in the Filters tab first.');
+        return;
+      }
+
+      var goodPaths = [];
+      var badPaths  = [];
+      var SKIP_RULE_RE = /^\/(sandbox-default|default-test-container)/;
+
+      rules.forEach(function (fileObj) {
+        if (fileObj.file === 'sandbox_policy.any') return;
+        var content = fileObj.content || '';
+        var ruleRe = /\/[\w-]+\s*\{([^}]+)\}/g;
+        var m;
+        while ((m = ruleRe.exec(content)) !== null) {
+          var ruleName = (m[0].match(/^\/([\w-]+)/) || [])[1] || '';
+          if (SKIP_RULE_RE.test('/' + ruleName)) continue;
+          var body   = m[1];
+          var type   = extractAnyField(body, 'type');
+          var method = extractAnyField(body, 'method');
+          var url    = extractAnyField(body, 'url');
+          var path   = extractAnyField(body, 'path');
+          var ext    = extractAnyField(body, 'extension');
+          var glob   = extractAnyField(body, 'glob');
+          if (!type) continue;
+          var exPath = buildExamplePath(url, path, ext, glob);
+          if (!exPath) continue;
+          var entry = (method && method !== '' && method !== '*')
+            ? method.toUpperCase() + ' ' + exPath
+            : exPath;
+          if (type === 'allow') goodPaths.push(entry);
+          else if (type === 'deny') badPaths.push(entry);
+        }
+      });
+
+      if (!goodPaths.length && !badPaths.length) {
+        alert('Could not extract example paths from the current rules.\nCheck that rules specify /url, /path, or /glob fields.');
+        return;
+      }
+
+      var existingGood = good.value.trim();
+      var existingBad  = bad.value.trim();
+      good.value = existingGood ? existingGood + '\n' + goodPaths.join('\n') : goodPaths.join('\n');
+      bad.value  = existingBad  ? existingBad  + '\n' + badPaths.join('\n')  : badPaths.join('\n');
     });
 
     btnClearGen.addEventListener('click', function () {
