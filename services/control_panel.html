@@ -263,7 +263,7 @@
     <div class="module-modal-backdrop" aria-hidden="true"></div>
     <div class="module-modal-dialog" style="max-width:22rem;text-align:center">
       <div class="modal-spinner"></div>
-      <h2>Applying policy change</h2>
+      <h2 id="sandboxRestartTitle">Applying policy change</h2>
       <p class="hint" id="sandboxRestartMsg">Restarting dispatcher…</p>
     </div>
   </div>
@@ -610,12 +610,21 @@ DELETE /content/dam/sensitive"></textarea>
       } catch (e) { applySandboxModeUI('deny_all'); }
     }
 
-    async function setSandboxMode(mode) {
-      btnModeDeny.disabled  = true;
-      btnModeAllow.disabled = true;
+    function showRestartModal(title) {
+      sandboxRestartTitle.textContent = title || 'Restarting dispatcher';
       sandboxRestartMsg.textContent = 'Restarting dispatcher…';
       sandboxRestartModal.hidden = false;
       document.body.classList.add('module-modal-open');
+    }
+    function hideRestartModal() {
+      sandboxRestartModal.hidden = true;
+      document.body.classList.remove('module-modal-open');
+    }
+
+    async function setSandboxMode(mode) {
+      btnModeDeny.disabled  = true;
+      btnModeAllow.disabled = true;
+      showRestartModal('Applying policy change');
       try {
         var r = await fetch('/api/sandbox-mode', {
           method: 'POST',
@@ -633,8 +642,7 @@ DELETE /content/dam/sensitive"></textarea>
         sandboxRestartMsg.textContent = 'Error: ' + String(e);
         await new Promise(function (res) { setTimeout(res, 2500); });
       } finally {
-        sandboxRestartModal.hidden = true;
-        document.body.classList.remove('module-modal-open');
+        hideRestartModal();
         btnModeDeny.disabled  = false;
         btnModeAllow.disabled = false;
       }
@@ -845,6 +853,7 @@ DELETE /content/dam/sensitive"></textarea>
       try {
         var saved = await doSaveFilters();
         if (!saved) return;
+        showRestartModal('Restarting dispatcher');
         var r = await fetch('/api/restart-dispatcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         var j = await r.json();
         filterSaveOut.textContent = JSON.stringify(j, null, 2);
@@ -854,6 +863,7 @@ DELETE /content/dam/sensitive"></textarea>
         filterSaveOut.textContent = String(e);
         filterSaveOut.hidden = false;
       } finally {
+        hideRestartModal();
         setBusy(false);
       }
     });
@@ -862,6 +872,7 @@ DELETE /content/dam/sensitive"></textarea>
     btnRestart.addEventListener('click', async function () {
       setBusy(true);
       serverOut.hidden = true;
+      showRestartModal('Restarting dispatcher');
       try {
         var r = await fetch('/api/restart-dispatcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         var j = await r.json();
@@ -872,6 +883,7 @@ DELETE /content/dam/sensitive"></textarea>
         serverOut.textContent = String(e);
         serverOut.hidden = false;
       } finally {
+        hideRestartModal();
         setBusy(false);
       }
     });
