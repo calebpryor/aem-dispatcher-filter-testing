@@ -990,6 +990,7 @@
     function exportJsonForDownload(j) {
       function rowOut(row) {
         var o = { path: row.path||'', ok: !!row.ok, status: row.status, expect: row.expect };
+        if (row.filter_log) o.filter_match = row.filter_log;
         if (row.error) o.error = row.error;
         return o;
       }
