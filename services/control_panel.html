@@ -347,7 +347,7 @@
 
     <section>
       <h2>Quick-start guide</h2>
-      <p class="hint">New here? Follow these five steps to go from a fresh container to a fully-tested dispatcher configuration. Already know what you're doing? Jump straight to any tab above — this guide is here when you need it.</p>
+      <p class="hint">New here? Follow these five steps to go from a fresh container to a fully-tested dispatcher filters. Already know what you're doing? Jump straight to any tab above — this guide is here when you need it.</p>
     </section>
 
     <section>
@@ -355,7 +355,7 @@
         <div class="step-num">1</div>
         <div>
           <h2>Choose a module version</h2>
-          <p class="hint"><strong>What:</strong> The AEM Dispatcher module (<code>mod_dispatcher.so</code>) is the Apache plugin that evaluates your filter rules and decides what to pass or block. Nothing proprietary is baked into the image — the module is downloaded fresh from Adobe's CDN each time you switch.</p>
+          <p class="hint"><strong>What:</strong> The AEM Dispatcher module (<code>mod_dispatcher.so</code>) is the Apache plugin that evaluates your filter rules and decides what gets to fetch files from AEM (HTTP 2xx) or not (HTTP 404). Nothing proprietary is baked into the image — the module is downloaded fresh from Adobe's CDN each time you switch.</p>
           <p class="hint"><strong>How:</strong> In <strong>Server Controls → Dispatcher module version</strong>, pick the version that matches your production AEM environment, then click <strong>Download &amp; switch module</strong>. Apache will restart automatically. Not sure which version? Use the latest, or check your team's AEM release notes.</p>
           <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Server Controls →</button>
         </div>
@@ -379,11 +379,11 @@
         <div class="step-num">3</div>
         <div>
           <h2>Add or generate your filters</h2>
-          <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are blocked (returning 404). Rules live in <code>.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
+          <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are rejected (returning 404). Rules live in <code>.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
           <p class="hint"><strong>How:</strong> Go to the <strong>Filters</strong> tab:</p>
           <ul class="hint">
             <li>Pick a <strong>Default policy</strong> first. <em>Deny all</em> is the realistic production setting — blocks everything unless you explicitly allow it. <em>Allow all</em> is useful for testing deny rules in isolation.</li>
-            <li><strong>Paste rules directly</strong> into the editor — use this if you already have a <code>.any</code> file from your production environment.</li>
+            <li><strong>Paste rules directly</strong> into the editor — use this if you already have a <code>_filters.any</code> file from your production environment (typically found in <code>/etc/httpd/conf.dispatcher.d/filters/</code>).</li>
             <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
           </ul>
           <p class="hint">Click <strong>Save &amp; Restart</strong> after editing. Your filter file is volume-mounted to the host so changes persist across container restarts.</p>
@@ -409,7 +409,7 @@
         <div class="step-num win">✓</div>
         <div>
           <h2>WIN!</h2>
-          <p class="hint">Your dispatcher rules are verified and your results are documented. The same <code>002_web_filters.any</code> file from the <code>filters/</code> volume mount is ready to deploy to your production AEM dispatcher — tested and proven.</p>
+          <p class="hint">When you test in the sandbox you can verify your rules are functional and play nice by themselves and with other rules without needing to affect an actual AEM hosted system.  It's all on your workstation locally.  Makig sure your rules are working as expected before deploying to production. Then your dispatcher rules are verified and your results are documented. The same <code>002_web_filters.any</code> file from the <code>filters/</code> volume mount is ready to deploy to your production AEM dispatcher — tested and proven.</p>
         </div>
       </div>
     </section>
@@ -605,11 +605,11 @@ DELETE /content/dam/sensitive"></textarea>
       </p>
       <ul class="log-links">
         <li><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a> — Dispatcher module (trace)</li>
-        <li><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a> — Filter extractor output</li>
+        <li><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a> — Filter specific output from dispatcher.log</li>
         <li><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a> — Dispatcher httpd (may be stderr)</li>
-        <li><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a> — May be stdout</li>
-        <li><a href="/logs/view?name=renderer_error_log" target="_blank" rel="noopener noreferrer">renderer_error_log</a></li>
-        <li><a href="/logs/view?name=renderer_access_log" target="_blank" rel="noopener noreferrer">renderer_access_log</a></li>
+        <li><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log - Apache access log</a></li>
+        <li><a href="/logs/view?name=renderer_error_log" target="_blank" rel="noopener noreferrer">renderer_error_log - Fake AEM Renderer error log</a></li>
+        <li><a href="/logs/view?name=renderer_access_log" target="_blank" rel="noopener noreferrer">renderer_access_log - Fake AEM Renderer access log</a></li>
       </ul>
       <div class="toolbar" style="margin-top:0.85rem">
         <button type="button" id="btnTruncateAllLogs" class="danger">Truncate all logs</button>
