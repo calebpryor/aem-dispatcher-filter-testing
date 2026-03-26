@@ -131,6 +131,21 @@
     }
     .pill-ok { background: #d4f5e2; color: #0a6633; }
     .pill-warn { background: #fff3cd; color: #856404; }
+    .pill-err { background: #fdd; color: #900; }
+
+    /* ── Service health grid ── */
+    .svc-grid {
+      display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem;
+      margin-top: 0.4rem;
+    }
+    .svc-chip {
+      display: flex; align-items: center; gap: 0.35rem;
+      background: #f0f2f5; border: 1px solid #e2e4e9;
+      border-radius: 6px; padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+    }
+    .svc-chip .svc-name { font-weight: 600; color: #333; }
+    .svc-chip .svc-detail { color: #777; font-size: 0.75rem; }
 
     /* ── Filter table ── */
     table.filters {
@@ -241,10 +256,13 @@
   <div id="tab-server" class="tab-panel" role="tabpanel">
     <section>
       <h2>Status</h2>
-      <p class="hint">Module status is checked every 5 seconds. Restart applies to both Apache processes (dispatcher on :80, renderer on :4503).</p>
-      <div class="row align-center" style="margin-bottom:0.75rem">
+      <p class="hint">Module and service status poll every 5 seconds. Restart applies to both Apache processes (dispatcher on :80, renderer on :4503).</p>
+      <div class="row align-center" style="margin-bottom:0.5rem">
         <span>Module:</span>
         <span id="statusPill" class="pill pill-warn">checking…</span>
+      </div>
+      <div id="serviceHealth" style="margin-bottom:0.75rem">
+        <div class="svc-grid" id="svcGrid"><span class="muted" style="font-size:0.8rem">Loading services…</span></div>
       </div>
       <div class="row">
         <button type="button" id="btnRestart" class="secondary">Restart dispatcher (httpd)</button>
@@ -388,6 +406,10 @@
         <li><a href="/logs/view?name=renderer_error_log" target="_blank" rel="noopener noreferrer">renderer_error_log</a></li>
         <li><a href="/logs/view?name=renderer_access_log" target="_blank" rel="noopener noreferrer">renderer_access_log</a></li>
       </ul>
+      <div class="toolbar" style="margin-top:0.85rem">
+        <button type="button" id="btnTruncateAllLogs" class="danger">Truncate all logs</button>
+        <span id="truncateAllMsg" class="muted" hidden></span>
+      </div>
     </section>
   </div>
 
@@ -456,6 +478,9 @@
     var btnExportCsv  = document.getElementById('btnExportCsv');
     var testErr       = document.getElementById('testErr');
     var statusPill    = document.getElementById('statusPill');
+    var svcGrid       = document.getElementById('svcGrid');
+    var btnTruncateAllLogs = document.getElementById('btnTruncateAllLogs');
+    var truncateAllMsg     = document.getElementById('truncateAllMsg');
     var filterTableWrap    = document.getElementById('filterTableWrap');
     var btnRefreshFilters  = document.getElementById('btnRefreshFilters');
     var filterEditor       = document.getElementById('filterEditor');
@@ -1021,6 +1046,56 @@
 
     ver.addEventListener('change', syncModalVersionFromMain);
 
+    /* ── Service health ── */
+    function svcPillClass(state) {
+      if (state === 'RUNNING') return 'pill-ok';
+      if (['STOPPED', 'EXITED', 'FATAL', 'ERROR'].includes(state)) return 'pill-err';
+      return 'pill-warn';
+    }
+
+    async function refreshServiceHealth() {
+      try {
+        var r = await fetch('/api/service-health');
+        var j = await r.json();
+        var svcs = j.services || [];
+        if (!svcs.length) {
+          svcGrid.innerHTML = '<span class="muted" style="font-size:0.8rem">No services reported</span>';
+          return;
+        }
+        svcGrid.innerHTML = svcs.map(function (s) {
+          var pc = svcPillClass(s.state);
+          var detail = s.detail ? '<span class="svc-detail">' + escHtml(s.detail) + '</span>' : '';
+          return '<div class="svc-chip">'
+            + '<span class="svc-name">' + escHtml(s.name) + '</span>'
+            + '<span class="pill ' + pc + '" style="font-size:0.72rem;padding:0.1rem 0.45rem">' + escHtml(s.state) + '</span>'
+            + detail
+            + '</div>';
+        }).join('');
+      } catch (e) {
+        svcGrid.innerHTML = '<span class="muted" style="font-size:0.8rem">Could not load service status</span>';
+      }
+    }
+
+    /* ── Truncate all logs ── */
+    btnTruncateAllLogs.addEventListener('click', async function () {
+      if (!confirm('Truncate (empty) all log files under /var/log/httpd/?')) return;
+      btnTruncateAllLogs.disabled = true;
+      truncateAllMsg.hidden = true;
+      try {
+        var r = await fetch('/api/truncate-all-logs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        var j = await r.json();
+        truncateAllMsg.textContent = j.ok ? 'All logs truncated.' : ('Error: ' + (j.error || JSON.stringify(j)));
+        truncateAllMsg.className = j.ok ? 'muted' : 'err';
+        truncateAllMsg.hidden = false;
+      } catch (e) {
+        truncateAllMsg.textContent = 'Request failed: ' + e;
+        truncateAllMsg.className = 'err';
+        truncateAllMsg.hidden = false;
+      } finally {
+        btnTruncateAllLogs.disabled = false;
+      }
+    });
+
     /* ── Init ── */
     async function loadVersions() {
       var r = await fetch('/api/versions');
@@ -1041,13 +1116,14 @@
       await loadSandboxMode();
       await refreshFilterFilesStatic();
       await loadDefaultTestPaths();
+      await refreshServiceHealth();
       if (moduleModal && !moduleModal.hidden) {
         try { btnModalOk.focus(); } catch (e2) {}
       }
     }
 
-    // Poll module status every 5 seconds
-    setInterval(updateModuleGate, 5000);
+    // Poll module + service status every 5 seconds
+    setInterval(function () { updateModuleGate(); refreshServiceHealth(); }, 5000);
 
     loadVersions().catch(function (e) {
       actionOut.textContent = 'Failed to load versions: ' + e;

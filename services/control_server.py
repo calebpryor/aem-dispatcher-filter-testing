@@ -377,6 +377,60 @@ def _read_filter_decision(log_pos: int, request_path: str) -> Optional[str]:
     return None
 
 
+def _truncate_log(basename: str) -> Optional[str]:
+    """Truncate a single log file. Returns an error string, or None on success."""
+    if basename not in ALLOWED_LOG_BASENAMES:
+        return "Unknown log name"
+    path = LOG_DIR / basename
+    try:
+        path.resolve().relative_to(LOG_DIR.resolve())
+    except ValueError:
+        return "Invalid path"
+    except OSError:
+        return "Cannot resolve log directory"
+    if not path.exists():
+        return None
+    try:
+        st = os.stat(path)
+        if not stat.S_ISREG(st.st_mode):
+            return "Not a regular file"
+    except OSError as e:
+        return str(e)
+    try:
+        with open(path, "w"):
+            pass
+    except OSError as e:
+        return str(e)
+    return None
+
+
+def _get_service_health() -> List[Dict[str, str]]:
+    """Return supervisord-managed process states via `supervisorctl status`."""
+    try:
+        r = subprocess.run(
+            ["/usr/bin/supervisorctl", "status"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        out: List[Dict[str, str]] = []
+        for line in r.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            if len(parts) < 2:
+                continue
+            out.append({
+                "name": parts[0],
+                "state": parts[1],
+                "detail": " ".join(parts[2:]) if len(parts) > 2 else "",
+            })
+        return out
+    except Exception as e:
+        return [{"name": "supervisorctl", "state": "ERROR", "detail": str(e)}]
+
+
 def _restart_httpd_processes() -> None:
     subprocess.run(
         ["/usr/bin/supervisorctl", "restart", "dispatcher", "renderer"],
@@ -476,6 +530,9 @@ class ControlHandler(BaseHTTPRequestHandler):
             return
         if path == "/api/default-test-paths":
             _json_response(self, 200, _read_default_test_paths())
+            return
+        if path == "/api/service-health":
+            _json_response(self, 200, {"services": _get_service_health()})
             return
         if path == "/api/log-tail":
             name = (qs.get("name") or [""])[0].strip()
@@ -702,6 +759,35 @@ class ControlHandler(BaseHTTPRequestHandler):
                 _json_response(self, 500, {"ok": False, "error": str(e)})
                 return
             _json_response(self, 200, {"ok": True, "file": "002_web_filters.any"})
+            return
+
+        if path == "/api/truncate-log":
+            data = _read_json_body(self)
+            if not data:
+                _json_response(self, 400, {"ok": False, "error": "Invalid JSON body"})
+                return
+            name = data.get("name")
+            if not isinstance(name, str) or not name.strip():
+                _json_response(self, 400, {"ok": False, "error": "Missing name"})
+                return
+            err = _truncate_log(name.strip())
+            if err:
+                status = 400 if err in ("Unknown log name", "Invalid path", "Not a regular file") else 500
+                _json_response(self, status, {"ok": False, "error": err})
+                return
+            _json_response(self, 200, {"ok": True, "name": name.strip()})
+            return
+
+        if path == "/api/truncate-all-logs":
+            errors: List[Dict[str, str]] = []
+            for basename in sorted(ALLOWED_LOG_BASENAMES):
+                err = _truncate_log(basename)
+                if err and err not in ("Unknown log name", "Not a regular file"):
+                    errors.append({"name": basename, "error": err})
+            if errors:
+                _json_response(self, 500, {"ok": False, "errors": errors})
+                return
+            _json_response(self, 200, {"ok": True})
             return
 
         if path == "/api/test-urls":

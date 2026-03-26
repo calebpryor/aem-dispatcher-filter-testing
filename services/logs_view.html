@@ -98,6 +98,8 @@
       white-space: nowrap;
     }
     button.toolbar-btn:hover { background: #30363d; }
+    button.toolbar-btn.danger { border-color: #6e1a1a; background: #3d1212; color: #f47068; }
+    button.toolbar-btn.danger:hover { background: #5a1919; }
 
     /* ── Log area ── */
     #out {
@@ -142,6 +144,7 @@
       <label for="chkAutoScroll">Auto-scroll</label>
     </span>
     <button type="button" class="toolbar-btn" id="btnClear">Clear</button>
+    <button type="button" class="toolbar-btn danger" id="btnTruncate">Truncate log</button>
   </div>
 
   <pre id="out" aria-live="polite" aria-label="Log output"></pre>
@@ -165,6 +168,7 @@
       var statusLabel = document.getElementById('statusLabel');
       var chkAutoScroll = document.getElementById('chkAutoScroll');
       var btnClear    = document.getElementById('btnClear');
+      var btnTruncate = document.getElementById('btnTruncate');
 
       var currentEs = null;
 
@@ -226,6 +230,30 @@
 
       btnClear.addEventListener('click', function () {
         out.textContent = '';
+      });
+
+      btnTruncate.addEventListener('click', async function () {
+        var name = logSelect.value;
+        if (!confirm('Truncate (empty) ' + name + ' on disk?')) return;
+        btnTruncate.disabled = true;
+        try {
+          var r = await fetch('/api/truncate-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name })
+          });
+          var j = await r.json();
+          out.textContent = '';
+          if (!j.ok) {
+            appendLine('[truncate error: ' + (j.error || JSON.stringify(j)) + ']');
+          } else {
+            appendLine('[log truncated]');
+          }
+        } catch (e) {
+          appendLine('[truncate failed: ' + e + ']');
+        } finally {
+          btnTruncate.disabled = false;
+        }
       });
 
       function startStream(name) {
