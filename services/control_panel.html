@@ -415,6 +415,16 @@
     </section>
 
     <section>
+      <h2>Security insights</h2>
+      <ul class="hint" style="margin:0;padding-left:1.3rem">
+        <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
+        <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes.</li>
+        <li>When the dispatcher rejects a request it responds with a <code>404 Not Found</code>, not a <code>403 Forbidden</code> — it signals the resource doesn't exist rather than that access is denied.</li>
+        <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
+      </ul>
+    </section>
+
+    <section>
       <h2>Bonus: reading the logs</h2>
       <p class="hint">The <strong>Logs</strong> tab links to live-streaming views for all processes. Here is what each log tells you:</p>
       <ul class="hint" style="margin:0.3rem 0 0.5rem;padding-left:1.3rem">
