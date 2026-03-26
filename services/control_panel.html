@@ -328,6 +328,27 @@
     </section>
 
     <section>
+      <h2>Generate rules from requests</h2>
+      <p class="hint">
+        Paste raw HTTP request lines (e.g. <code>GET /content/page.html</code>) — rules are generated live.
+        Click <strong>Append to editor</strong> to add them to the filter editor below.
+      </p>
+      <label for="genRequestsInput">HTTP request lines (one per line)</label>
+      <textarea id="genRequestsInput" rows="6" placeholder="GET /content/home.html
+GET /content/dam/images/hero.jpg
+GET /content/site/page.model.json
+GET /content/site/page.model.json/model
+POST /content/site/page.html?wcmmode=edit"></textarea>
+      <label for="genRulesOutput" style="margin-top:0.75rem">Generated rules</label>
+      <textarea id="genRulesOutput" rows="10" readonly placeholder="Generated rules will appear here…" style="font-family:ui-monospace,'Cascadia Code','Source Code Pro',monospace;font-size:0.8rem;background:#0d1117;color:#e6edf3;border-color:#30363d;resize:vertical"></textarea>
+      <div class="row" style="margin-top:0.75rem">
+        <button type="button" id="btnAppendGenRules">Append to editor</button>
+        <button type="button" id="btnClearGen" class="secondary">Clear</button>
+      </div>
+      <p id="genMsg" class="muted" hidden></p>
+    </section>
+
+    <section>
       <h2>Edit <code>002_web_filters.any</code></h2>
       <p class="hint">
         Paste or type dispatcher filter rules below and click <strong>Save</strong>.
@@ -1095,6 +1116,228 @@
       } finally {
         btnTruncateAllLogs.disabled = false;
       }
+    });
+
+    /* ══════════════════════════════════════════════════════════
+       ── Generate rules from requests (ported from filter-fiddler) ──
+       ══════════════════════════════════════════════════════════ */
+    var genRequestsInput = document.getElementById('genRequestsInput');
+    var genRulesOutput   = document.getElementById('genRulesOutput');
+    var btnAppendGenRules = document.getElementById('btnAppendGenRules');
+    var btnClearGen      = document.getElementById('btnClearGen');
+    var genMsg           = document.getElementById('genMsg');
+
+    /* ── URL component parsers ── */
+
+    function genGetExtension(req) {
+      var m = req.match(/\.(?<extension>[^.][A-Za-z0-9]+)\//);
+      if (m) return m.groups.extension;
+      m = req.match(/\.(?<extension>[A-Za-z0-9]+)(\?.*)?$/);
+      return m ? m.groups.extension : undefined;
+    }
+
+    function genGetMethod(req) {
+      var m = req.match(/^(?<method>[A-Za-z]+)\s/);
+      return m ? m.groups.method : undefined;
+    }
+
+    function genSplitOnExtension(req, ext) {
+      return req.replace('.' + ext, '    ').split('    ');
+    }
+
+    function genGetPath(req, ext) {
+      var s = ext ? genSplitOnExtension(req, ext)[0] : req;
+      var m = s.match(/(?:[A-Za-z]+\s)?(?<path>.*\/)(?<resource>.+)$/);
+      if (!m) return undefined;
+      return m.groups.path + '*';
+    }
+
+    function genGetSelectors(req, ext) {
+      if (!ext) return undefined;
+      var before = genSplitOnExtension(req, ext)[0];
+      var m = before.match(/(?<selectors>\.[^/]*\.)/);
+      if (!m) return undefined;
+      return m.groups.selectors.split('.').filter(function (s) { return s.length > 0; });
+    }
+
+    function genGetSuffix(req, ext) {
+      if (!ext) return undefined;
+      var parts = genSplitOnExtension(req, ext);
+      var after = parts[1];
+      if (!after || !after.trim()) return undefined;
+      return after.indexOf('?') >= 0 ? after.split('?')[0] : after;
+    }
+
+    function genGetQuery(req, ext) {
+      if (!ext) return undefined;
+      var parts = genSplitOnExtension(req, ext);
+      var after = parts[1];
+      if (!after || after.indexOf('?') < 0) return undefined;
+      var qs = after.split('?')[1];
+      return qs.indexOf('&') >= 0 ? qs.split('&') : [qs];
+    }
+
+    function genGetUrl(req) {
+      var method = genGetMethod(req);
+      var s = method ? req.slice(method.length).trim() : req.trim();
+      if (s.indexOf('?') >= 0) s = s.split('?')[0];
+      return s + '*';
+    }
+
+    /* ── Rule ID generator ── */
+    var GEN_MAX_BASE = 29;
+
+    function genBuildId(pathParts, selectorParts, extPart) {
+      return '/' + ['PUB', 'ALLOW'].concat(pathParts).concat(selectorParts).concat(extPart ? [extPart] : []).join('_');
+    }
+
+    function genGenerateRuleId(path, ext, selectors, usedIds) {
+      var pathParts = (path || '')
+        .replace(/\/\*$/, '').replace(/^\//, '')
+        .split('/').filter(function (s) { return s && s !== '*'; })
+        .map(function (s) { return s.toUpperCase().replace(/[^A-Z0-9]/g, ''); })
+        .filter(function (s) { return s.length > 0; });
+
+      var selectorParts = selectors
+        ? selectors.map(function (s) { return s.toUpperCase().replace(/[^A-Z0-9]/g, ''); })
+        : [];
+
+      var extPart = ext ? ext.toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+
+      var candidate = genBuildId(pathParts, selectorParts, extPart);
+
+      // Truncate from right if over limit
+      while (candidate.length > GEN_MAX_BASE) {
+        if (pathParts.length > 0) {
+          pathParts.pop();
+        } else if (selectorParts.length > 0) {
+          selectorParts.pop();
+        } else {
+          break;
+        }
+        candidate = genBuildId(pathParts, selectorParts, extPart);
+      }
+
+      // Deduplicate within batch
+      if (!usedIds[candidate]) {
+        usedIds[candidate] = 1;
+        return candidate;
+      }
+      var count = Math.min(usedIds[candidate] + 1, 9);
+      usedIds[candidate] = count;
+      return candidate + '_' + count;
+    }
+
+    /* ── Rule block builder ── */
+    function genGenerateRule(ruleId, methodValue, path, url, ext, selectors, suffix, query) {
+      var lines = [ruleId + ' {'];
+      lines.push('  /type "allow"');
+      if (methodValue) lines.push('  /method ' + methodValue);
+      if (path)        lines.push('  /path "' + path + '"');
+      if (url)         lines.push('  /url "' + url + '"');
+      if (ext)         lines.push('  /extension "' + ext + '"');
+      if (selectors) {
+        if (selectors.length === 1) {
+          lines.push('  /selectors "' + selectors[0] + '"');
+        } else {
+          lines.push("  /selectors '(" + selectors.join('|') + ")'");
+        }
+      }
+      if (suffix) lines.push('  /suffix "' + suffix + '"');
+      if (query) {
+        var qParts = query.slice().sort().map(function (p) {
+          return p.replace(/=.*/, '=.*');
+        });
+        if (qParts.length === 1) {
+          lines.push('  /query "' + query[0].replace(/=.*/, '=*') + '"');
+        } else {
+          lines.push("  /query '(" + qParts.join('|') + ")'");
+        }
+      }
+      lines.push('}');
+      return lines.join('\n') + '\n\n';
+    }
+
+    /* ── Main orchestrator ── */
+    function genGenerate() {
+      var raw = genRequestsInput.value;
+      var inputLines = raw.split(/\r?\n/);
+      var objects = [];
+
+      inputLines.forEach(function (line) {
+        if (!/\S/.test(line)) return;
+        var ext       = genGetExtension(line);
+        var method    = genGetMethod(line);
+        var path      = genGetPath(line, ext);
+        var selectors = genGetSelectors(line, ext);
+        var suffix    = genGetSuffix(line, ext);
+        var query     = genGetQuery(line, ext);
+        var url       = genGetUrl(line);
+
+        // Replace selector string in URL with wildcard
+        if (selectors) {
+          url = url.split(selectors.join('.')).join('*');
+        }
+
+        objects.push({ method: method, path: path, url: url, ext: ext,
+                       selectors: selectors, suffix: suffix, query: query });
+      });
+
+      // Group by fingerprint (everything except method)
+      var groups = {};
+      var fingerprintOrder = [];
+      objects.forEach(function (o) {
+        var selectorKey = o.selectors ? o.selectors.slice().sort().join('|') : '';
+        var queryKey    = o.query     ? o.query.slice().sort().join('&')     : '';
+        var fp = [o.path||'', o.url||'', o.ext||'', selectorKey, o.suffix||'', queryKey].join('\x00');
+        if (!groups[fp]) {
+          groups[fp] = { methods: [], first: o };
+          fingerprintOrder.push(fp);
+        }
+        var m = (o.method || '').toUpperCase();
+        if (m && groups[fp].methods.indexOf(m) < 0) groups[fp].methods.push(m);
+      });
+
+      var output = '';
+      var usedIds = {};
+      fingerprintOrder.forEach(function (fp) {
+        var group = groups[fp];
+        var f = group.first;
+        group.methods.sort();
+        var methodValue;
+        if (group.methods.length === 0) {
+          methodValue = null;
+        } else if (group.methods.length === 1) {
+          methodValue = '"' + group.methods[0] + '"';
+        } else {
+          methodValue = "'(" + group.methods.join('|') + ")'";
+        }
+        var ruleId = genGenerateRuleId(f.path, f.ext, f.selectors, usedIds);
+        output += genGenerateRule(ruleId, methodValue, f.path, f.url, f.ext, f.selectors, f.suffix, f.query);
+      });
+
+      genRulesOutput.value = output;
+    }
+
+    ['change', 'keyup', 'paste', 'input'].forEach(function (evt) {
+      genRequestsInput.addEventListener(evt, genGenerate);
+    });
+
+    btnAppendGenRules.addEventListener('click', function () {
+      var rules = genRulesOutput.value.trim();
+      if (!rules) return;
+      var current = filterEditor.value.trimEnd();
+      filterEditor.value = current ? current + '\n\n' + rules : rules;
+      genMsg.textContent = 'Rules appended to editor. Review, then Save or Save & Restart.';
+      genMsg.hidden = false;
+      // Scroll editor into view
+      filterEditor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    btnClearGen.addEventListener('click', function () {
+      genRequestsInput.value = '';
+      genRulesOutput.value = '';
+      genMsg.hidden = true;
     });
 
     /* ── Init ── */
