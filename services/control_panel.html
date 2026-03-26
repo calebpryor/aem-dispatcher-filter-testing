@@ -403,7 +403,7 @@
             <div class="warning-box-title">⚠ Security insights</div>
             <ul>
               <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
-              <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes.</li>
+              <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes outside of the sandbox.</li>
               <li>When the dispatcher rejects a request it responds with a <code>404 Not Found</code>, not a <code>403 Forbidden</code> — it signals the resource doesn't exist rather than that access is denied.</li>
               <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
             </ul>
@@ -1522,13 +1522,14 @@ DELETE /content/dam/sensitive"></textarea>
     }
 
     /* ── Rule block builder ── */
-    function genGenerateRule(ruleId, methodValue, path, url, ext, selectors, suffix, query) {
+    // extValue is pre-formatted: '"png"' for single, "'(jpg|png)'" for merged regex
+    function genGenerateRule(ruleId, methodValue, path, url, extValue, selectors, suffix, query) {
       var lines = [ruleId + ' {'];
       lines.push('  /type "allow"');
       if (methodValue) lines.push('  /method ' + methodValue);
       if (path)        lines.push('  /path "' + path + '"');
       if (url)         lines.push('  /url "' + url + '"');
-      if (ext)         lines.push('  /extension "' + ext + '"');
+      if (extValue)    lines.push('  /extension ' + extValue);
       if (selectors) {
         if (selectors.length === 1) {
           lines.push('  /selectors "' + selectors[0] + '"');
@@ -1567,7 +1568,6 @@ DELETE /content/dam/sensitive"></textarea>
         var query     = genGetQuery(line, ext);
         var url       = genGetUrl(line);
 
-        // Replace selector string in URL with wildcard
         if (selectors) {
           url = url.split(selectors.join('.')).join('*');
         }
@@ -1576,7 +1576,7 @@ DELETE /content/dam/sensitive"></textarea>
                        selectors: selectors, suffix: suffix, query: query });
       });
 
-      // Group by fingerprint (everything except method)
+      // Phase 1: group by full fingerprint (everything except method) → merges methods
       var groups = {};
       var fingerprintOrder = [];
       objects.forEach(function (o) {
@@ -1591,22 +1591,57 @@ DELETE /content/dam/sensitive"></textarea>
         if (m && groups[fp].methods.indexOf(m) < 0) groups[fp].methods.push(m);
       });
 
+      // Resolve method values from phase 1
+      var phase1 = fingerprintOrder.map(function (fp) {
+        var g = groups[fp];
+        g.methods.sort();
+        var mv = g.methods.length === 0 ? null
+               : g.methods.length === 1 ? ('"' + g.methods[0] + '"')
+               : ("'(" + g.methods.join('|') + ")'");
+        return { f: g.first, methodValue: mv };
+      });
+
+      // Phase 2: group by path+selectors+suffix+query+method → merges extensions
+      var extGroups = {};
+      var extOrder = [];
+      phase1.forEach(function (r) {
+        var f = r.f;
+        var selectorKey = f.selectors ? f.selectors.slice().sort().join('|') : '';
+        var queryKey    = f.query     ? f.query.slice().sort().join('&')     : '';
+        var fp2 = [f.path||'', selectorKey, f.suffix||'', queryKey, r.methodValue||''].join('\x00');
+        if (!extGroups[fp2]) {
+          extGroups[fp2] = { items: [], first: r };
+          extOrder.push(fp2);
+        }
+        extGroups[fp2].items.push(r);
+      });
+
       var output = '';
       var usedIds = {};
-      fingerprintOrder.forEach(function (fp) {
-        var group = groups[fp];
-        var f = group.first;
-        group.methods.sort();
-        var methodValue;
-        if (group.methods.length === 0) {
-          methodValue = null;
-        } else if (group.methods.length === 1) {
-          methodValue = '"' + group.methods[0] + '"';
+      extOrder.forEach(function (fp2) {
+        var eg = extGroups[fp2];
+        var f  = eg.first.f;
+        var mv = eg.first.methodValue;
+
+        // Collect unique sorted extensions across all items in this group
+        var rawExts = eg.items.map(function (r) { return r.f.ext || ''; }).filter(Boolean);
+        var uniqueExts = rawExts.filter(function (e, i) { return rawExts.indexOf(e) === i; }).sort();
+
+        var extValue, mergedUrl;
+        if (uniqueExts.length <= 1) {
+          // Single extension — keep url, quote normally
+          extValue  = uniqueExts.length ? ('"' + uniqueExts[0] + '"') : null;
+          mergedUrl = f.url;
         } else {
-          methodValue = "'(" + group.methods.join('|') + ")'";
+          // Multiple extensions — regex alternation, drop url (filenames differ)
+          extValue  = "'(" + uniqueExts.join('|') + ")'";
+          mergedUrl = null;
         }
-        var ruleId = genGenerateRuleId(f.path, f.ext, f.selectors, usedIds);
-        output += genGenerateRule(ruleId, methodValue, f.path, f.url, f.ext, f.selectors, f.suffix, f.query);
+
+        // For rule ID, pass raw ext only for the single-ext case
+        var idExt = uniqueExts.length === 1 ? uniqueExts[0] : null;
+        var ruleId = genGenerateRuleId(f.path, idExt, f.selectors, usedIds);
+        output += genGenerateRule(ruleId, mv, f.path, mergedUrl, extValue, f.selectors, f.suffix, f.query);
       });
 
       genRulesOutput.value = output;
