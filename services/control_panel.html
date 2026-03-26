@@ -467,7 +467,9 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
     /* ── Keyboard shortcuts: Alt+1–5 ── */
     document.addEventListener('keydown', function (e) {
       if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      var idx = parseInt(e.key, 10);
+      var m = e.code.match(/^Digit(\d)$/);  // e.key unreliable on Mac (Option+1 → '¡')
+      if (!m) return;
+      var idx = parseInt(m[1], 10);
       if (idx >= 1 && idx <= TAB_IDS.length) {
         e.preventDefault();
         activateTab(TAB_IDS[idx - 1]);
