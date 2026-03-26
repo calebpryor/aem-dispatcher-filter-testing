@@ -293,6 +293,21 @@
     }
     .warning-box ul { margin: 0; padding-left: 1.2rem; }
     .warning-box li { font-size: 0.8rem; color: #5a3e00; margin: 0.3rem 0; line-height: 1.45; }
+
+    /* ── Generate rules: allow / deny columns ── */
+    .gen-columns { display: flex; gap: 1rem; }
+    .gen-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .gen-col label { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem; font-size: 0.85rem; font-weight: 600; }
+    .gen-col textarea { flex: 1; }
+    .gen-col-badge {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+      padding: 0.1rem 0.45rem; border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .gen-col-badge-allow { background: #d4f5e2; color: #0a6633; border: 1px solid #a3d9b8; }
+    .gen-col-badge-deny  { background: #fdd;    color: #900;    border: 1px solid #f5b0b0; }
+    @media (max-width: 600px) { .gen-columns { flex-direction: column; } }
   </style>
 </head>
 <body>
@@ -524,17 +539,33 @@
     </section>
 
     <section>
-      <h2>Generate rules from requests <span class="help-tip" data-tip="Paste raw HTTP request lines — one per line, e.g. 'GET /content/home.html' — and dispatcher filter rules are generated automatically. Useful when you have Apache access logs and want to build allow rules from real traffic patterns. Click Append to web filters to add the generated rules to the editor below.">?</span></h2>
+      <h2>Generate rules from requests <span class="help-tip" data-tip="Paste raw HTTP request lines — one per line, e.g. 'GET /content/home.html' — and dispatcher filter rules are generated automatically. Add requests to the Allow column to generate /type &quot;allow&quot; rules, or the Deny column to generate /type &quot;deny&quot; rules. Useful when you have Apache access logs and want to build rules from real traffic patterns. Click Append to web filters to add the generated rules to the editor below.">?</span></h2>
       <p class="hint">
-        Paste raw HTTP request lines (e.g. <code>GET /content/page.html</code>) — rules are generated live.
+        Paste raw HTTP request lines (e.g. <code>GET /content/page.html</code>) into the appropriate column — rules are generated live.
         Click <strong>Append to web filters</strong> to add them to the filter editor below.
       </p>
-      <label for="genRequestsInput">HTTP request lines (one per line)</label>
-      <textarea id="genRequestsInput" rows="6" placeholder="GET /content/home.html
+      <div class="gen-columns">
+        <div class="gen-col gen-col-allow">
+          <label for="genAllowInput">
+            <span class="gen-col-badge gen-col-badge-allow">Allow</span>
+            Requests that should pass
+          </label>
+          <textarea id="genAllowInput" rows="6" placeholder="GET /content/home.html
 GET /content/dam/images/hero.jpg
 GET /content/site/page.model.json
-GET /content/site/page.model.json/model
-POST /content/site/page.html?wcmmode=edit"></textarea>
+POST /content/site/page.html"></textarea>
+        </div>
+        <div class="gen-col gen-col-deny">
+          <label for="genDenyInput">
+            <span class="gen-col-badge gen-col-badge-deny">Deny</span>
+            Requests that should be rejected
+          </label>
+          <textarea id="genDenyInput" rows="6" placeholder="GET /system/console
+GET /crx/de/index.jsp
+POST /bin/wcm/siteadmin
+DELETE /content/dam/sensitive"></textarea>
+        </div>
+      </div>
       <label for="genRulesOutput" style="margin-top:0.75rem">Generated rules</label>
       <textarea id="genRulesOutput" rows="10" readonly placeholder="Generated rules will appear here…" style="font-family:ui-monospace,'Cascadia Code','Source Code Pro',monospace;font-size:0.8rem;background:#0d1117;color:#e6edf3;border-color:#30363d;resize:vertical"></textarea>
       <div class="row" style="margin-top:0.75rem">
@@ -1414,7 +1445,8 @@ DELETE /content/dam/sensitive"></textarea>
     /* ══════════════════════════════════════════════════════════
        ── Generate rules from requests (ported from filter-fiddler) ──
        ══════════════════════════════════════════════════════════ */
-    var genRequestsInput = document.getElementById('genRequestsInput');
+    var genAllowInput    = document.getElementById('genAllowInput');
+    var genDenyInput     = document.getElementById('genDenyInput');
     var genRulesOutput   = document.getElementById('genRulesOutput');
     var btnAppendGenRules = document.getElementById('btnAppendGenRules');
     var btnClearGen      = document.getElementById('btnClearGen');
@@ -1485,11 +1517,12 @@ DELETE /content/dam/sensitive"></textarea>
     /* ── Rule ID generator ── */
     var GEN_MAX_BASE = 29;
 
-    function genBuildId(pathParts, selectorParts, extPart) {
-      return '/' + ['PUB', 'ALLOW'].concat(pathParts).concat(selectorParts).concat(extPart ? [extPart] : []).join('_');
+    function genBuildId(pathParts, selectorParts, extPart, ruleType) {
+      var typeWord = (ruleType === 'deny') ? 'DENY' : 'ALLOW';
+      return '/' + ['PUB', typeWord].concat(pathParts).concat(selectorParts).concat(extPart ? [extPart] : []).join('_');
     }
 
-    function genGenerateRuleId(path, ext, selectors, usedIds) {
+    function genGenerateRuleId(path, ext, selectors, usedIds, ruleType) {
       var pathParts = (path || '')
         .replace(/\/\*$/, '').replace(/^\//, '')
         .split('/').filter(function (s) { return s && s !== '*'; })
@@ -1502,7 +1535,7 @@ DELETE /content/dam/sensitive"></textarea>
 
       var extPart = ext ? ext.toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
 
-      var candidate = genBuildId(pathParts, selectorParts, extPart);
+      var candidate = genBuildId(pathParts, selectorParts, extPart, ruleType);
 
       // Truncate from right if over limit
       while (candidate.length > GEN_MAX_BASE) {
@@ -1513,7 +1546,7 @@ DELETE /content/dam/sensitive"></textarea>
         } else {
           break;
         }
-        candidate = genBuildId(pathParts, selectorParts, extPart);
+        candidate = genBuildId(pathParts, selectorParts, extPart, ruleType);
       }
 
       // Deduplicate within batch
@@ -1528,9 +1561,10 @@ DELETE /content/dam/sensitive"></textarea>
 
     /* ── Rule block builder ── */
     // extValue is pre-formatted: '"png"' for single, "'(jpg|png)'" for merged regex
-    function genGenerateRule(ruleId, methodValue, path, url, extValue, selectors, suffix, query) {
+    // ruleType is "allow" or "deny"
+    function genGenerateRule(ruleId, methodValue, path, url, extValue, selectors, suffix, query, ruleType) {
       var lines = [ruleId + ' {'];
-      lines.push('  /type "allow"');
+      lines.push('  /type "' + (ruleType || 'allow') + '"');
       if (methodValue) lines.push('  /method ' + methodValue);
       if (path)        lines.push('  /path "' + path + '"');
       if (url)         lines.push('  /url "' + url + '"');
@@ -1558,12 +1592,9 @@ DELETE /content/dam/sensitive"></textarea>
     }
 
     /* ── Main orchestrator ── */
-    function genGenerate() {
-      var raw = genRequestsInput.value;
-      var inputLines = raw.split(/\r?\n/);
+    function genParseLines(raw, ruleType) {
       var objects = [];
-
-      inputLines.forEach(function (line) {
+      raw.split(/\r?\n/).forEach(function (line) {
         if (!/\S/.test(line)) return;
         var ext       = genGetExtension(line);
         var method    = genGetMethod(line);
@@ -1578,8 +1609,15 @@ DELETE /content/dam/sensitive"></textarea>
         }
 
         objects.push({ method: method, path: path, url: url, ext: ext,
-                       selectors: selectors, suffix: suffix, query: query });
+                       selectors: selectors, suffix: suffix, query: query,
+                       ruleType: ruleType });
       });
+      return objects;
+    }
+
+    function genGenerate() {
+      var objects = genParseLines(genAllowInput.value, 'allow')
+                      .concat(genParseLines(genDenyInput.value, 'deny'));
 
       // Phase 1: group by full fingerprint (everything except method) → merges methods
       var groups = {};
@@ -1587,7 +1625,7 @@ DELETE /content/dam/sensitive"></textarea>
       objects.forEach(function (o) {
         var selectorKey = o.selectors ? o.selectors.slice().sort().join('|') : '';
         var queryKey    = o.query     ? o.query.slice().sort().join('&')     : '';
-        var fp = [o.path||'', o.url||'', o.ext||'', selectorKey, o.suffix||'', queryKey].join('\x00');
+        var fp = [o.path||'', o.url||'', o.ext||'', selectorKey, o.suffix||'', queryKey, o.ruleType||'allow'].join('\x00');
         if (!groups[fp]) {
           groups[fp] = { methods: [], first: o };
           fingerprintOrder.push(fp);
@@ -1606,14 +1644,14 @@ DELETE /content/dam/sensitive"></textarea>
         return { f: g.first, methodValue: mv };
       });
 
-      // Phase 2: group by path+selectors+suffix+query+method → merges extensions
+      // Phase 2: group by path+selectors+suffix+query+method+type → merges extensions
       var extGroups = {};
       var extOrder = [];
       phase1.forEach(function (r) {
         var f = r.f;
         var selectorKey = f.selectors ? f.selectors.slice().sort().join('|') : '';
         var queryKey    = f.query     ? f.query.slice().sort().join('&')     : '';
-        var fp2 = [f.path||'', selectorKey, f.suffix||'', queryKey, r.methodValue||''].join('\x00');
+        var fp2 = [f.path||'', selectorKey, f.suffix||'', queryKey, r.methodValue||'', f.ruleType||'allow'].join('\x00');
         if (!extGroups[fp2]) {
           extGroups[fp2] = { items: [], first: r };
           extOrder.push(fp2);
@@ -1645,15 +1683,16 @@ DELETE /content/dam/sensitive"></textarea>
 
         // For rule ID, pass raw ext only for the single-ext case
         var idExt = uniqueExts.length === 1 ? uniqueExts[0] : null;
-        var ruleId = genGenerateRuleId(f.path, idExt, f.selectors, usedIds);
-        output += genGenerateRule(ruleId, mv, f.path, mergedUrl, extValue, f.selectors, f.suffix, f.query);
+        var ruleId = genGenerateRuleId(f.path, idExt, f.selectors, usedIds, f.ruleType || 'allow');
+        output += genGenerateRule(ruleId, mv, f.path, mergedUrl, extValue, f.selectors, f.suffix, f.query, f.ruleType || 'allow');
       });
 
       genRulesOutput.value = output;
     }
 
     ['change', 'keyup', 'paste', 'input'].forEach(function (evt) {
-      genRequestsInput.addEventListener(evt, genGenerate);
+      genAllowInput.addEventListener(evt, genGenerate);
+      genDenyInput.addEventListener(evt, genGenerate);
     });
 
     btnAppendGenRules.addEventListener('click', function () {
@@ -1767,7 +1806,8 @@ DELETE /content/dam/sensitive"></textarea>
     });
 
     btnClearGen.addEventListener('click', function () {
-      genRequestsInput.value = '';
+      genAllowInput.value = '';
+      genDenyInput.value = '';
       genRulesOutput.value = '';
       genMsg.hidden = true;
     });
