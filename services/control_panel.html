@@ -1447,10 +1447,15 @@ DELETE /content/dam/sensitive"></textarea>
 
     function genGetSelectors(req, ext) {
       if (!ext) return undefined;
-      var before = genSplitOnExtension(req, ext)[0];
-      var m = before.match(/(?<selectors>\.[^/]*\.)/);
-      if (!m) return undefined;
-      return m.groups.selectors.split('.').filter(function (s) { return s.length > 0; });
+      var before = genSplitOnExtension(req, ext)[0]; // e.g. "GET /content/dam/logo.800.600"
+      // Grab just the filename segment (after the last /)
+      var lastSlash = before.lastIndexOf('/');
+      var filename = lastSlash >= 0 ? before.slice(lastSlash + 1) : before;
+      // All dot-separated parts after the resource name are selectors
+      var parts = filename.split('.');
+      if (parts.length <= 1) return undefined;
+      var sels = parts.slice(1).filter(function (s) { return s.length > 0; });
+      return sels.length > 0 ? sels : undefined;
     }
 
     function genGetSuffix(req, ext) {
