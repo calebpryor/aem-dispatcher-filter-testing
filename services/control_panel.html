@@ -1677,14 +1677,24 @@ DELETE /content/dam/sensitive"></textarea>
       return /[\^$()[\]{}+|\\]/.test(str);
     }
 
-    function buildExamplePath(url, path, ext, glob) {
+    function buildExamplePath(url, path, ext, glob, selectors) {
       var base = url || path || glob;
       if (!base || base === '*' || base === '.*') return null;
+
+      // Resolve first concrete selector value (handles regex like '(800|600)' → '800')
+      var firstSel = null;
+      if (selectors) {
+        firstSel = hasRegexSyntax(selectors)
+          ? (selectors.match(/[a-z0-9]+/i) || [null])[0]
+          : selectors.split('|')[0];
+      }
+
       base = base
         .replace(/(\.[a-z0-9]+)\*+$/i, '$1')
         .replace(/\*\*/g, 'example/sub')
-        .replace(/\.\*/g, '.example')
+        .replace(/\.\*/g, firstSel ? '.' + firstSel : '.example')
         .replace(/\*/g,   'example');
+
       // Append extension when path has no extension suffix
       if ((path || glob) && ext && ext !== '' && ext !== '*') {
         // If ext is a regex alternation like (jpg|png), resolve to the first concrete value
@@ -1729,13 +1739,14 @@ DELETE /content/dam/sensitive"></textarea>
           var body   = m[1];
           var type   = extractAnyField(body, 'type');
           var method = extractAnyField(body, 'method');
-          var url    = extractAnyField(body, 'url');
-          var path   = extractAnyField(body, 'path');
-          var ext    = extractAnyField(body, 'extension');
-          var glob   = extractAnyField(body, 'glob');
+          var url       = extractAnyField(body, 'url');
+          var path      = extractAnyField(body, 'path');
+          var ext       = extractAnyField(body, 'extension');
+          var glob      = extractAnyField(body, 'glob');
+          var selectors = extractAnyField(body, 'selectors');
           if (!type) continue;
           if ([url, path, glob].some(function (v) { return v && hasRegexSyntax(v); })) continue;
-          var exPath = buildExamplePath(url, path, ext, glob);
+          var exPath = buildExamplePath(url, path, ext, glob, selectors);
           if (!exPath) continue;
           var entry = (method && method !== '' && method !== '*')
             ? method.toUpperCase() + ' ' + exPath
