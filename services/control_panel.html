@@ -243,11 +243,11 @@
 
   <!-- ── Tab bar ── -->
   <nav class="tabs" role="tablist" aria-label="Control sections">
-    <button class="tab-btn" role="tab" data-tab="server"  aria-controls="tab-server">1. Server Controls</button>
-    <button class="tab-btn" role="tab" data-tab="version" aria-controls="tab-version">2. Module Version</button>
-    <button class="tab-btn" role="tab" data-tab="filters" aria-controls="tab-filters">3. Filters</button>
-    <button class="tab-btn" role="tab" data-tab="testing" aria-controls="tab-testing">4. Testing</button>
-    <button class="tab-btn" role="tab" data-tab="logs"    aria-controls="tab-logs">5. Logs</button>
+    <button class="tab-btn" role="tab" data-tab="server"  aria-controls="tab-server"  title="Ctrl+Shift+1">1. Server Controls</button>
+    <button class="tab-btn" role="tab" data-tab="version" aria-controls="tab-version" title="Ctrl+Shift+2">2. Module Version</button>
+    <button class="tab-btn" role="tab" data-tab="filters" aria-controls="tab-filters" title="Ctrl+Shift+3">3. Filters</button>
+    <button class="tab-btn" role="tab" data-tab="testing" aria-controls="tab-testing" title="Ctrl+Shift+4">4. Testing</button>
+    <button class="tab-btn" role="tab" data-tab="logs"    aria-controls="tab-logs"    title="Ctrl+Shift+5">5. Logs</button>
   </nav>
 
   <!-- ════════════════════════════════════════
@@ -464,10 +464,10 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
       activateTab(TAB_IDS.includes(h) ? h : 'server', false);
     });
 
-    /* ── Keyboard shortcuts: Alt+1–5 ── */
+    /* ── Keyboard shortcuts: Ctrl+Shift+1–5 ── */
     document.addEventListener('keydown', function (e) {
-      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      var m = e.code.match(/^Digit(\d)$/);  // e.key unreliable on Mac (Option+1 → '¡')
+      if (!e.ctrlKey || !e.shiftKey || e.altKey || e.metaKey) return;
+      var m = e.code.match(/^Digit(\d)$/);
       if (!m) return;
       var idx = parseInt(m[1], 10);
       if (idx >= 1 && idx <= TAB_IDS.length) {
