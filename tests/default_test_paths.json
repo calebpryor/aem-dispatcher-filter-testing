@@ -15,7 +15,6 @@
     "/admin",
     "/admin.html",
     "/admin/",
-
     "/crx",
     "/crx/",
     "/crx/de",
@@ -28,7 +27,6 @@
     "/crx/repository",
     "/dav/crx.default",
     "/bin/crxde/logs",
-
     "/system/console",
     "/system/console/bundles",
     "/system/console/components",
@@ -37,12 +35,10 @@
     "/system/console/memoryusage",
     "/system/console/jmx",
     "/system/sling/login",
-
     "/libs/cq/core/content/login.html",
     "/libs/cq/core/content/login.json",
     "/libs/cq/core/content/login.infinity.json",
     "/libs/opensocial/proxy",
-
     "/apps",
     "/apps/",
     "/apps/geometrixx",
@@ -50,7 +46,6 @@
     "/bin/querybuilder.json",
     "/bin/querybuilder.json?path=/content",
     "/libs/dam/merge/metadata",
-
     "/etc/replication.xml",
     "/etc/replication.infinity.json",
     "/etc/replication/agents.publish.html",
@@ -58,10 +53,8 @@
     "/etc/reports/diskusage.html",
     "/etc/map",
     "/etc/map.infinity.json",
-
     "/jcr:system/jcr:versionStorage.json",
     "/_jcr_system/_jcr_versionStorage.json",
-
     "/content/geometrixx/en.infinity.json",
     "/content/dam.tidy.json",
     "/content/mysite/en.docview.xml",
@@ -73,11 +66,9 @@
     "/content/mysite/en.blueprint.json",
     "/content/mysite/en.sysview.xml",
     "/content/mysite/en.-1.json",
-
     "/content/geometrixx/en.html?debug=layout",
     "/content/mysite/en.html?wcmmode=edit",
     "/content/mysite/en.html?wcmmode=design",
-
     "/content/usergenerated",
     "/content/usergenerated/",
     "/home/users",
