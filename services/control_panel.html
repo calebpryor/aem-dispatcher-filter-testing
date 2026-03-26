@@ -1483,6 +1483,7 @@ DELETE /content/dam/sensitive"></textarea>
       var base = url || path || glob;
       if (!base || base === '*' || base === '.*') return null;
       base = base
+        .replace(/(\.[a-z0-9]+)\*+$/i, '$1')
         .replace(/\*\*/g, 'example/sub')
         .replace(/\.\*/g, '.example')
         .replace(/\*/g,   'example');
