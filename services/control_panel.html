@@ -235,6 +235,52 @@
     .method-badge.POST   { background: #fef3c7; color: #92400e; }
     .method-badge.PUT    { background: #d1fae5; color: #065f46; }
     .method-badge.DELETE { background: #fee2e2; color: #991b1b; }
+
+    /* ── Help tooltips ── */
+    .help-tip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1rem; height: 1rem;
+      background: #dde1ea; color: #555;
+      border-radius: 50%; font-size: 0.62rem; font-weight: 700;
+      cursor: default; vertical-align: middle; margin-left: 0.4rem;
+      position: relative; user-select: none; flex-shrink: 0;
+    }
+    .help-tip:hover { background: #b8bfcc; color: #222; }
+    .help-tip::after {
+      content: attr(data-tip);
+      display: none;
+      position: absolute; left: 0; top: 1.3rem;
+      background: #1a1a1a; color: #f0f0f0;
+      font-size: 0.76rem; font-weight: 400;
+      padding: 0.5rem 0.75rem;
+      border-radius: 7px;
+      white-space: normal; word-break: normal;
+      max-width: 26rem; min-width: 14rem; width: max-content;
+      z-index: 200; line-height: 1.45;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+    .help-tip:hover::after { display: block; }
+
+    /* ── Guide tab ── */
+    .guide-step { display: flex; gap: 1rem; align-items: flex-start; }
+    .step-num {
+      flex-shrink: 0; width: 2rem; height: 2rem;
+      background: #1f7aad; color: #fff;
+      border-radius: 50%; font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 0.1rem;
+    }
+    .step-num.win { background: #0a6633; }
+    .guide-step h2 { margin: 0 0 0.4rem; }
+    .guide-step p, .guide-step ul { margin: 0 0 0.45rem; }
+    .guide-step ul { padding-left: 1.3rem; }
+    .guide-code {
+      display: inline-block; background: #0d1117; color: #e6edf3;
+      font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+      font-size: 0.78rem; padding: 0.6rem 0.85rem; border-radius: 6px;
+      margin: 0.3rem 0 0.5rem; white-space: pre;
+    }
   </style>
 </head>
 <body>
@@ -287,19 +333,109 @@
 
   <!-- ── Tab bar ── -->
   <nav class="tabs" role="tablist" aria-label="Control sections">
-    <button class="tab-btn" role="tab" data-tab="server"  aria-controls="tab-server"  title="Ctrl+Shift+1">1. Server Controls</button>
-    <button class="tab-btn" role="tab" data-tab="version" aria-controls="tab-version" title="Ctrl+Shift+2">2. Module Version</button>
-    <button class="tab-btn" role="tab" data-tab="filters" aria-controls="tab-filters" title="Ctrl+Shift+3">3. Filters</button>
-    <button class="tab-btn" role="tab" data-tab="testing" aria-controls="tab-testing" title="Ctrl+Shift+4">4. Testing</button>
-    <button class="tab-btn" role="tab" data-tab="logs"    aria-controls="tab-logs"    title="Ctrl+Shift+5">5. Logs</button>
+    <button class="tab-btn" role="tab" data-tab="guide"   aria-controls="tab-guide"   title="Ctrl+Shift+1">⭐ Guide</button>
+    <button class="tab-btn" role="tab" data-tab="server"  aria-controls="tab-server"  title="Ctrl+Shift+2">Server Controls</button>
+    <button class="tab-btn" role="tab" data-tab="filters" aria-controls="tab-filters" title="Ctrl+Shift+3">Filters</button>
+    <button class="tab-btn" role="tab" data-tab="testing" aria-controls="tab-testing" title="Ctrl+Shift+4">Testing</button>
+    <button class="tab-btn" role="tab" data-tab="logs"    aria-controls="tab-logs"    title="Ctrl+Shift+5">Logs</button>
   </nav>
+
+  <!-- ════════════════════════════════════════
+       TAB: Guide
+  ════════════════════════════════════════ -->
+  <div id="tab-guide" class="tab-panel" role="tabpanel">
+
+    <section>
+      <h2>Quick-start guide</h2>
+      <p class="hint">New here? Follow these five steps to go from a fresh container to a fully-tested dispatcher configuration. Already know what you're doing? Jump straight to any tab above — this guide is here when you need it.</p>
+    </section>
+
+    <section>
+      <div class="guide-step">
+        <div class="step-num">1</div>
+        <div>
+          <h2>Choose a module version</h2>
+          <p class="hint"><strong>What:</strong> The AEM Dispatcher module (<code>mod_dispatcher.so</code>) is the Apache plugin that evaluates your filter rules and decides what to pass or block. Nothing proprietary is baked into the image — the module is downloaded fresh from Adobe's CDN each time you switch.</p>
+          <p class="hint"><strong>How:</strong> In <strong>Server Controls → Dispatcher module version</strong>, pick the version that matches your production AEM environment, then click <strong>Download &amp; switch module</strong>. Apache will restart automatically. Not sure which version? Use the latest, or check your team's AEM release notes.</p>
+          <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Server Controls →</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="guide-step">
+        <div class="step-num">2</div>
+        <div>
+          <h2>Verify container health</h2>
+          <p class="hint"><strong>What:</strong> Before testing filters the two Apache processes must be running. The <strong>dispatcher</strong> (port 80) is the real dispatcher handling requests. The <strong>renderer</strong> (port 4503) is a lightweight mock AEM publish instance that always returns HTTP 200 — it gives the dispatcher something to proxy to so filter decisions are realistic.</p>
+          <p class="hint"><strong>How:</strong> Check the status chips in <strong>Server Controls → Status</strong>. Both should show <span class="pill pill-ok" style="font-size:0.72rem;vertical-align:middle">running</span>. If they are not, click <strong>Restart dispatcher</strong>. Status auto-refreshes every 5 seconds.</p>
+          <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Server Controls →</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="guide-step">
+        <div class="step-num">3</div>
+        <div>
+          <h2>Add or generate your filters</h2>
+          <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are blocked (returning 404). Rules live in <code>.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
+          <p class="hint"><strong>How:</strong> Go to the <strong>Filters</strong> tab:</p>
+          <ul class="hint">
+            <li>Pick a <strong>Default policy</strong> first. <em>Deny all</em> is the realistic production setting — blocks everything unless you explicitly allow it. <em>Allow all</em> is useful for testing deny rules in isolation.</li>
+            <li><strong>Paste rules directly</strong> into the editor — use this if you already have a <code>.any</code> file from your production environment.</li>
+            <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
+          </ul>
+          <p class="hint">Click <strong>Save &amp; Restart</strong> after editing. Your filter file is volume-mounted to the host so changes persist across container restarts.</p>
+          <button type="button" class="secondary" onclick="_gotoTab('filters')">Go to Filters →</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="guide-step">
+        <div class="step-num">4</div>
+        <div>
+          <h2>Test your filters and share the results</h2>
+          <p class="hint"><strong>What:</strong> Each path in <strong>Good paths</strong> is expected to return HTTP 200 (the dispatcher should allow it). Each path in <strong>Bad paths</strong> is expected to return HTTP 404 (the dispatcher should block it). Tests hit the live running dispatcher — no mocking.</p>
+          <p class="hint"><strong>How:</strong> Go to the <strong>Testing</strong> tab. Click <strong>Generate tests from filters</strong> to auto-populate both lists from your current rules, or paste in real paths from your site. Click <strong>Run tests</strong> and review the colour-coded results table. Use <strong>Export JSON</strong> or <strong>Export CSV</strong> to share results with your team or save a baseline for future comparisons.</p>
+          <button type="button" class="secondary" onclick="_gotoTab('testing')">Go to Testing →</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="guide-step">
+        <div class="step-num win">✓</div>
+        <div>
+          <h2>WIN!</h2>
+          <p class="hint">Your dispatcher rules are verified and your results are documented. The same <code>002_web_filters.any</code> file from the <code>filters/</code> volume mount is ready to deploy to your production AEM dispatcher — tested and proven.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Bonus: reading the logs</h2>
+      <p class="hint">The <strong>Logs</strong> tab links to live-streaming views for all processes. Here is what each log tells you:</p>
+      <ul class="hint" style="margin:0.3rem 0 0.5rem;padding-left:1.3rem">
+        <li><strong><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a></strong> — The most useful log. With trace logging enabled you will see every filter rule evaluated per request. Look for <code>Filter</code> lines to trace exactly why a request was allowed or blocked.</li>
+        <li><strong><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a></strong> — Output from the filter parser script. Check this if rules are not appearing in the <em>Active filter rules</em> view.</li>
+        <li><strong><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a></strong> — Apache / dispatcher startup and runtime errors. First stop when the dispatcher fails to start.</li>
+        <li><strong><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a></strong> — Every HTTP request that reached Apache. Useful for confirming your test client is actually hitting the dispatcher.</li>
+      </ul>
+      <p class="hint">Tip: run this in your terminal for a combined real-time stream of all container output:</p>
+      <code class="guide-code">docker compose logs -f</code>
+      <button type="button" class="secondary" onclick="_gotoTab('logs')">Go to Logs →</button>
+    </section>
+
+  </div>
 
   <!-- ════════════════════════════════════════
        TAB: Server Controls
   ════════════════════════════════════════ -->
   <div id="tab-server" class="tab-panel" role="tabpanel">
     <section>
-      <h2>Status</h2>
+      <h2>Status <span class="help-tip" data-tip="Shows whether the dispatcher module is loaded and both Apache processes are running. The dispatcher handles real HTTP requests on port 80. The renderer is a mock AEM publish instance on port 4503 that always returns 200 — it gives the dispatcher something to proxy to. Status auto-refreshes every 5 seconds.">?</span></h2>
       <p class="hint">Module and service status poll every 5 seconds. Restart applies to both Apache processes (dispatcher on :80, renderer on :4503).</p>
       <div class="row align-center" style="margin-bottom:0.5rem">
         <span>Module:</span>
@@ -313,14 +449,9 @@
       </div>
       <pre class="action-out" id="serverOut" hidden></pre>
     </section>
-  </div>
 
-  <!-- ════════════════════════════════════════
-       TAB: Module Version
-  ════════════════════════════════════════ -->
-  <div id="tab-version" class="tab-panel" role="tabpanel">
     <section>
-      <h2>Dispatcher module version</h2>
+      <h2>Dispatcher module version <span class="help-tip" data-tip="mod_dispatcher.so is the Apache module that evaluates your filter rules. Pick the version that matches your production AEM environment. The module is downloaded fresh from Adobe's CDN — nothing is baked into the image. Switching downloads the selected .so file and restarts both Apache processes automatically.">?</span></h2>
       <p class="hint">
         Versions match Adobe-published Linux tarballs. The module is downloaded only from this page — nothing proprietary is baked into the image.
         Switching downloads the selected <code>.so</code> and restarts both Apache processes.
@@ -346,7 +477,7 @@
   <div id="tab-filters" class="tab-panel" role="tabpanel">
 
     <section>
-      <h2>Default policy</h2>
+      <h2>Default policy <span class="help-tip" data-tip="The catch-all rule applied when no filter matches a request. Deny all is the most realistic production setting — everything is blocked by default and you write allow rules for paths that should pass. Allow all passes everything and you write deny rules for paths to block. Switch between them without restarting; a dispatcher reload happens automatically.">?</span></h2>
       <p class="hint">Sets the sandbox catch-all rule. In <strong>Deny all</strong> mode, write allow rules for paths that should pass. In <strong>Allow all</strong> mode, write deny rules for paths that should be blocked.</p>
       <div class="mode-bar">
         <span class="mode-label">Default policy:</span>
@@ -361,7 +492,7 @@
     </section>
 
     <section>
-      <h2>Active filter rules</h2>
+      <h2>Active filter rules <span class="help-tip" data-tip="A read-only parsed view of every filter rule currently loaded by the dispatcher (files matched in glob order). Rules are evaluated top-to-bottom — the last matching rule wins. Use this to verify your saved rules are actually loaded. Hit Refresh after saving a new file.">?</span></h2>
       <p class="hint">Parsed from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order). Built-in container rules in <code>dispatcher.any</code> are not shown here.</p>
       <div class="row">
         <button type="button" id="btnRefreshFilters" class="secondary">Refresh</button>
@@ -372,7 +503,7 @@
     </section>
 
     <section>
-      <h2>Generate rules from requests</h2>
+      <h2>Generate rules from requests <span class="help-tip" data-tip="Paste raw HTTP request lines — one per line, e.g. 'GET /content/home.html' — and dispatcher filter rules are generated automatically. Useful when you have Apache access logs and want to build allow rules from real traffic patterns. Click Append to web filters to add the generated rules to the editor below.">?</span></h2>
       <p class="hint">
         Paste raw HTTP request lines (e.g. <code>GET /content/page.html</code>) — rules are generated live.
         Click <strong>Append to web filters</strong> to add them to the filter editor below.
@@ -393,7 +524,7 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
     </section>
 
     <section>
-      <h2>Edit <code>002_web_filters.any</code></h2>
+      <h2>Edit <code>002_web_filters.any</code> <span class="help-tip" data-tip="Direct editor for your dispatcher filter rules. Uses AEM Dispatcher .any syntax: each rule has a /name { } block with /type (allow or deny), and one or more of /method, /url, /path, /extension, /glob. Rules are evaluated in order — last match wins. The file is volume-mounted to the host so changes persist across container restarts. Always click Save & Restart to apply edits.">?</span></h2>
       <p class="hint">
         Paste or type dispatcher filter rules below and click <strong>Save</strong>.
         Rules are written to <code>filters/002_web_filters.any</code> on the container filesystem (also reflected on the host via the volume mount).
@@ -419,7 +550,7 @@ POST /content/site/page.html?wcmmode=edit"></textarea>
   ════════════════════════════════════════ -->
   <div id="tab-testing" class="tab-panel" role="tabpanel">
     <section>
-      <h2>Request paths</h2>
+      <h2>Request paths <span class="help-tip" data-tip="Tests paths live against the running dispatcher — no mocking. Good paths should return HTTP 200 (the dispatcher allows the request to reach the renderer). Bad paths should return HTTP 404 (the dispatcher blocks it). Generate tests from filters auto-populates both lists from your current rules. Export results to share with your team or save a test baseline.">?</span></h2>
       <p class="hint">
         Filter fragments are loaded from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order).
         Default good/bad paths are loaded from <code>tests/default_test_paths.json</code> on the host.
@@ -467,7 +598,7 @@ DELETE /content/dam/sensitive"></textarea>
   ════════════════════════════════════════ -->
   <div id="tab-logs" class="tab-panel" role="tabpanel">
     <section>
-      <h2>Log streams</h2>
+      <h2>Log streams <span class="help-tip" data-tip="Live-streaming log views via Server-Sent Events (tail -F under the hood). dispatcher.log is the most useful — with trace logging it shows every filter rule evaluated per request. error_log is your first stop when the dispatcher won't start. access_log records every HTTP request Apache received. You can also run 'docker compose logs -f' in your terminal for a combined real-time stream.">?</span></h2>
       <p class="hint">
         Each link opens a live-streaming view (Server-Sent Events + <code>tail -F</code> under <code>/var/log/httpd/</code>).
         If a log is linked to container stdout/stderr, use <code>docker compose logs</code> instead.
@@ -490,14 +621,14 @@ DELETE /content/dam/sensitive"></textarea>
   <script>
   (function () {
     /* ── Tab routing ── */
-    const TAB_IDS = ['server', 'version', 'filters', 'testing', 'logs'];
+    const TAB_IDS = ['guide', 'server', 'filters', 'testing', 'logs'];
     const tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
     const tabPanels = {};
     TAB_IDS.forEach(function (id) { tabPanels[id] = document.getElementById('tab-' + id); });
 
     var activeTab = null;
     function activateTab(name, push) {
-      if (!TAB_IDS.includes(name)) name = 'server';
+      if (!TAB_IDS.includes(name)) name = 'guide';
       if (name === activeTab) return;
       activeTab = name;
       tabBtns.forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
@@ -514,7 +645,7 @@ DELETE /content/dam/sensitive"></textarea>
 
     window.addEventListener('hashchange', function () {
       var h = location.hash.replace('#', '');
-      activateTab(TAB_IDS.includes(h) ? h : 'server', false);
+      activateTab(TAB_IDS.includes(h) ? h : 'guide', false);
     });
 
     /* ── Keyboard shortcuts: Ctrl+Shift+1–5 ── */
@@ -529,8 +660,10 @@ DELETE /content/dam/sensitive"></textarea>
       }
     });
 
+    window._gotoTab = activateTab;
+
     var initHash = location.hash.replace('#', '');
-    activateTab(TAB_IDS.includes(initHash) ? initHash : 'server', false);
+    activateTab(TAB_IDS.includes(initHash) ? initHash : 'guide', false);
 
     /* ── Element refs ── */
     var ver         = document.getElementById('ver');
