@@ -1800,9 +1800,8 @@ DELETE /content/dam/sensitive"></textarea>
         return;
       }
 
-      var existingBad = bad.value.trim();
       good.value = goodPaths.join('\n');
-      bad.value  = existingBad ? existingBad + '\n' + badPaths.join('\n') : badPaths.join('\n');
+      if (badPaths.length) bad.value = badPaths.join('\n');
     });
 
     btnClearGen.addEventListener('click', function () {
