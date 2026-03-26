@@ -335,9 +335,9 @@
         Restart the dispatcher after saving to apply changes.
       </p>
       <label for="filterEditor">Filter rules</label>
-      <textarea id="filterEditor" rows="12" placeholder='/0001 { /type "allow" /method "GET" /url "/content/*" }
-/0002 { /type "allow" /method "GET" /url "/etc/designs/*" }
-/9999 { /type "deny" /glob "*" }'></textarea>
+      <textarea id="filterEditor" rows="12" placeholder='/example-allow-content-html { /type "allow" /method "GET" /url "/content/*" /extension "html" }
+/example-allow-design-dir { /type "allow" /method "GET" /url "/etc/designs/*" /path "/etc/designs/*" }
+/example-deny-all { /type "deny" /glob "*" }'></textarea>
       <div class="row" style="margin-top:0.75rem">
         <button type="button" id="btnSaveFilters">Save</button>
         <button type="button" id="btnSaveAndRestart">Save &amp; Restart</button>
