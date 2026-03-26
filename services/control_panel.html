@@ -281,6 +281,18 @@
       font-size: 0.78rem; padding: 0.6rem 0.85rem; border-radius: 6px;
       margin: 0.3rem 0 0.5rem; white-space: pre;
     }
+    .warning-box {
+      background: #fffbea; border: 1px solid #f0c000;
+      border-left: 4px solid #e6a800;
+      border-radius: 6px; padding: 0.65rem 0.85rem;
+      margin: 0.75rem 0 0.25rem;
+    }
+    .warning-box-title {
+      font-size: 0.8rem; font-weight: 700; color: #7a5500;
+      margin: 0 0 0.4rem; display: flex; align-items: center; gap: 0.35rem;
+    }
+    .warning-box ul { margin: 0; padding-left: 1.2rem; }
+    .warning-box li { font-size: 0.8rem; color: #5a3e00; margin: 0.3rem 0; line-height: 1.45; }
   </style>
 </head>
 <body>
@@ -387,6 +399,15 @@
             <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
           </ul>
           <p class="hint">Click <strong>Save &amp; Restart</strong> after editing. Your filter file is volume-mounted to the host so changes persist across container restarts.</p>
+          <div class="warning-box">
+            <div class="warning-box-title">⚠ Security insights</div>
+            <ul>
+              <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
+              <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes.</li>
+              <li>When the dispatcher rejects a request it responds with a <code>404 Not Found</code>, not a <code>403 Forbidden</code> — it signals the resource doesn't exist rather than that access is denied.</li>
+              <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
+            </ul>
+          </div>
           <button type="button" class="secondary" onclick="_gotoTab('filters')">Go to Filters →</button>
         </div>
       </div>
@@ -412,16 +433,6 @@
           <p class="hint">When you test in the sandbox you can verify your rules are functional and play nice by themselves and with other rules without needing to affect an actual AEM hosted system.  It's all on your workstation locally.  Makig sure your rules are working as expected before deploying to production. Then your dispatcher rules are verified and your results are documented. The same <code>002_web_filters.any</code> file from the <code>filters/</code> volume mount is ready to deploy to your production AEM dispatcher — tested and proven.</p>
         </div>
       </div>
-    </section>
-
-    <section>
-      <h2>Security insights</h2>
-      <ul class="hint" style="margin:0;padding-left:1.3rem">
-        <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
-        <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes.</li>
-        <li>When the dispatcher rejects a request it responds with a <code>404 Not Found</code>, not a <code>403 Forbidden</code> — it signals the resource doesn't exist rather than that access is denied.</li>
-        <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
-      </ul>
     </section>
 
     <section>
