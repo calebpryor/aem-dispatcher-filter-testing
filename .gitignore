@@ -19,6 +19,9 @@ logs/*
 filters/001_my_filters.any
 filters/002_web_filters.any
 
+# Dispatcher binary
+*.so
+
 # OS
 .DS_Store
 Thumbs.db
