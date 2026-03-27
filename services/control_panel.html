@@ -540,10 +540,10 @@
     </section>
 
     <section>
-      <h2>Generate rules from requests <span class="help-tip" data-tip="Paste raw HTTP request lines — one per line, e.g. 'GET /content/home.html' — and dispatcher filter rules are generated automatically. Add requests to the Allow column to generate /type &quot;allow&quot; rules, or the Deny column to generate /type &quot;deny&quot; rules. Useful when you have Apache access logs and want to build rules from real traffic patterns. Click Append to web filters to add the generated rules to the editor below.">?</span></h2>
+      <h2>Generate rules from requests <span class="help-tip" data-tip="Paste raw HTTP request lines — one per line, e.g. 'GET /content/home.html' — and dispatcher filter rules are generated automatically. Add requests to the Allow column to generate /type &quot;allow&quot; rules, or the Deny column to generate /type &quot;deny&quot; rules. Useful when you have Apache access logs and want to build rules from real traffic patterns. Click Append to selected filter to add the generated rules to the editor below.">?</span></h2>
       <p class="hint">
         Paste raw HTTP request lines (e.g. <code>GET /content/page.html</code>) into the appropriate column — rules are generated live.
-        Click <strong>Append to web filters</strong> to add them to the filter editor below.
+        Click <strong>Append to selected filter</strong> to add them to the filter editor below.
       </p>
       <div class="gen-columns">
         <div class="gen-col gen-col-allow">
@@ -570,7 +570,7 @@ DELETE /content/dam/sensitive"></textarea>
       <label for="genRulesOutput" style="margin-top:0.75rem">Generated rules</label>
       <textarea id="genRulesOutput" rows="10" readonly placeholder="Generated rules will appear here…" style="font-family:ui-monospace,'Cascadia Code','Source Code Pro',monospace;font-size:0.8rem;background:#0d1117;color:#e6edf3;border-color:#30363d;resize:vertical"></textarea>
       <div class="row" style="margin-top:0.75rem">
-        <button type="button" id="btnAppendGenRules">Append to web filters</button>
+        <button type="button" id="btnAppendGenRules">Append to selected filter</button>
         <button type="button" id="btnClearGen" class="secondary">Clear</button>
       </div>
       <p id="genMsg" class="muted" hidden></p>
