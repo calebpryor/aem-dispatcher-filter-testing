@@ -1175,7 +1175,7 @@ DELETE /content/dam/sensitive"></textarea>
 
     function pathCellHtml(row) {
       var p = row.path   != null ? String(row.path)   : '';
-      var u = row.url    != null ? String(row.url)    : (p ? 'http://127.0.0.1' + p : '');
+      var u = row.url    != null ? String(row.url)    : '';
       var m = row.method != null ? String(row.method) : 'GET';
       var badge = '<span class="method-badge' + (m !== 'GET' ? ' ' + m : '') + '">' + escHtml(m) + '</span>';
       var inner = badge + escHtml(p);
