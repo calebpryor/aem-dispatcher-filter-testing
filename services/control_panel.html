@@ -577,12 +577,16 @@ DELETE /content/dam/sensitive"></textarea>
     </section>
 
     <section>
-      <h2>Edit <code>002_web_filters.any</code> <span class="help-tip" data-tip="Direct editor for your dispatcher filter rules. Uses AEM Dispatcher .any syntax: each rule has a /name { } block with /type (allow or deny), and one or more of /method, /url, /path, /extension, /glob. Rules are evaluated in order — last match wins. The file is volume-mounted to the host so changes persist across container restarts. Always click Save & Restart to apply edits.">?</span></h2>
+      <h2>Edit filter rules <span class="help-tip" data-tip="Direct editor for your dispatcher filter rules. Uses AEM Dispatcher .any syntax: each rule has a /name { } block with /type (allow or deny), and one or more of /method, /url, /path, /extension, /glob. Rules are evaluated in order — last match wins. The file is volume-mounted to the host so changes persist across container restarts. Always click Save & Restart to apply edits.">?</span></h2>
       <p class="hint">
         Paste or type dispatcher filter rules below and click <strong>Save</strong>.
-        Rules are written to <code>filters/002_web_filters.any</code> on the container filesystem (also reflected on the host via the volume mount).
+        Rules are written to the selected file in <code>filters/</code> on the container filesystem (also reflected on the host via the volume mount).
         Restart the dispatcher after saving to apply changes.
       </p>
+      <div class="row" style="margin-bottom:0.5rem">
+        <label for="filterFileSelect" style="margin:0;line-height:2">File:</label>
+        <select id="filterFileSelect"></select>
+      </div>
       <label for="filterEditor">Filter rules</label>
       <textarea id="filterEditor" rows="12" placeholder='/example-allow-content-html { /type "allow" /method "GET" /url "/content/*" /extension "html" }
 /example-allow-design-dir { /type "allow" /method "GET" /url "/etc/designs/*" /path "/etc/designs/*" }
@@ -746,6 +750,7 @@ DELETE /content/dam/sensitive"></textarea>
     var filterTableWrap    = document.getElementById('filterTableWrap');
     var btnRefreshFilters  = document.getElementById('btnRefreshFilters');
     var filterEditor       = document.getElementById('filterEditor');
+    var filterFileSelect   = document.getElementById('filterFileSelect');
     var btnSaveFilters     = document.getElementById('btnSaveFilters');
     var btnSaveAndRestart  = document.getElementById('btnSaveAndRestart');
     var btnLoadFilterEditor = document.getElementById('btnLoadFilterEditor');
@@ -1010,8 +1015,21 @@ DELETE /content/dam/sensitive"></textarea>
           fileRules = j.rules || [];
         } catch (e) { return; }
       }
-      var f = fileRules.find(function (x) { return x.file === '002_web_filters.any'; });
-      filterEditor.value = f ? f.content : '';
+      // Rebuild the file selector, preserving the current selection if possible
+      var currentSel = filterFileSelect.value;
+      filterFileSelect.innerHTML = '';
+      fileRules.forEach(function (f) {
+        var opt = document.createElement('option');
+        opt.value = f.file;
+        opt.textContent = f.file;
+        filterFileSelect.appendChild(opt);
+      });
+      if (currentSel && fileRules.some(function (f) { return f.file === currentSel; })) {
+        filterFileSelect.value = currentSel;
+      }
+      var selected = filterFileSelect.value;
+      var match = fileRules.find(function (x) { return x.file === selected; });
+      filterEditor.value = match ? match.content : '';
     }
 
     var filtersTabEverOpened = false;
@@ -1032,19 +1050,29 @@ DELETE /content/dam/sensitive"></textarea>
       await loadFilterEditorContent(null);
     });
 
+    filterFileSelect.addEventListener('change', async function () {
+      var fileRules = await (async function () {
+        try { var r = await fetch('/api/filter-rules'); var j = await r.json(); return j.rules || []; } catch (e) { return []; }
+      })();
+      var selected = filterFileSelect.value;
+      var match = fileRules.find(function (x) { return x.file === selected; });
+      filterEditor.value = match ? match.content : '';
+    });
+
     async function doSaveFilters() {
       filterSaveMsg.hidden = true;
       filterSaveOut.hidden = true;
       var content = filterEditor.value;
+      var filename = filterFileSelect.value || '002_web_filters.any';
       try {
         var r = await fetch('/api/save-filters', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: content })
+          body: JSON.stringify({ content: content, filename: filename })
         });
         var j = await r.json();
         if (j.ok) {
-          filterSaveMsg.textContent = 'Saved to 002_web_filters.any';
+          filterSaveMsg.textContent = 'Saved to ' + (j.file || filename);
           filterSaveMsg.className = 'muted';
           filterSaveMsg.hidden = false;
           filtersTabEverOpened = false; // force editor reload next open

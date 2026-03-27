@@ -765,13 +765,22 @@ class ControlHandler(BaseHTTPRequestHandler):
             if len(content) > 512_000:
                 _json_response(self, 400, {"ok": False, "error": "Content too large (max 512 KB)"})
                 return
-            target = FILTERS_DIR / "002_web_filters.any"
+            filename = data.get("filename", "002_web_filters.any")
+            # Validate: basename only, must end in .any, no path separators
+            import os as _os
+            if (not isinstance(filename, str) or
+                    _os.path.basename(filename) != filename or
+                    not filename.endswith(".any") or
+                    "/" in filename or "\\" in filename):
+                _json_response(self, 400, {"ok": False, "error": "Invalid filename"})
+                return
+            target = FILTERS_DIR / filename
             try:
                 target.write_text(content, encoding="utf-8")
             except OSError as e:
                 _json_response(self, 500, {"ok": False, "error": str(e)})
                 return
-            _json_response(self, 200, {"ok": True, "file": "002_web_filters.any"})
+            _json_response(self, 200, {"ok": True, "file": filename})
             return
 
         if path == "/api/truncate-log":
