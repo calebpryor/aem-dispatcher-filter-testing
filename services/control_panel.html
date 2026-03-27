@@ -179,8 +179,9 @@
     table.results td a code { text-decoration: inherit; }
     table.results td code { font-size: 0.88em; }
     .filter-note { font-size: 0.75rem; margin-top: 0.3rem; padding: 0.2rem 0.4rem; border-radius: 4px; display: inline-block; }
-    .filter-note-warn { background: #fff3cd; color: #856404; }
-    .filter-note-info { background: #d1ecf1; color: #0c5460; }
+    .filter-note-warn   { background: #fff3cd; color: #856404; }
+    .filter-note-info   { background: #d1ecf1; color: #0c5460; }
+    .filter-note-danger { background: #f8d7da; color: #721c24; }
 
     /* ── Misc ── */
     .filter-list { font-size: 0.82rem; margin: 0.35rem 0 0; padding-left: 1.2rem; color: #333; }
@@ -939,6 +940,30 @@ DELETE /content/dam/sensitive"></textarea>
       }
     }
 
+    var FILTER_MATCHERS = ['method', 'url', 'path', 'extension', 'selector', 'suffix', 'query', 'glob'];
+
+    function analyzeRule(raw) {
+      var warnings = [];
+      var typeMatch = raw.match(/\/type\s+"(\w+)"/i);
+      var type = typeMatch ? typeMatch[1].toLowerCase() : null;
+
+      var matcherCount = 0;
+      FILTER_MATCHERS.forEach(function (m) {
+        if (new RegExp('\\/' + m + '\\s+"', 'i').test(raw)) matcherCount++;
+      });
+
+      var hasGlob = /\/glob\s+"/i.test(raw);
+      if (type === 'allow' && hasGlob) {
+        warnings.push({ level: 'danger', msg: '\u26a0\ufe0f /glob on an allow rule is a known insecure pattern — /glob matches the entire URL with no type safety, making it easy to bypass. Use /method, /url, /extension, and other specific matchers instead.' });
+      }
+
+      if (matcherCount < 2) {
+        warnings.push({ level: 'warn', msg: '\u26a0\ufe0f Fewer than 2 matchers — this rule is likely too broad. Combining multiple matchers (e.g. /method + /url + /extension) makes the rule far harder to circumvent.' });
+      }
+
+      return warnings;
+    }
+
     function renderFilterTable(fileRules) {
       if (!fileRules.length) {
         filterTableWrap.innerHTML = '<p class="muted">No filter files found in <code>filters/*.any</code>.</p>';
@@ -961,9 +986,13 @@ DELETE /content/dam/sensitive"></textarea>
         + '<thead><tr><th>#</th><th>Rule</th><th>File</th></tr></thead><tbody>';
 
       allRules.forEach(function (rule, idx) {
-        html += '<tr>'
+        var warnings = analyzeRule(rule.raw);
+        var noteHtml = warnings.map(function (w) {
+          return '<div class="filter-note filter-note-' + w.level + '">' + escHtml(w.msg) + '</div>';
+        }).join('');
+        html += '<tr' + (warnings.length ? ' class="rule-has-warning"' : '') + '>'
           + '<td class="num muted">' + (idx + 1) + '</td>'
-          + '<td><code>' + escHtml(rule.raw) + '</code></td>'
+          + '<td><code>' + escHtml(rule.raw) + '</code>' + noteHtml + '</td>'
           + '<td><span class="muted">' + escHtml(rule.file) + '</span></td>'
           + '</tr>';
       });
