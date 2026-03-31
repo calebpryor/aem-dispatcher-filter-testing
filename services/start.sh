@@ -6,11 +6,22 @@
 CP="${CONTROL_PORT:-59173}"
 echo "Dispatcher module: use the control UI at http://127.0.0.1:${CP} (Download & switch module). Apache will start after the .so is installed."
 
-# Write default sandbox policy (deny all) if not already present
+# Restore sandbox policy from prefs file (persisted in bind-mounted filters dir), else deny_all
 POLICY_FILE="/etc/httpd/conf.dispatcher.d/sandbox_policy.any"
-if [ ! -f "$POLICY_FILE" ]; then
+PREFS_FILE="/etc/httpd/conf.dispatcher.d/filters/.prefs.json"
+SANDBOX_MODE="deny_all"
+if [ -f "$PREFS_FILE" ]; then
+    SAVED_MODE=$(python3 -c "import json,sys; d=json.load(open('$PREFS_FILE')); print(d.get('sandbox_mode','deny_all'))" 2>/dev/null)
+    if [ "$SAVED_MODE" = "allow_all" ] || [ "$SAVED_MODE" = "deny_all" ]; then
+        SANDBOX_MODE="$SAVED_MODE"
+    fi
+fi
+if [ "$SANDBOX_MODE" = "allow_all" ]; then
+    printf '# mode: allow_all\n/sandbox-default { /type "allow" /url "*" }\n' > "$POLICY_FILE"
+    echo "Restored sandbox policy from prefs: allow_all"
+else
     printf '# mode: deny_all\n/sandbox-default { /type "deny" /url "*" }\n' > "$POLICY_FILE"
-    echo "Created default sandbox policy: deny_all"
+    echo "Restored sandbox policy from prefs: deny_all"
 fi
 
 echo "Starting filter file watcher..."

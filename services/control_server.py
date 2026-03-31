@@ -40,6 +40,23 @@ DISPATCHER_LOG = Path("/var/log/httpd/dispatcher.log")
 SANDBOX_POLICY_FILE = Path("/etc/httpd/conf.dispatcher.d/sandbox_policy.any")
 _SANDBOX_DENY  = '# mode: deny_all\n/sandbox-default { /type "deny" /url "*" }\n'
 _SANDBOX_ALLOW = '# mode: allow_all\n/sandbox-default { /type "allow" /url "*" }\n'
+# Stored in the bind-mounted filters directory so it survives container restarts.
+# Host-visible path: ./filters/.prefs.json
+PREFS_FILE = Path("/etc/httpd/conf.dispatcher.d/filters/.prefs.json")
+PREFS_HOST_DISPLAY = "./filters/.prefs.json"
+
+
+def _read_prefs() -> Dict[str, Any]:
+    try:
+        return json.loads(PREFS_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _write_pref(key: str, value: Any) -> None:
+    prefs = _read_prefs()
+    prefs[key] = value
+    PREFS_FILE.write_text(json.dumps(prefs, indent=2) + "\n", encoding="utf-8")
 
 
 def _read_sandbox_mode() -> str:
@@ -541,6 +558,9 @@ class ControlHandler(BaseHTTPRequestHandler):
                     pass
             _json_response(self, 200, {"version": ver})
             return
+        if path == "/api/prefs":
+            _json_response(self, 200, _read_prefs())
+            return
         if path == "/api/default-test-paths":
             _json_response(self, 200, _read_default_test_paths())
             return
@@ -726,7 +746,8 @@ class ControlHandler(BaseHTTPRequestHandler):
                     },
                 )
                 return
-            _json_response(self, 200, {"ok": True, "version": ver})
+            _write_pref("dispatcher_version", ver)
+            _json_response(self, 200, {"ok": True, "version": ver, "prefs_file": PREFS_HOST_DISPLAY})
             return
 
         if path == "/api/sandbox-mode":
@@ -750,7 +771,8 @@ class ControlHandler(BaseHTTPRequestHandler):
                 _json_response(self, 500, {"ok": False, "error": "policy saved but restart failed",
                                            "detail": (e.stderr or e.stdout or str(e))[:2000]})
                 return
-            _json_response(self, 200, {"ok": True, "mode": mode})
+            _write_pref("sandbox_mode", mode)
+            _json_response(self, 200, {"ok": True, "mode": mode, "prefs_file": PREFS_HOST_DISPLAY})
             return
 
         if path == "/api/save-filters":

@@ -192,6 +192,22 @@
     .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
     label.inline { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 500; margin: 0; }
 
+    /* ── Pref-saved toast ── */
+    #prefToast {
+      position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 20000;
+      background: #1a1a2e; color: #e8eaf6;
+      border-radius: 8px; padding: 0.6rem 1rem;
+      font-size: 0.8rem; line-height: 1.4;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+      max-width: 22rem;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+    #prefToast.visible { opacity: 1; transform: translateY(0); }
+    #prefToast .toast-label { font-weight: 600; margin-bottom: 0.2rem; }
+    #prefToast .toast-path { font-family: monospace; font-size: 0.78rem; color: #90caf9; word-break: break-all; }
+
     /* ── Module install modal ── */
     .module-modal {
       position: fixed; inset: 0; z-index: 10000;
@@ -312,6 +328,12 @@
   </style>
 </head>
 <body>
+
+  <!-- ── Pref-saved toast ── -->
+  <div id="prefToast" role="status" aria-live="polite">
+    <div class="toast-label">Preferences saved</div>
+    <div class="toast-path" id="prefToastPath"></div>
+  </div>
 
   <!-- ── Module install modal ── -->
   <div id="moduleModal" class="module-modal" role="dialog" aria-modal="true" aria-labelledby="moduleModalTitle" hidden>
@@ -774,6 +796,17 @@ DELETE /content/dam/sensitive"></textarea>
     var filtersLoaded    = false;
     var cachedFilterRules = [];
 
+    /* ── Pref-saved toast ── */
+    var prefToast     = document.getElementById('prefToast');
+    var prefToastPath = document.getElementById('prefToastPath');
+    var prefToastTimer = null;
+    function showPrefToast(filePath) {
+      prefToastPath.textContent = filePath;
+      prefToast.classList.add('visible');
+      clearTimeout(prefToastTimer);
+      prefToastTimer = setTimeout(function () { prefToast.classList.remove('visible'); }, 3000);
+    }
+
     /* ── Busy state ── */
     function setBusy(b) {
       [btnSwitch, btnRestart, btnModalOk, document.getElementById('btnTest'),
@@ -825,6 +858,7 @@ DELETE /content/dam/sensitive"></textarea>
         var j = await r.json();
         if (j.ok) {
           applySandboxModeUI(mode);
+          if (j.prefs_file) showPrefToast(j.prefs_file);
         } else {
           sandboxRestartMsg.textContent = 'Error: ' + (j.error || 'unknown error');
           await new Promise(function (res) { setTimeout(res, 2500); });
@@ -1142,6 +1176,7 @@ DELETE /content/dam/sensitive"></textarea>
         var j = await r.json();
         actionOut.textContent = JSON.stringify(j, null, 2);
         actionOut.hidden = false;
+        if (j.prefs_file) showPrefToast(j.prefs_file);
         syncModalVersionFromMain();
         await updateModuleGate();
         await refreshInstalledVersion();
@@ -1179,6 +1214,7 @@ DELETE /content/dam/sensitive"></textarea>
         ver.value = verModal.value;
         actionOut.textContent = JSON.stringify(j, null, 2);
         actionOut.hidden = false;
+        if (j.prefs_file) showPrefToast(j.prefs_file);
         await updateModuleGate();
         await refreshInstalledVersion();
       } catch (e) {
@@ -1881,19 +1917,52 @@ DELETE /content/dam/sensitive"></textarea>
         var om = document.createElement('option'); om.value = v; om.textContent = v; verModal.appendChild(om);
       });
       var want = new URLSearchParams(location.search).get('ver');
+      var prefs = {};
+      try { var pr = await fetch('/api/prefs'); prefs = await pr.json(); } catch (_) {}
+      var prefVer = (prefs.dispatcher_version && list.indexOf(prefs.dispatcher_version) >= 0)
+        ? prefs.dispatcher_version : null;
       if (want && list.indexOf(want) >= 0) ver.value = want;
+      else if (prefVer) ver.value = prefVer;
       else if (list.length) ver.selectedIndex = 0;
       syncModalVersionFromMain();
       if (btnModalOk) btnModalOk.disabled = list.length === 0;
-      await updateModuleGate();
+      var installed = await updateModuleGate();
+      if (!installed && list.length) {
+        var autoVer = prefVer || list[0];
+        moduleModal.hidden = true;
+        document.body.classList.remove('module-modal-open');
+        setBusy(true);
+        try {
+          var ar = await fetch('/api/dispatcher-version', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version: autoVer })
+          });
+          var arText = await ar.text();
+          var arJ; try { arJ = JSON.parse(arText); } catch (_) {}
+          if (ar.ok) {
+            ver.value = autoVer;
+            actionOut.textContent = JSON.stringify(arJ, null, 2);
+            actionOut.hidden = false;
+            await updateModuleGate();
+          } else {
+            moduleModal.hidden = false;
+            document.body.classList.add('module-modal-open');
+            try { btnModalOk.focus(); } catch (_) {}
+          }
+        } catch (e) {
+          moduleModal.hidden = false;
+          document.body.classList.add('module-modal-open');
+          try { btnModalOk.focus(); } catch (_) {}
+        } finally {
+          setBusy(false);
+        }
+      }
       await refreshInstalledVersion();
       await loadSandboxMode();
       await refreshFilterFilesStatic();
       await loadDefaultTestPaths();
       await refreshServiceHealth();
-      if (moduleModal && !moduleModal.hidden) {
-        try { btnModalOk.focus(); } catch (e2) {}
-      }
     }
 
     // Poll module + service status every 5 seconds
