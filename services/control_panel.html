@@ -329,6 +329,21 @@
     .guide-step-summary { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
     .guide-step-summary h2 { margin: 0; }
     .guide-body { padding: 0.75rem 1.1rem 0.9rem; border-top: 1px solid #f0f0f0; }
+    /* Card wrapper for sections that mix collapsible + always-visible content */
+    .guide-section-card {
+      background: #fff; border: 1px solid #e2e4e9; border-radius: 8px;
+      margin-bottom: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); overflow: hidden;
+    }
+    .guide-section-card > details > summary {
+      cursor: pointer; list-style: none; padding: 0.8rem 1.1rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      user-select: none;
+    }
+    .guide-section-card > details > summary::-webkit-details-marker { display: none; }
+    .guide-section-card > details > summary::marker { content: none; }
+    .guide-section-card > details > summary h2 { margin: 0; flex: 1; }
+    .guide-section-card > details[open] > summary .guide-chevron { transform: rotate(90deg); }
+    .guide-always-visible { padding: 0.75rem 1.1rem 0.9rem; border-top: 1px solid #f0f0f0; }
 
     /* ── Generate rules: allow / deny columns ── */
     .gen-columns { display: flex; gap: 1rem; }
@@ -448,24 +463,29 @@
       </div>
     </details>
 
-    <details class="guide-section">
-      <summary>
-        <div class="guide-step-summary">
-          <div class="step-num">3</div>
-          <h2>Add or generate your filters</h2>
+    <div class="guide-section-card">
+      <details>
+        <summary>
+          <div class="guide-step-summary">
+            <div class="step-num">3</div>
+            <h2>Add or generate your filters</h2>
+          </div>
+          <span class="guide-chevron">▶</span>
+        </summary>
+        <div class="guide-body">
+          <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are rejected (returning 404). Rules live in <code>_filters.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
+          <p class="hint"><strong>How:</strong> Go to the <strong>Filters</strong> tab:</p>
+          <ul class="hint">
+            <li>Pick a <strong>Default policy</strong> first. <em>Deny all</em> is the realistic production setting — rejects everything unless you explicitly allow it. <em>Allow all</em> is useful for testing deny rules in isolation.</li>
+            <li><strong>Paste rules directly</strong> into the editor — use this if you already have a <code>_filters.any</code> file from your production environment (typically found in <code>/etc/httpd/conf.dispatcher.d/filters/</code>).</li>
+            <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
+          </ul>
+          <p class="hint">Click <strong>Save &amp; Restart</strong> after editing. Your filter file is volume-mounted to the host so changes persist across container restarts.</p>
+          <button type="button" class="secondary" onclick="_gotoTab('filters')">Go to Filters →</button>
         </div>
-        <span class="guide-chevron">▶</span>
-      </summary>
-      <div class="guide-body">
-        <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are rejected (returning 404). Rules live in <code>_filters.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
-        <p class="hint"><strong>How:</strong> Go to the <strong>Filters</strong> tab:</p>
-        <ul class="hint">
-          <li>Pick a <strong>Default policy</strong> first. <em>Deny all</em> is the realistic production setting — rejects everything unless you explicitly allow it. <em>Allow all</em> is useful for testing deny rules in isolation.</li>
-          <li><strong>Paste rules directly</strong> into the editor — use this if you already have a <code>_filters.any</code> file from your production environment (typically found in <code>/etc/httpd/conf.dispatcher.d/filters/</code>).</li>
-          <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
-        </ul>
-        <p class="hint">Click <strong>Save &amp; Restart</strong> after editing. Your filter file is volume-mounted to the host so changes persist across container restarts.</p>
-        <div class="warning-box">
+      </details>
+      <div class="guide-always-visible">
+        <div class="warning-box" style="margin:0">
           <div class="warning-box-title">⚠ Security insights</div>
           <ul>
             <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
@@ -474,9 +494,8 @@
             <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
           </ul>
         </div>
-        <button type="button" class="secondary" onclick="_gotoTab('filters')">Go to Filters →</button>
       </div>
-    </details>
+    </div>
 
     <details class="guide-section">
       <summary>
