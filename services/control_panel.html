@@ -1813,6 +1813,13 @@ DELETE /content/dam/sensitive"></textarea>
       var base = url || path || glob;
       if (!base || base === '*' || base === '.*') return null;
 
+      // Dispatcher /glob uses "METHOD /path" format — strip the method token before processing
+      if (!url && !path && glob) {
+        var si = base.indexOf(' ');
+        if (si >= 0) base = base.slice(si + 1).trim();
+        if (!base || base === '*' || base === '.*') return null;
+      }
+
       // Resolve first concrete selector value (handles regex like '(800|600)' → '800')
       var firstSel = null;
       if (selectors) {
@@ -1877,9 +1884,18 @@ DELETE /content/dam/sensitive"></textarea>
           var glob      = extractAnyField(body, 'glob');
           var selectors = extractAnyField(body, 'selectors');
           if (!type) continue;
-          if ([url, path, glob].some(function (v) { return v && hasRegexSyntax(v); })) continue;
+          // For glob rules, check only the URL portion (after the space) for regex syntax
+          var globUrlPart = glob ? (glob.indexOf(' ') >= 0 ? glob.slice(glob.indexOf(' ') + 1).trim() : glob) : null;
+          if ([url, path, globUrlPart].some(function (v) { return v && hasRegexSyntax(v); })) continue;
           var exPath = buildExamplePath(url, path, ext, glob, selectors);
           if (!exPath) continue;
+          // For glob rules without an explicit /method, extract the method from the glob "METHOD /path" token
+          if (!method && glob && glob.indexOf(' ') >= 0) {
+            var globMethodToken = glob.slice(0, glob.indexOf(' ')).trim();
+            if (globMethodToken && globMethodToken !== '*' && !hasRegexSyntax(globMethodToken)) {
+              method = globMethodToken;
+            }
+          }
           // If method is a regex like (GET|POST), pick the first concrete value
           var concreteMethod = method && method !== '' && method !== '*'
             ? (hasRegexSyntax(method) ? (method.match(/[A-Z]+/i) || [null])[0] : method.toUpperCase())
