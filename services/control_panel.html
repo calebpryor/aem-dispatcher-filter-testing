@@ -413,29 +413,10 @@
        TAB: Guide
   ════════════════════════════════════════ -->
   <div id="tab-guide" class="tab-panel" role="tabpanel">
-
-    <!-- Security Insights — always visible, never collapsible -->
     <section>
-      <div class="warning-box" style="margin:0">
-        <div class="warning-box-title">⚠ Security insights</div>
-        <ul>
-          <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
-          <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes outside of the sandbox.</li>
-          <li>When the dispatcher rejects a request it responds with a <code>404 Not Found</code>, not a <code>403 Forbidden</code> — it signals the resource doesn't exist rather than that access is denied.</li>
-          <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
-        </ul>
-      </div>
+      <h2>Quick-start guide</h2>
+      <p class="hint">New here? Follow these five steps to go from a fresh container to a fully-tested dispatcher filters. Already know what you're doing? Jump straight to any tab above — this guide is here when you need it.</p>
     </section>
-
-    <details class="guide-section">
-      <summary>
-        <h2>Quick-start guide</h2>
-        <span class="guide-chevron">▶</span>
-      </summary>
-      <div class="guide-body">
-        <p class="hint">New here? Follow these five steps to go from a fresh container to a fully-tested dispatcher filters. Already know what you're doing? Jump straight to any tab above — this guide is here when you need it.</p>
-      </div>
-    </details>
 
     <details class="guide-section">
       <summary>
@@ -484,6 +465,15 @@
           <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
         </ul>
         <p class="hint">Click <strong>Save &amp; Restart</strong> after editing. Your filter file is volume-mounted to the host so changes persist across container restarts.</p>
+        <div class="warning-box">
+          <div class="warning-box-title">⚠ Security insights</div>
+          <ul>
+            <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
+            <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes outside of the sandbox.</li>
+            <li>When the dispatcher rejects a request it responds with a <code>404 Not Found</code>, not a <code>403 Forbidden</code> — it signals the resource doesn't exist rather than that access is denied.</li>
+            <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
+          </ul>
+        </div>
         <button type="button" class="secondary" onclick="_gotoTab('filters')">Go to Filters →</button>
       </div>
     </details>
@@ -516,24 +506,19 @@
       </div>
     </details>
 
-    <details class="guide-section">
-      <summary>
-        <h2>Bonus: reading the logs</h2>
-        <span class="guide-chevron">▶</span>
-      </summary>
-      <div class="guide-body">
-        <p class="hint">The <strong>Logs</strong> tab links to live-streaming views for all processes. Here is what each log tells you:</p>
-        <ul class="hint" style="margin:0.3rem 0 0.5rem;padding-left:1.3rem">
-          <li><strong><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a></strong> — The most useful log. With trace logging enabled you will see every filter rule evaluated per request. Look for <code>Filter</code> lines to trace exactly why a request was allowed or rejected.</li>
-          <li><strong><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a></strong> — Output from the filter parser script. Check this if rules are not appearing in the <em>Active filter rules</em> view.</li>
-          <li><strong><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a></strong> — Apache / dispatcher startup and runtime errors. First stop when the dispatcher fails to start.</li>
-          <li><strong><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a></strong> — Every HTTP request that reached Apache. Useful for confirming your test client is actually hitting the dispatcher.</li>
-        </ul>
-        <p class="hint">Tip: run this in your terminal for a combined real-time stream of all container output:</p>
-        <code class="guide-code">docker compose logs -f</code>
-        <button type="button" class="secondary" onclick="_gotoTab('logs')">Go to Logs →</button>
-      </div>
-    </details>
+    <section>
+      <h2>Bonus: reading the logs</h2>
+      <p class="hint">The <strong>Logs</strong> tab links to live-streaming views for all processes. Here is what each log tells you:</p>
+      <ul class="hint" style="margin:0.3rem 0 0.5rem;padding-left:1.3rem">
+        <li><strong><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a></strong> — The most useful log. With trace logging enabled you will see every filter rule evaluated per request. Look for <code>Filter</code> lines to trace exactly why a request was allowed or rejected.</li>
+        <li><strong><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a></strong> — Output from the filter parser script. Check this if rules are not appearing in the <em>Active filter rules</em> view.</li>
+        <li><strong><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a></strong> — Apache / dispatcher startup and runtime errors. First stop when the dispatcher fails to start.</li>
+        <li><strong><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a></strong> — Every HTTP request that reached Apache. Useful for confirming your test client is actually hitting the dispatcher.</li>
+      </ul>
+      <p class="hint">Tip: run this in your terminal for a combined real-time stream of all container output:</p>
+      <code class="guide-code">docker compose logs -f</code>
+      <button type="button" class="secondary" onclick="_gotoTab('logs')">Go to Logs →</button>
+    </section>
 
   </div>
 
