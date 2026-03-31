@@ -25,4 +25,4 @@ services:
       #   - ./dispatcher/mod_dispatcher.so:/etc/httpd/modules/dispatcher/mod_dispatcher.so:ro
       - ./logs/:/var/log/httpd/
       # Test path JSON files — entire tests/ directory is mounted so all *.json files are listable.
-      - ./tests/:/usr/local/share/tests/:ro
+      - ./tests/:/usr/local/share/tests/

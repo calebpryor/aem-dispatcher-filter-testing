@@ -2030,7 +2030,7 @@ DELETE /content/dam/sensitive"></textarea>
         if (j.ok) {
           showPrefToast(j.saved_path, 'Tests saved');
           await refreshTestPathFiles();
-          var savedKey = 'filters:' + j.filename;
+          var savedKey = 'tests:' + j.filename;
           for (var i = 0; i < testPathFileSelect.options.length; i++) {
             if (testPathFileSelect.options[i].value === savedKey) {
               testPathFileSelect.selectedIndex = i; break;

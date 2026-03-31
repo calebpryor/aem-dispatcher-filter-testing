@@ -881,11 +881,11 @@ class ControlHandler(BaseHTTPRequestHandler):
                 return
             payload = {"good_paths": good_paths, "bad_paths": bad_paths}
             try:
-                (FILTERS_DIR / filename).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+                (TESTS_DIR / filename).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
             except OSError as e:
                 _json_response(self, 500, {"ok": False, "error": str(e)})
                 return
-            _json_response(self, 200, {"ok": True, "filename": filename, "saved_path": "./filters/" + filename})
+            _json_response(self, 200, {"ok": True, "filename": filename, "saved_path": "./tests/" + filename})
             return
 
         if path == "/api/truncate-log":
