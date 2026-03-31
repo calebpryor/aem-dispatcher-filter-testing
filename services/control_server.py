@@ -93,20 +93,16 @@ ALLOWED_PORTS = frozenset({80, 4503, 8080, 18080, 55555, 59173})
 
 
 def _list_test_path_files() -> List[Dict[str, str]]:
-    """Return all loadable test path JSON files from filters/ and tests/ directories.
+    """Return all loadable test path JSON files from the tests/ directory.
 
-    Each entry has 'key' (used as the load identifier, format "source:filename"),
-    'label' (display name), and 'source' ("filters" or "tests").
+    Each entry has 'key' (used as the load identifier, format "tests:filename"),
+    'label' (display name), and 'source' ("tests").
     """
     entries: List[Dict[str, str]] = []
-    if FILTERS_DIR.is_dir():
-        for p in sorted(FILTERS_DIR.glob("*_test_paths.json")):
-            if p.is_file():
-                entries.append({"key": "filters:" + p.name, "label": p.name, "source": "filters"})
     if TESTS_DIR.is_dir():
         for p in sorted(TESTS_DIR.glob("*.json")):
             if p.is_file():
-                entries.append({"key": "tests:" + p.name, "label": p.name + " (tests/)", "source": "tests"})
+                entries.append({"key": "tests:" + p.name, "label": p.name, "source": "tests"})
     return entries
 
 
