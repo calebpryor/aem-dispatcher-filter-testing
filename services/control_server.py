@@ -93,6 +93,29 @@ ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost"})
 ALLOWED_PORTS = frozenset({80, 4503, 8080, 18080, 55555, 59173})
 
 
+def _list_test_path_files() -> List[str]:
+    """List *_test_paths.json files saved in the filters directory."""
+    if not FILTERS_DIR.is_dir():
+        return []
+    return [p.name for p in sorted(FILTERS_DIR.glob("*_test_paths.json")) if p.is_file()]
+
+
+def _read_test_path_file(filename: str) -> Dict[str, Any]:
+    p = FILTERS_DIR / filename
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return {"good_paths": [], "bad_paths": []}
+    if not isinstance(data, dict):
+        return {"good_paths": [], "bad_paths": []}
+    out: Dict[str, Any] = {"good_paths": [], "bad_paths": []}
+    for key in ("good_paths", "bad_paths"):
+        val = data.get(key)
+        if isinstance(val, list):
+            out[key] = [str(x).strip() for x in val if isinstance(x, str) and str(x).strip()]
+    return out
+
+
 def _list_filter_files() -> List[str]:
     if not FILTERS_DIR.is_dir():
         return []
@@ -561,6 +584,21 @@ class ControlHandler(BaseHTTPRequestHandler):
         if path == "/api/prefs":
             _json_response(self, 200, _read_prefs())
             return
+        if path == "/api/test-path-files":
+            _json_response(self, 200, {"files": _list_test_path_files()})
+            return
+        if path == "/api/load-test-paths":
+            name = (qs.get("name") or [""])[0].strip()
+            if (not name or os.path.basename(name) != name
+                    or not name.endswith("_test_paths.json")
+                    or "/" in name or "\\" in name):
+                _json_response(self, 400, {"ok": False, "error": "Invalid filename"})
+                return
+            if not (FILTERS_DIR / name).is_file():
+                _json_response(self, 404, {"ok": False, "error": "File not found"})
+                return
+            _json_response(self, 200, _read_test_path_file(name))
+            return
         if path == "/api/default-test-paths":
             _json_response(self, 200, _read_default_test_paths())
             return
@@ -803,6 +841,32 @@ class ControlHandler(BaseHTTPRequestHandler):
                 _json_response(self, 500, {"ok": False, "error": str(e)})
                 return
             _json_response(self, 200, {"ok": True, "file": filename})
+            return
+
+        if path == "/api/save-test-paths":
+            data = _read_json_body(self)
+            if not data:
+                _json_response(self, 400, {"ok": False, "error": "Invalid JSON body"})
+                return
+            filename = data.get("filename", "web_test_paths.json")
+            if (not isinstance(filename, str)
+                    or os.path.basename(filename) != filename
+                    or not filename.endswith("_test_paths.json")
+                    or "/" in filename or "\\" in filename):
+                _json_response(self, 400, {"ok": False, "error": "Filename must end in _test_paths.json"})
+                return
+            good_paths = data.get("good_paths", [])
+            bad_paths  = data.get("bad_paths",  [])
+            if not isinstance(good_paths, list) or not isinstance(bad_paths, list):
+                _json_response(self, 400, {"ok": False, "error": "good_paths and bad_paths must be arrays"})
+                return
+            payload = {"good_paths": good_paths, "bad_paths": bad_paths}
+            try:
+                (FILTERS_DIR / filename).write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+            except OSError as e:
+                _json_response(self, 500, {"ok": False, "error": str(e)})
+                return
+            _json_response(self, 200, {"ok": True, "filename": filename, "saved_path": "./filters/" + filename})
             return
 
         if path == "/api/truncate-log":
