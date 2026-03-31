@@ -384,7 +384,7 @@
   <!-- ── Tab bar ── -->
   <nav class="tabs" role="tablist" aria-label="Control sections">
     <button class="tab-btn" role="tab" data-tab="guide"   aria-controls="tab-guide"   title="Ctrl+Shift+1">1. ⭐ Guide</button>
-    <button class="tab-btn" role="tab" data-tab="server"  aria-controls="tab-server"  title="Ctrl+Shift+2">2. Server Controls</button>
+    <button class="tab-btn" role="tab" data-tab="server"  aria-controls="tab-server"  title="Ctrl+Shift+2">2. Sandbox Controls</button>
     <button class="tab-btn" role="tab" data-tab="filters" aria-controls="tab-filters" title="Ctrl+Shift+3">3. Filters</button>
     <button class="tab-btn" role="tab" data-tab="testing" aria-controls="tab-testing" title="Ctrl+Shift+4">4. Testing</button>
     <button class="tab-btn" role="tab" data-tab="logs"    aria-controls="tab-logs"    title="Ctrl+Shift+5">5. Logs</button>
@@ -406,8 +406,8 @@
         <div>
           <h2>Choose a module version</h2>
           <p class="hint"><strong>What:</strong> The AEM Dispatcher module (<code>mod_dispatcher.so</code>) is the Apache plugin that evaluates your filter rules and decides what gets to fetch files from AEM (HTTP 2xx) or not (HTTP 404). Nothing proprietary is baked into the image — the module is downloaded fresh from Adobe's CDN each time you switch.</p>
-          <p class="hint"><strong>How:</strong> In <strong>Server Controls → Dispatcher module version</strong>, pick the version that matches your production AEM environment, then click <strong>Download &amp; switch module</strong>. Apache will restart automatically. Not sure which version? Use the latest, or check your team's AEM release notes.</p>
-          <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Server Controls →</button>
+          <p class="hint"><strong>How:</strong> In <strong>Sandbox Controls → Dispatcher module version</strong>, pick the version that matches your production AEM environment, then click <strong>Download &amp; switch module</strong>. Apache will restart automatically. Not sure which version? Use the latest, or check your team's AEM release notes.</p>
+          <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Sandbox Controls →</button>
         </div>
       </div>
     </section>
@@ -418,8 +418,8 @@
         <div>
           <h2>Verify container health</h2>
           <p class="hint"><strong>What:</strong> Before testing filters the two Apache processes must be running. The <strong>dispatcher</strong> (port 80) is the real dispatcher handling requests. The <strong>renderer</strong> (port 4503) is a lightweight mock AEM publish instance that always returns HTTP 200 — it gives the dispatcher something to proxy to so filter decisions are realistic.</p>
-          <p class="hint"><strong>How:</strong> Check the status chips in <strong>Server Controls → Status</strong>. Both should show <span class="pill pill-ok" style="font-size:0.72rem;vertical-align:middle">running</span>. If they are not, click <strong>Restart dispatcher</strong>. Status auto-refreshes every 5 seconds.</p>
-          <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Server Controls →</button>
+          <p class="hint"><strong>How:</strong> Check the status chips in <strong>Sandbox Controls → Status</strong>. Both should show <span class="pill pill-ok" style="font-size:0.72rem;vertical-align:middle">running</span>. If they are not, click <strong>Restart dispatcher</strong>. Status auto-refreshes every 5 seconds.</p>
+          <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Sandbox Controls →</button>
         </div>
       </div>
     </section>
@@ -490,7 +490,7 @@
   </div>
 
   <!-- ════════════════════════════════════════
-       TAB: Server Controls
+       TAB: Sandbox Controls
   ════════════════════════════════════════ -->
   <div id="tab-server" class="tab-panel" role="tabpanel">
     <section>
