@@ -867,8 +867,9 @@ class ControlHandler(BaseHTTPRequestHandler):
             if (not isinstance(filename, str)
                     or os.path.basename(filename) != filename
                     or not filename.endswith("_test_paths.json")
-                    or "/" in filename or "\\" in filename):
-                _json_response(self, 400, {"ok": False, "error": "Filename must end in _test_paths.json"})
+                    or "/" in filename or "\\" in filename
+                    or filename == "default_test_paths.json"):
+                _json_response(self, 400, {"ok": False, "error": "Filename must end in _test_paths.json and cannot be default_test_paths.json"})
                 return
             good_paths = data.get("good_paths", [])
             bad_paths  = data.get("bad_paths",  [])

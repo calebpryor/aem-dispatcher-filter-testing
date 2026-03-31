@@ -2027,13 +2027,15 @@ DELETE /content/dam/sensitive"></textarea>
 
     btnSaveTestPaths.addEventListener('click', async function () {
       if (testPathFileSelect.value === 'tests:default_test_paths.json') return;
+      var selectedKey = testPathFileSelect.value;
+      var filename = selectedKey ? selectedKey.replace(/^tests:/, '') : 'web_test_paths.json';
       var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
       var badLines  = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
       try {
         var r = await fetch('/api/save-test-paths', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: 'web_test_paths.json', good_paths: goodLines, bad_paths: badLines })
+          body: JSON.stringify({ filename: filename, good_paths: goodLines, bad_paths: badLines })
         });
         var j = await r.json();
         if (j.ok) {
