@@ -311,6 +311,25 @@
     .warning-box ul { margin: 0; padding-left: 1.2rem; }
     .warning-box li { font-size: 0.8rem; color: #5a3e00; margin: 0.3rem 0; line-height: 1.45; }
 
+    /* ── Guide collapsible sections ── */
+    details.guide-section {
+      background: #fff; border: 1px solid #e2e4e9; border-radius: 8px;
+      margin-bottom: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); overflow: hidden;
+    }
+    details.guide-section > summary {
+      cursor: pointer; list-style: none; padding: 0.8rem 1.1rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      user-select: none;
+    }
+    details.guide-section > summary::-webkit-details-marker { display: none; }
+    details.guide-section > summary::marker { content: none; }
+    details.guide-section > summary h2 { margin: 0; flex: 1; }
+    .guide-chevron { font-size: 0.65rem; color: #999; transition: transform 0.18s; flex-shrink: 0; }
+    details.guide-section[open] > summary .guide-chevron { transform: rotate(90deg); }
+    .guide-step-summary { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+    .guide-step-summary h2 { margin: 0; }
+    .guide-body { padding: 0.75rem 1.1rem 0.9rem; border-top: 1px solid #f0f0f0; }
+
     /* ── Generate rules: allow / deny columns ── */
     .gen-columns { display: flex; gap: 1rem; }
     .gen-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -395,97 +414,126 @@
   ════════════════════════════════════════ -->
   <div id="tab-guide" class="tab-panel" role="tabpanel">
 
+    <!-- Security Insights — always visible, never collapsible -->
     <section>
-      <h2>Quick-start guide</h2>
-      <p class="hint">New here? Follow these five steps to go from a fresh container to a fully-tested dispatcher filters. Already know what you're doing? Jump straight to any tab above — this guide is here when you need it.</p>
+      <div class="warning-box" style="margin:0">
+        <div class="warning-box-title">⚠ Security insights</div>
+        <ul>
+          <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
+          <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes outside of the sandbox.</li>
+          <li>When the dispatcher rejects a request it responds with a <code>404 Not Found</code>, not a <code>403 Forbidden</code> — it signals the resource doesn't exist rather than that access is denied.</li>
+          <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
+        </ul>
+      </div>
     </section>
 
-    <section>
-      <div class="guide-step">
-        <div class="step-num">1</div>
-        <div>
+    <details class="guide-section">
+      <summary>
+        <h2>Quick-start guide</h2>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint">New here? Follow these five steps to go from a fresh container to a fully-tested dispatcher filters. Already know what you're doing? Jump straight to any tab above — this guide is here when you need it.</p>
+      </div>
+    </details>
+
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num">1</div>
           <h2>Choose a module version</h2>
-          <p class="hint"><strong>What:</strong> The AEM Dispatcher module (<code>mod_dispatcher.so</code>) is the Apache plugin that evaluates your filter rules and decides what gets to fetch files from AEM (HTTP 2xx) or not (HTTP 404). Nothing proprietary is baked into the image — the module is downloaded fresh from Adobe's CDN each time you switch.</p>
-          <p class="hint"><strong>How:</strong> In <strong>Sandbox Controls → Dispatcher module version</strong>, pick the version that matches your production AEM environment, then click <strong>Download &amp; switch module</strong>. Apache will restart automatically. Not sure which version? Use the latest, or check your team's AEM release notes.</p>
-          <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Sandbox Controls →</button>
         </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint"><strong>What:</strong> The AEM Dispatcher module (<code>mod_dispatcher.so</code>) is the AEM Dispatcher Apache plugin that acts as a file handler and uses your filter rules and decides what files are allowed to be fetched from AEM (HTTP 2xx) or not (HTTP 404).</p>
+        <p class="hint"><strong>How:</strong> In <strong>Sandbox Controls → Dispatcher module version</strong>, pick the version that matches your production AEM environment, then click <strong>Download &amp; switch module</strong>. Apache will restart automatically. Not sure which version? Use the latest, or check your team's AEM release notes.</p>
+        <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Sandbox Controls →</button>
       </div>
-    </section>
+    </details>
 
-    <section>
-      <div class="guide-step">
-        <div class="step-num">2</div>
-        <div>
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num">2</div>
           <h2>Verify container health</h2>
-          <p class="hint"><strong>What:</strong> Before testing filters the two Apache processes must be running. The <strong>dispatcher</strong> (port 80) is the real dispatcher handling requests. The <strong>renderer</strong> (port 4503) is a lightweight mock AEM publish instance that always returns HTTP 200 — it gives the dispatcher something to proxy to so filter decisions are realistic.</p>
-          <p class="hint"><strong>How:</strong> Check the status chips in <strong>Sandbox Controls → Status</strong>. Both should show <span class="pill pill-ok" style="font-size:0.72rem;vertical-align:middle">running</span>. If they are not, click <strong>Restart dispatcher</strong>. Status auto-refreshes every 5 seconds.</p>
-          <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Sandbox Controls →</button>
         </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint"><strong>What:</strong> Before testing filters the sandbox services must be running. The <strong>dispatcher</strong> service (port 80) is the real dispatcher handling requests. The <strong>renderer</strong> (port 4503) is a lightweight mock AEM publish instance that always returns HTTP 200 — it gives the dispatcher something to fetch from allowing filters to be exercised accurately.</p>
+        <p class="hint"><strong>How:</strong> Check the service status chips in <strong>Sandbox Controls → Status</strong>. Both should show <span class="pill pill-ok" style="font-size:0.72rem;vertical-align:middle">running</span>. If they are not, click <strong>Restart dispatcher</strong>. Status auto-refreshes every 5 seconds.</p>
+        <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Sandbox Controls →</button>
       </div>
-    </section>
+    </details>
 
-    <section>
-      <div class="guide-step">
-        <div class="step-num">3</div>
-        <div>
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num">3</div>
           <h2>Add or generate your filters</h2>
-          <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are rejected (returning 404). Rules live in <code>_filters.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
-          <p class="hint"><strong>How:</strong> Go to the <strong>Filters</strong> tab:</p>
-          <ul class="hint">
-            <li>Pick a <strong>Default policy</strong> first. <em>Deny all</em> is the realistic production setting — rejects everything unless you explicitly allow it. <em>Allow all</em> is useful for testing deny rules in isolation.</li>
-            <li><strong>Paste rules directly</strong> into the editor — use this if you already have a <code>_filters.any</code> file from your production environment (typically found in <code>/etc/httpd/conf.dispatcher.d/filters/</code>).</li>
-            <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
-          </ul>
-          <p class="hint">Click <strong>Save &amp; Restart</strong> after editing. Your filter file is volume-mounted to the host so changes persist across container restarts.</p>
-          <div class="warning-box">
-            <div class="warning-box-title">⚠ Security insights</div>
-            <ul>
-              <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
-              <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes outside of the sandbox.</li>
-              <li>When the dispatcher rejects a request it responds with a <code>404 Not Found</code>, not a <code>403 Forbidden</code> — it signals the resource doesn't exist rather than that access is denied.</li>
-              <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
-            </ul>
-          </div>
-          <button type="button" class="secondary" onclick="_gotoTab('filters')">Go to Filters →</button>
         </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are rejected (returning 404). Rules live in <code>_filters.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
+        <p class="hint"><strong>How:</strong> Go to the <strong>Filters</strong> tab:</p>
+        <ul class="hint">
+          <li>Pick a <strong>Default policy</strong> first. <em>Deny all</em> is the realistic production setting — rejects everything unless you explicitly allow it. <em>Allow all</em> is useful for testing deny rules in isolation.</li>
+          <li><strong>Paste rules directly</strong> into the editor — use this if you already have a <code>_filters.any</code> file from your production environment (typically found in <code>/etc/httpd/conf.dispatcher.d/filters/</code>).</li>
+          <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
+        </ul>
+        <p class="hint">Click <strong>Save &amp; Restart</strong> after editing. Your filter file is volume-mounted to the host so changes persist across container restarts.</p>
+        <button type="button" class="secondary" onclick="_gotoTab('filters')">Go to Filters →</button>
       </div>
-    </section>
+    </details>
 
-    <section>
-      <div class="guide-step">
-        <div class="step-num">4</div>
-        <div>
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num">4</div>
           <h2>Test your filters and share the results</h2>
-          <p class="hint"><strong>What:</strong> Each path in <strong>Good paths</strong> is expected to return HTTP 200 (the dispatcher should allow it). Each path in <strong>Bad paths</strong> is expected to return HTTP 404 (the dispatcher should reject it). Tests hit the live running dispatcher — no mocking.</p>
-          <p class="hint"><strong>How:</strong> Go to the <strong>Testing</strong> tab. Click <strong>Generate tests from filters</strong> to auto-populate both lists from your current rules, or paste in real paths from your site. Click <strong>Run tests</strong> and review the colour-coded results table. Use <strong>Export JSON</strong> or <strong>Export CSV</strong> to share results with your team or save a baseline for future comparisons.</p>
-          <button type="button" class="secondary" onclick="_gotoTab('testing')">Go to Testing →</button>
         </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint"><strong>What:</strong> Each path in <strong>Good paths</strong> is expected to return HTTP 200 (the dispatcher should allow it). Each path in <strong>Bad paths</strong> is expected to return HTTP 404 (the dispatcher should reject it). Tests hit the live running dispatcher — no mocking.</p>
+        <p class="hint"><strong>How:</strong> Go to the <strong>Testing</strong> tab. Click <strong>Generate tests from filters</strong> to auto-populate both lists from your current rules, or paste in real paths from your site. Click <strong>Run tests</strong> and review the colour-coded results table. Use <strong>Export JSON</strong> or <strong>Export CSV</strong> to share results with your team or save a baseline for future comparisons.</p>
+        <button type="button" class="secondary" onclick="_gotoTab('testing')">Go to Testing →</button>
       </div>
-    </section>
+    </details>
 
-    <section>
-      <div class="guide-step">
-        <div class="step-num win">✓</div>
-        <div>
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num win">✓</div>
           <h2>WIN!</h2>
-          <p class="hint">When you test in the sandbox you can verify your rules are functional and play nice by themselves and with other rules without needing to affect an actual AEM hosted system.  It's all on your workstation locally.  Makig sure your rules are working as expected before deploying to production. Then your dispatcher rules are verified and your results are documented. The same <code>002_web_filters.any</code> file from the <code>filters/</code> volume mount is ready to deploy to your production AEM dispatcher — tested and proven.</p>
         </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint">When you test in the sandbox you can verify your rules are functional and play nice by themselves and with other rules without needing to affect an actual AEM hosted system. It's all on your workstation locally. Making sure your rules are working as expected before deploying to production. Then your dispatcher rules are verified and your results are documented. The same <code>002_web_filters.any</code> file from the <code>filters/</code> volume mount is ready to deploy to your production AEM dispatcher — tested and proven.</p>
       </div>
-    </section>
+    </details>
 
-    <section>
-      <h2>Bonus: reading the logs</h2>
-      <p class="hint">The <strong>Logs</strong> tab links to live-streaming views for all processes. Here is what each log tells you:</p>
-      <ul class="hint" style="margin:0.3rem 0 0.5rem;padding-left:1.3rem">
-        <li><strong><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a></strong> — The most useful log. With trace logging enabled you will see every filter rule evaluated per request. Look for <code>Filter</code> lines to trace exactly why a request was allowed or rejected.</li>
-        <li><strong><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a></strong> — Output from the filter parser script. Check this if rules are not appearing in the <em>Active filter rules</em> view.</li>
-        <li><strong><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a></strong> — Apache / dispatcher startup and runtime errors. First stop when the dispatcher fails to start.</li>
-        <li><strong><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a></strong> — Every HTTP request that reached Apache. Useful for confirming your test client is actually hitting the dispatcher.</li>
-      </ul>
-      <p class="hint">Tip: run this in your terminal for a combined real-time stream of all container output:</p>
-      <code class="guide-code">docker compose logs -f</code>
-      <button type="button" class="secondary" onclick="_gotoTab('logs')">Go to Logs →</button>
-    </section>
+    <details class="guide-section">
+      <summary>
+        <h2>Bonus: reading the logs</h2>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint">The <strong>Logs</strong> tab links to live-streaming views for all processes. Here is what each log tells you:</p>
+        <ul class="hint" style="margin:0.3rem 0 0.5rem;padding-left:1.3rem">
+          <li><strong><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a></strong> — The most useful log. With trace logging enabled you will see every filter rule evaluated per request. Look for <code>Filter</code> lines to trace exactly why a request was allowed or rejected.</li>
+          <li><strong><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a></strong> — Output from the filter parser script. Check this if rules are not appearing in the <em>Active filter rules</em> view.</li>
+          <li><strong><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a></strong> — Apache / dispatcher startup and runtime errors. First stop when the dispatcher fails to start.</li>
+          <li><strong><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a></strong> — Every HTTP request that reached Apache. Useful for confirming your test client is actually hitting the dispatcher.</li>
+        </ul>
+        <p class="hint">Tip: run this in your terminal for a combined real-time stream of all container output:</p>
+        <code class="guide-code">docker compose logs -f</code>
+        <button type="button" class="secondary" onclick="_gotoTab('logs')">Go to Logs →</button>
+      </div>
+    </details>
 
   </div>
 
