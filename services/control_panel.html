@@ -252,6 +252,8 @@
     .method-badge.POST   { background: #fef3c7; color: #92400e; }
     .method-badge.PUT    { background: #d1fae5; color: #065f46; }
     .method-badge.DELETE { background: #fee2e2; color: #991b1b; }
+    a.path-link { color: #1a56c4; text-decoration: underline; text-underline-offset: 2px; }
+    a.path-link:hover { color: #0d3a8a; }
 
     /* ── Help tooltips ── */
     .help-tip {
@@ -1329,12 +1331,11 @@ DELETE /content/dam/sensitive"></textarea>
       var u = row.url    != null ? String(row.url)    : '';
       var m = row.method != null ? String(row.method) : 'GET';
       var badge = '<span class="method-badge' + (m !== 'GET' ? ' ' + m : '') + '">' + escHtml(m) + '</span>';
-      var inner = badge + escHtml(p);
       if (u) {
-        return '<a href="' + escAttr(u) + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none"><code>'
-          + inner + '</code></a>';
+        return '<code>' + badge + '<a href="' + escAttr(u) + '" target="_blank" rel="noopener noreferrer" class="path-link">'
+          + escHtml(p) + '</a></code>';
       }
-      return '<code>' + inner + '</code>';
+      return '<code>' + badge + escHtml(p) + '</code>';
     }
 
     var DEFAULT_RULE_RE = /\/(sandbox-default|default-test-container-deny)\b/;
