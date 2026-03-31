@@ -1985,6 +1985,11 @@ DELETE /content/dam/sensitive"></textarea>
     var btnLoadTestPaths   = document.getElementById('btnLoadTestPaths');
     var btnSaveTestPaths   = document.getElementById('btnSaveTestPaths');
 
+    function updateSaveButton() {
+      var isDefault = testPathFileSelect.value === 'tests:default_test_paths.json';
+      btnSaveTestPaths.disabled = isDefault;
+    }
+
     async function refreshTestPathFiles() {
       try {
         var r = await fetch('/api/test-path-files');
@@ -2003,8 +2008,11 @@ DELETE /content/dam/sensitive"></textarea>
             testPathFileSelect.appendChild(o);
           });
         }
+        updateSaveButton();
       } catch (e) {}
     }
+
+    testPathFileSelect.addEventListener('change', updateSaveButton);
 
     btnLoadTestPaths.addEventListener('click', async function () {
       var key = testPathFileSelect.value;
@@ -2018,6 +2026,7 @@ DELETE /content/dam/sensitive"></textarea>
     });
 
     btnSaveTestPaths.addEventListener('click', async function () {
+      if (testPathFileSelect.value === 'tests:default_test_paths.json') return;
       var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
       var badLines  = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
       try {
