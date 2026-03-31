@@ -1999,7 +1999,7 @@ DELETE /content/dam/sensitive"></textarea>
         } else {
           btnLoadTestPaths.disabled = false;
           files.forEach(function (f) {
-            var o = document.createElement('option'); o.value = f; o.textContent = f;
+            var o = document.createElement('option'); o.value = f.key; o.textContent = f.label;
             testPathFileSelect.appendChild(o);
           });
         }
@@ -2007,10 +2007,10 @@ DELETE /content/dam/sensitive"></textarea>
     }
 
     btnLoadTestPaths.addEventListener('click', async function () {
-      var name = testPathFileSelect.value;
-      if (!name) return;
+      var key = testPathFileSelect.value;
+      if (!key) return;
       try {
-        var r = await fetch('/api/load-test-paths?name=' + encodeURIComponent(name));
+        var r = await fetch('/api/load-test-paths?key=' + encodeURIComponent(key));
         var j = await r.json();
         if (Array.isArray(j.good_paths)) good.value = j.good_paths.join('\n');
         if (Array.isArray(j.bad_paths))  bad.value  = j.bad_paths.join('\n');
@@ -2030,9 +2030,9 @@ DELETE /content/dam/sensitive"></textarea>
         if (j.ok) {
           showPrefToast(j.saved_path, 'Tests saved');
           await refreshTestPathFiles();
-          // Select the newly saved file in the dropdown
+          var savedKey = 'filters:' + j.filename;
           for (var i = 0; i < testPathFileSelect.options.length; i++) {
-            if (testPathFileSelect.options[i].value === j.filename) {
+            if (testPathFileSelect.options[i].value === savedKey) {
               testPathFileSelect.selectedIndex = i; break;
             }
           }

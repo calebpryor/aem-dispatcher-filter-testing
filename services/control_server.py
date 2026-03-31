@@ -75,9 +75,8 @@ FILTERS_DIR = Path(
     os.environ.get("FILTERS_DIR", "/etc/httpd/conf.dispatcher.d/filters")
 )
 LOG_DIR = Path(os.environ.get("HTTPD_LOG_DIR", "/var/log/httpd"))
-DEFAULT_TEST_PATHS_FILE = Path(
-    os.environ.get("DEFAULT_TEST_PATHS_FILE", "/usr/local/share/default_test_paths.json")
-)
+TESTS_DIR = Path(os.environ.get("TESTS_DIR", "/usr/local/share/tests"))
+DEFAULT_TEST_PATHS_FILE = TESTS_DIR / "default_test_paths.json"
 # Basenames only; paths are resolved strictly under LOG_DIR (no traversal).
 ALLOWED_LOG_BASENAMES = frozenset(
     {
@@ -93,15 +92,27 @@ ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost"})
 ALLOWED_PORTS = frozenset({80, 4503, 8080, 18080, 55555, 59173})
 
 
-def _list_test_path_files() -> List[str]:
-    """List *_test_paths.json files saved in the filters directory."""
-    if not FILTERS_DIR.is_dir():
-        return []
-    return [p.name for p in sorted(FILTERS_DIR.glob("*_test_paths.json")) if p.is_file()]
+def _list_test_path_files() -> List[Dict[str, str]]:
+    """Return all loadable test path JSON files from filters/ and tests/ directories.
+
+    Each entry has 'key' (used as the load identifier, format "source:filename"),
+    'label' (display name), and 'source' ("filters" or "tests").
+    """
+    entries: List[Dict[str, str]] = []
+    if FILTERS_DIR.is_dir():
+        for p in sorted(FILTERS_DIR.glob("*_test_paths.json")):
+            if p.is_file():
+                entries.append({"key": "filters:" + p.name, "label": p.name, "source": "filters"})
+    if TESTS_DIR.is_dir():
+        for p in sorted(TESTS_DIR.glob("*.json")):
+            if p.is_file():
+                entries.append({"key": "tests:" + p.name, "label": p.name + " (tests/)", "source": "tests"})
+    return entries
 
 
-def _read_test_path_file(filename: str) -> Dict[str, Any]:
-    p = FILTERS_DIR / filename
+def _read_test_path_file(source: str, filename: str) -> Dict[str, Any]:
+    base_dir = TESTS_DIR if source == "tests" else FILTERS_DIR
+    p = base_dir / filename
     try:
         data = json.loads(p.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError, UnicodeDecodeError):
@@ -588,16 +599,24 @@ class ControlHandler(BaseHTTPRequestHandler):
             _json_response(self, 200, {"files": _list_test_path_files()})
             return
         if path == "/api/load-test-paths":
-            name = (qs.get("name") or [""])[0].strip()
-            if (not name or os.path.basename(name) != name
-                    or not name.endswith("_test_paths.json")
-                    or "/" in name or "\\" in name):
+            key = (qs.get("key") or [""])[0].strip()
+            if ":" not in key:
+                _json_response(self, 400, {"ok": False, "error": "Invalid key — expected source:filename"})
+                return
+            source, filename = key.split(":", 1)
+            if source not in ("filters", "tests"):
+                _json_response(self, 400, {"ok": False, "error": "source must be 'filters' or 'tests'"})
+                return
+            if (not filename or os.path.basename(filename) != filename
+                    or not filename.endswith(".json")
+                    or "/" in filename or "\\" in filename):
                 _json_response(self, 400, {"ok": False, "error": "Invalid filename"})
                 return
-            if not (FILTERS_DIR / name).is_file():
+            base_dir = TESTS_DIR if source == "tests" else FILTERS_DIR
+            if not (base_dir / filename).is_file():
                 _json_response(self, 404, {"ok": False, "error": "File not found"})
                 return
-            _json_response(self, 200, _read_test_path_file(name))
+            _json_response(self, 200, _read_test_path_file(source, filename))
             return
         if path == "/api/default-test-paths":
             _json_response(self, 200, _read_default_test_paths())
