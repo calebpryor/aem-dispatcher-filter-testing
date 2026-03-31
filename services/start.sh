@@ -24,6 +24,13 @@ else
     echo "Restored sandbox policy from prefs: deny_all"
 fi
 
+# Create default filter file if no *_filters.any files exist (prevents empty dropdown)
+FILTERS_DIR="/etc/httpd/conf.dispatcher.d/filters"
+if ! ls "$FILTERS_DIR"/*_filters.any 2>/dev/null | grep -q .; then
+    touch "$FILTERS_DIR/002_web_filters.any"
+    echo "Created default filter file: 002_web_filters.any"
+fi
+
 echo "Starting filter file watcher..."
 /usr/local/bin/watch_filters.sh &
 
