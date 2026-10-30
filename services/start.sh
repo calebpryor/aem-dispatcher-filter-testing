@@ -31,6 +31,10 @@ if ! ls "$FILTERS_DIR"/*_filters.any 2>/dev/null | grep -q .; then
     echo "Created default filter file: 002_web_filters.any"
 fi
 
+# Generate the ModSecurity include list from ./modsecurity/ (no rules are built in) using the
+# block / logonly / off choices saved in prefs.
+/usr/bin/python3.9 /usr/local/bin/modsec_config.py apply
+
 echo "Starting filter file watcher..."
 /usr/local/bin/watch_filters.sh &
 

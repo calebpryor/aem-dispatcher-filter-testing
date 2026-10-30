@@ -1,6 +1,6 @@
 FROM rockylinux:8
 RUN dnf -y --nogpgcheck install epel-release && \
-    dnf -y --nogpgcheck install wget httpd supervisor inotify-tools python39 file && \
+    dnf -y --nogpgcheck install wget httpd mod_security supervisor inotify-tools python39 file && \
     dnf clean all && \
     test -x /usr/bin/python3.9
 RUN mkdir -p /run/httpd && \
@@ -9,6 +9,8 @@ RUN mkdir -p /run/httpd && \
     mkdir -p /etc/httpd/modules/dispatcher && \
     mkdir -p /var/www/renderer && \
     mkdir -p /var/log/httpd && \
+    mkdir -p /etc/httpd/modsecurity.d/rules && \
+    mkdir -p /var/lib/mod_security && \
     ln -sf /dev/stderr /var/log/supervisord.log
 RUN setcap 'cap_net_bind_service=+ep' /usr/sbin/httpd && \
     setcap 'cap_net_bind_service=+ep' /usr/bin/supervisord
@@ -18,6 +20,7 @@ ADD services/wait_httpd.sh /usr/local/bin/wait_httpd.sh
 ADD services/download_dispatcher.sh /usr/local/bin/download_dispatcher.sh
 ADD services/watch_filters.sh /usr/local/bin/watch_filters.sh
 ADD services/filter_log_extractor.sh /usr/local/bin/filter_log_extractor.sh
+ADD services/modsec_config.py /usr/local/bin/modsec_config.py
 ADD services/dispatcher_versions.txt /usr/local/share/dispatcher_versions.txt
 ADD tests/default_test_paths.json /usr/local/share/default_test_paths.json
 ADD services/control_server.py /usr/local/bin/control_server.py
@@ -27,11 +30,16 @@ ADD services/svd-apache-nc.ini /etc/supervisord.d/svd-apache-nc.ini
 RUN chmod +x /usr/local/bin/start.sh /usr/local/bin/disp_module_valid.sh \
     /usr/local/bin/wait_httpd.sh /usr/local/bin/download_dispatcher.sh \
     /usr/local/bin/watch_filters.sh /usr/local/bin/filter_log_extractor.sh \
+    /usr/local/bin/modsec_config.py \
     /usr/local/bin/control_server.py
 ADD apache/httpd-renderer.conf /etc/httpd/conf/httpd-renderer.conf
 ADD apache/httpd-dispatcher.conf /etc/httpd/conf.d/httpd-dispatcher.conf
 ADD apache/dispatcher.any /etc/httpd/conf.dispatcher.d/dispatcher.any
 ADD apache/02-dispatcher.conf /etc/httpd/conf.modules.d/02-dispatcher.conf
+ADD apache/mod_security.conf /etc/httpd/conf.d/mod_security.conf
+# No rules are shipped: drop the package's bundled local_rules and start with an empty rule set.
+RUN rm -rf /etc/httpd/modsecurity.d/local_rules /etc/httpd/modsecurity.d/activated_rules && \
+    SANDBOX_PREFS_FILE=/nonexistent /usr/bin/python3.9 /usr/local/bin/modsec_config.py apply
 ADD www/container-404.html /var/www/renderer/container-404.html
 ADD www/index.html /var/www/renderer/index.html
 ADD www/test.json /var/www/renderer/test.json
@@ -39,7 +47,7 @@ ADD www/test.xml /var/www/renderer/test.xml
 ADD www/image.jpg /var/www/renderer/image.jpg
 ADD www/image.png /var/www/renderer/image.png
 ADD www/image.gif /var/www/renderer/image.gif
-RUN chown -R apache:apache /var/log /var/www /run/httpd /var/run/supervisor /etc/httpd && \
+RUN chown -R apache:apache /var/log /var/www /run/httpd /var/run/supervisor /etc/httpd /var/lib/mod_security && \
     chown -R apache:apache /etc/httpd/modules/dispatcher
 USER apache
 EXPOSE 80 59173

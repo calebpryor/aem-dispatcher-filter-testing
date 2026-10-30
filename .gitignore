@@ -25,3 +25,10 @@ filters/002_web_filters.any
 # OS
 .DS_Store
 Thumbs.db
+
+# Customer ModSecurity rules copied in for testing (keep only the README)
+modsecurity/*
+!modsecurity/README.md
+
+# Runtime sandbox preferences (may list private rule file names)
+filters/.prefs.json

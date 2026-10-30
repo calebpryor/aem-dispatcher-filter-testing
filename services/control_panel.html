@@ -215,6 +215,7 @@
       padding: 1rem; box-sizing: border-box;
     }
     .module-modal[hidden] { display: none !important; }
+    .scope-banner[hidden] { display: none !important; }
     .module-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
     .module-modal-dialog {
       position: relative; z-index: 1; background: #fff;
@@ -360,6 +361,16 @@
     }
     .gen-col-badge-allow { background: #d4f5e2; color: #0a6633; border: 1px solid #a3d9b8; }
     .gen-col-badge-deny  { background: #fdd;    color: #900;    border: 1px solid #f5b0b0; }
+
+    /* ── ModSecurity ── */
+    .mode-btn.active-on     { background: #fdd;    border-color: #c00;    color: #900; }
+    .mode-btn.active-detect { background: #fff3cd; border-color: #b38600; color: #856404; }
+    .mode-btn.active-off    { background: #e8eaf0; border-color: #555;    color: #333; }
+    input.text-input { font: inherit; border-radius: 6px; border: 1px solid #ccd; padding: 0.35rem 0.5rem; min-width: 16rem; }
+    .modsec-event { display: block; margin-bottom: 0.2rem; }
+    .modsec-event .ms-deny { color: #900; font-weight: 700; }
+    .modsec-event .ms-warn { color: #856404; font-weight: 700; }
+    .req-extra { display: block; font-size: 0.75rem; color: #555; margin-top: 0.15rem; word-break: break-all; }
     @media (max-width: 600px) { .gen-columns { flex-direction: column; } }
   </style>
 </head>
@@ -422,8 +433,9 @@
     <button class="tab-btn" role="tab" data-tab="guide"   aria-controls="tab-guide"   title="Ctrl+Shift+1">1. ⭐ Guide</button>
     <button class="tab-btn" role="tab" data-tab="server"  aria-controls="tab-server"  title="Ctrl+Shift+2">2. Sandbox Controls</button>
     <button class="tab-btn" role="tab" data-tab="filters" aria-controls="tab-filters" title="Ctrl+Shift+3">3. Filters</button>
-    <button class="tab-btn" role="tab" data-tab="testing" aria-controls="tab-testing" title="Ctrl+Shift+4">4. Testing</button>
-    <button class="tab-btn" role="tab" data-tab="logs"    aria-controls="tab-logs"    title="Ctrl+Shift+5">5. Logs</button>
+    <button class="tab-btn" role="tab" data-tab="modsec"  aria-controls="tab-modsec"  title="Ctrl+Shift+4">4. ModSecurity</button>
+    <button class="tab-btn" role="tab" data-tab="testing" aria-controls="tab-testing" title="Ctrl+Shift+5">5. Testing</button>
+    <button class="tab-btn" role="tab" data-tab="logs"    aria-controls="tab-logs"    title="Ctrl+Shift+6">6. Logs</button>
   </nav>
 
   <!-- ════════════════════════════════════════
@@ -502,13 +514,29 @@
     <details class="guide-section">
       <summary>
         <div class="guide-step-summary">
+          <div class="step-num">3b</div>
+          <h2>Add your ModSecurity rules (optional)</h2>
+        </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint"><strong>What:</strong> ModSecurity runs in front of the dispatcher on port 80. It inspects each request (URL, query, headers, body) before the dispatcher filters see it, and blocks matches, usually with <code>403 Forbidden</code>. No rules are built in.</p>
+        <p class="hint"><strong>How:</strong> Copy your rule set (<code>*.conf</code> plus the <code>*.data</code> files they reference) into <code>modsecurity/</code> next to <code>docker-compose.yml</code>. On the <strong>ModSecurity</strong> tab, choose <em>Block</em>, <em>Log only</em> or <em>Off</em> for each rule. A rule file and its <code>_logonly</code> twin count as one rule. Click <strong>Apply &amp; restart</strong>. Every change is checked with <code>httpd -t</code> first, so a bad rule can't take the dispatcher down.</p>
+        <p class="hint">Edit <code>.data</code> lists (allowlisted IPs, author hostnames…) right in the panel. Test requests come from <code>127.0.0.1</code>. Rules that skip by <code>Host</code> header can be tested with <code>-H 'Host: …'</code> on the Testing tab.</p>
+        <button type="button" class="secondary" onclick="_gotoTab('modsec')">Go to ModSecurity →</button>
+      </div>
+    </details>
+
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
           <div class="step-num">4</div>
           <h2>Test your filters and share the results</h2>
         </div>
         <span class="guide-chevron">▶</span>
       </summary>
       <div class="guide-body">
-        <p class="hint"><strong>What:</strong> Each path in <strong>Good paths</strong> is expected to return HTTP 200 (the dispatcher should allow it). Each path in <strong>Bad paths</strong> is expected to return HTTP 404 (the dispatcher should reject it). Tests hit the live running dispatcher — no mocking.</p>
+        <p class="hint"><strong>What:</strong> Each path in <strong>Good paths</strong> is expected to return HTTP 200 (the dispatcher should allow it). Each path in <strong>Bad paths</strong> is expected to return HTTP 404 (the dispatcher should reject it). Each path in <strong>ModSecurity blocked</strong> is expected to return HTTP 403 (a ModSecurity rule should block it). Tests hit the live running dispatcher — no mocking. The results show which filter rule and which ModSecurity rule IDs matched each request.</p>
         <p class="hint"><strong>How:</strong> Go to the <strong>Testing</strong> tab. Click <strong>Generate tests from filters</strong> to auto-populate both lists from your current rules, or paste in real paths from your site. Click <strong>Run tests</strong> and review the colour-coded results table. Use <strong>Export JSON</strong> or <strong>Export CSV</strong> to share results with your team or save a baseline for future comparisons.</p>
         <button type="button" class="secondary" onclick="_gotoTab('testing')">Go to Testing →</button>
       </div>
@@ -535,6 +563,7 @@
         <li><strong><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a></strong> — Output from the filter parser script. Check this if rules are not appearing in the <em>Active filter rules</em> view.</li>
         <li><strong><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a></strong> — Apache / dispatcher startup and runtime errors. First stop when the dispatcher fails to start.</li>
         <li><strong><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a></strong> — Every HTTP request that reached Apache. Useful for confirming your test client is actually hitting the dispatcher.</li>
+        <li><strong><a href="/logs/view?name=modsec_audit.log" target="_blank" rel="noopener noreferrer">modsec_audit.log</a></strong> — Full request and matched-rule details for every request ModSecurity blocked or flagged. ModSecurity rule matches also appear in <code>error_log</code> as <code>ModSecurity:</code> lines.</li>
       </ul>
       <p class="hint">Tip: run this in your terminal for a combined real-time stream of all container output:</p>
       <code class="guide-code">docker compose logs -f</code>
@@ -588,6 +617,10 @@
        TAB: Filters
   ════════════════════════════════════════ -->
   <div id="tab-filters" class="tab-panel" role="tabpanel">
+    <div class="warning-box scope-banner" data-scope-banner="modsec" hidden style="margin:1rem 0 0">
+      <div class="warning-box-title">Test scope is “ModSecurity only”</div>
+      Your filter files are not loaded right now — the dispatcher allows every request. Switch the scope on the <a href="#testing">Testing</a> tab to test filters.
+    </div>
 
     <section>
       <h2>Default policy <span class="help-tip" data-tip="The catch-all rule applied when no filter matches a request. Deny all is the most realistic production setting — everything is rejected by default and you write allow rules for paths that should pass. Allow all passes everything and you write deny rules for paths to reject. Switch between them without restarting; a dispatcher reload happens automatically.">?</span></h2>
@@ -679,18 +712,117 @@ DELETE /content/dam/sensitive"></textarea>
   </div>
 
   <!-- ════════════════════════════════════════
+       TAB: ModSecurity
+  ════════════════════════════════════════ -->
+  <div id="tab-modsec" class="tab-panel" role="tabpanel">
+    <div class="warning-box scope-banner" data-scope-banner="filters" hidden style="margin:1rem 0 0">
+      <div class="warning-box-title">Test scope is “Filters only”</div>
+      The ModSecurity engine is forced Off right now (your engine setting below is kept and comes back when you switch). Switch the scope on the <a href="#testing">Testing</a> tab to test ModSecurity.
+    </div>
+
+    <section>
+      <h2>Engine settings <span class="help-tip" data-tip="SecRuleEngine for the dispatcher vhost. On = rules run and disruptive actions (deny, redirect…) are enforced. DetectionOnly = rules run and matches are logged but nothing is blocked. Off = ModSecurity is disabled. Applied after your rule files, so it overrides any SecRuleEngine line inside them. Debug level > 0 writes rule-by-rule tracing to modsec_debug.log.">?</span></h2>
+      <p class="hint">ModSecurity runs on the dispatcher vhost (port 80) before the dispatcher filters. No rules are built in — copy your rule set (<code>*.conf</code> and the <code>*.data</code> files they reference) into <code>modsecurity/</code> next to <code>docker-compose.yml</code>.</p>
+      <div class="mode-bar">
+        <span class="mode-label">Engine:</span>
+        <button type="button" class="mode-btn" id="btnMsEngineOn" data-engine="On">On (block)</button>
+        <button type="button" class="mode-btn" id="btnMsEngineDetect" data-engine="DetectionOnly">DetectionOnly (log only)</button>
+        <button type="button" class="mode-btn" id="btnMsEngineOff" data-engine="Off">Off</button>
+        <span class="mode-hint" id="msEngineHint"></span>
+      </div>
+      <div class="mode-bar">
+        <label class="mode-label" for="msDebugLevel">Debug log level:</label>
+        <select id="msDebugLevel">
+          <option value="0">0 — off</option>
+          <option value="3">3 — rule matches</option>
+          <option value="4">4 — rule evaluation</option>
+          <option value="9">9 — everything</option>
+        </select>
+        <span class="mode-hint">Written to <a href="/logs/view?name=modsec_debug.log" target="_blank" rel="noopener noreferrer">modsec_debug.log</a></span>
+      </div>
+      <pre class="action-out" id="msSettingsOut" hidden></pre>
+    </section>
+
+    <section>
+      <h2>Rule files <span class="help-tip" data-tip="Every *.conf under modsecurity/. A file and its _logonly twin (e.g. foo.conf + foo_logonly.conf) share rule IDs, so they are treated as one rule with a choice of Block, Log only or Off — only one variant is ever loaded, like symlinking one of them into activated_rules/ in production. Other files can be turned On or Off. Load order: files at the top of modsecurity/, then sub-directories, then local_rules/. Changes are checked with httpd -t on a staged copy before going live.">?</span></h2>
+      <p class="hint">
+        Choose how each rule is loaded, then click <strong>Apply &amp; restart</strong>. A file and its <code>_logonly</code> twin count as one rule: pick <em>Block</em>, <em>Log only</em> or <em>Off</em>.
+        Changes are checked with <code>httpd -t</code> first. If the check fails, nothing changes.
+        Referenced <code>.data</code> files that are missing get an empty placeholder, same as the production RPM install.
+      </p>
+      <div class="row" style="gap:0.5rem;flex-wrap:wrap">
+        <button type="button" id="btnMsApplyModes">Apply &amp; restart</button>
+        <button type="button" id="btnMsRefresh" class="secondary">Refresh</button>
+        <span style="color:#ccd;padding:0 0.15rem">|</span>
+        <button type="button" class="secondary" data-ms-bulk="block">All → Block</button>
+        <button type="button" class="secondary" data-ms-bulk="logonly">All → Log only</button>
+        <button type="button" class="secondary" data-ms-bulk="off">All → Off</button>
+      </div>
+      <div id="msProblems"></div>
+      <div id="msRulesWrap"><p class="muted">Loading…</p></div>
+      <pre class="action-out" id="msModesOut" hidden></pre>
+    </section>
+
+    <section>
+      <h2>Active rules <span class="help-tip" data-tip="SecRule / SecAction directives from the files that are currently loaded, with their id, phase and disruptive action. Use the ids with --rule in the Testing tab to assert that a rule fired.">?</span></h2>
+      <p class="hint">Parsed from the loaded files. Use these rule IDs with <code>--rule &lt;id&gt;</code> on the Testing tab to check that a rule fired.</p>
+      <div id="msDirectivesWrap"><p class="muted">Loading…</p></div>
+    </section>
+
+    <section>
+      <h2>Edit rule &amp; data files <span class="help-tip" data-tip="Edit any .conf or .data file under modsecurity/ — e.g. add a hostname to an author-domains .data file or an IP to an allowlist .data file. Every save is checked with httpd -t against a staged copy first; if the check fails the file is not written.">?</span></h2>
+      <p class="hint">
+        Edit <code>.conf</code> rules or the <code>.data</code> lists they read, such as allowlisted IPs or author hostnames. Files are written to <code>modsecurity/</code> on the host.
+        Each save runs <code>httpd -t</code> against a staged copy first. Invalid configuration is <strong>not</strong> saved.
+      </p>
+      <div class="row align-center" style="margin-bottom:0.5rem;gap:0.5rem;flex-wrap:wrap">
+        <label for="msFileSelect" style="margin:0;line-height:2">File:</label>
+        <select id="msFileSelect"></select>
+        <span style="color:#ccd;padding:0 0.15rem">|</span>
+        <input type="text" id="msNewFileName" class="text-input" placeholder="new file, e.g. local_rules/custom_rules.conf" aria-label="New ModSecurity file name">
+        <button type="button" id="btnMsNewFile" class="secondary">New file</button>
+      </div>
+      <label for="msEditor">Content</label>
+      <textarea id="msEditor" rows="14" spellcheck="false" style="font-family:ui-monospace,'Cascadia Code','Source Code Pro',monospace;font-size:0.82rem" placeholder='SecRule REQUEST_URI "@beginsWith /system/console" "id:1000001,phase:1,deny,status:403,log,msg:&apos;Console blocked&apos;"'></textarea>
+      <div class="row" style="margin-top:0.75rem">
+        <button type="button" id="btnMsValidate" class="secondary">Validate</button>
+        <button type="button" id="btnMsSave">Save</button>
+        <button type="button" id="btnMsSaveRestart">Save &amp; Restart</button>
+        <button type="button" id="btnMsLoad" class="secondary">Reload file</button>
+      </div>
+      <p id="msSaveMsg" class="muted" hidden></p>
+      <pre class="action-out" id="msSaveOut" hidden></pre>
+    </section>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
        TAB: Testing
   ════════════════════════════════════════ -->
   <div id="tab-testing" class="tab-panel" role="tabpanel">
     <section>
-      <h2>Request paths <span class="help-tip" data-tip="Tests paths live against the running dispatcher — no mocking. Good paths should return HTTP 200 (the dispatcher allows the request to reach the renderer). Bad paths should return HTTP 404 (the dispatcher rejects it). Generate tests from filters auto-populates both lists from your current rules. Export results to share with your team or save a test baseline.">?</span></h2>
+      <h2>Request paths <span class="help-tip" data-tip="Tests paths live against the running dispatcher — no mocking. Good paths should return HTTP 200 (the dispatcher allows the request to reach the renderer). Bad paths should return HTTP 404 (the dispatcher rejects it). ModSecurity blocked paths should return HTTP 403 (a ModSecurity rule blocks it). Generate tests from filters auto-populates both lists from your current rules. Export results to share with your team or save a test baseline.">?</span></h2>
+      <div class="mode-bar" id="scopeBar">
+        <span class="mode-label">Test scope:</span>
+        <button type="button" class="mode-btn" data-scope="both">Filters + ModSecurity</button>
+        <button type="button" class="mode-btn" data-scope="filters">Filters only</button>
+        <button type="button" class="mode-btn" data-scope="modsec">ModSecurity only</button>
+        <span class="mode-hint" id="scopeHint"></span>
+      </div>
       <p class="hint">
         Filter fragments are loaded from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order).
         Default good/bad paths are loaded from <code>tests/default_test_paths.json</code> on the host.
       </p>
       <p class="muted" id="filterFilesStatic">Filter files: …</p>
 
-      <p class="hint" style="margin-bottom:0.4rem">One path per line. Format: <code>/path</code> or <code>METHOD /path</code> (e.g. <code>POST /api/submit</code>). Method defaults to GET.</p>
+      <p class="hint" style="margin-bottom:0.4rem">One request per line. Format: <code>/path</code> or <code>METHOD /path</code> (e.g. <code>POST /api/submit</code>). Method defaults to GET.</p>
+      <p class="hint" style="margin-bottom:0.4rem">For ModSecurity tests, add curl-style options after the path:
+        <code>-H 'Name: value'</code> (repeatable; e.g. <code>-H 'Host: author.example.com'</code> to test host-based skips), <code>-d 'a=1'</code> (repeatable, joined with <code>&amp;</code>; implies POST),
+        <code>-A</code> user agent, <code>-e</code> referer, <code>-b</code> cookie, <code>-X METHOD</code>.
+        Assertions: <code>--expect 406</code> or <code>--expect '!403'</code> (anything but 403) overrides the group's expected status;
+        <code>--rule 1234</code> fails the test unless that rule ID fired (works for Log only rules too).
+        You can also paste whole <code>curl … 'http://host/path'</code> commands. The URL host becomes the <code>Host</code> header, and the request is sent to the local dispatcher.
+        Paths are sent as typed (encoded characters, <code>..</code> and <code>;</code> are kept). Spaces are encoded.</p>
       <div class="row align-center" style="margin-bottom:0.5rem;gap:0.5rem;flex-wrap:wrap">
         <button type="button" id="btnGenTestsFromFilters" class="secondary">Generate tests from filters</button>
         <span style="color:#ccd;padding:0 0.15rem">|</span>
@@ -699,15 +831,27 @@ DELETE /content/dam/sensitive"></textarea>
         <button type="button" id="btnLoadTestPaths" class="secondary">Load</button>
       </div>
 
-      <label for="good">Good request paths (one per line) — expect HTTP 200</label>
+      <div id="grpGood">
+      <label for="good" id="lblGood">Good request paths (one per line) — expect HTTP 200</label>
       <textarea id="good" rows="6" placeholder="/content/dam/logo.png
 GET /content/mysite/en.html
 POST /bin/receive"></textarea>
+      </div>
 
+      <div id="grpBad">
       <label for="bad" style="margin-top:0.65rem">Bad request paths (one per line) — expect HTTP 404</label>
       <textarea id="bad" rows="6" placeholder="/system/console
 GET /crx/de/index.jsp
 DELETE /content/dam/sensitive"></textarea>
+      </div>
+
+      <div id="grpBlocked">
+      <label for="blocked" style="margin-top:0.65rem">ModSecurity blocked requests (one per line) — expect HTTP 403</label>
+      <textarea id="blocked" rows="6" placeholder="/content/mysite/en.html?q=&lt;script&gt;alert(1)&lt;/script&gt;
+/content/mysite/en.html?id=1' OR '1'='1
+/content/mysite/en.html -A 'sqlmap/1.5'
+POST /content/mysite/en/form.html -d 'comment=&lt;script&gt;alert(1)&lt;/script&gt;'"></textarea>
+      </div>
 
       <div class="row" style="margin-top:0.75rem;gap:0.5rem">
         <button type="button" id="btnTest">Run tests</button>
@@ -720,10 +864,20 @@ DELETE /content/dam/sensitive"></textarea>
         <p class="muted" id="filterFilesAtTest">Filter files at time of test:</p>
         <ul class="filter-list" id="filterFilesList"></ul>
         <p class="hint" style="margin-bottom:0.75rem">Paths in the table are clickable links — click one to open it via the dispatcher and see the live response in your browser.</p>
+        <p class="muted" id="scopeAtTest"></p>
+        <div id="resGood">
         <h3>Good paths <span class="muted">(expect 200)</span></h3>
         <table class="results" id="tableGood" aria-label="Good path results"></table>
+        </div>
+        <div id="resBad">
         <h3>Bad paths <span class="muted">(expect 404)</span></h3>
         <table class="results" id="tableBad" aria-label="Bad path results"></table>
+        </div>
+        <div id="resBlocked">
+        <h3>ModSecurity blocked <span class="muted">(expect 403)</span></h3>
+        <p class="muted" id="modsecAtTest"></p>
+        <table class="results" id="tableBlocked" aria-label="ModSecurity blocked results"></table>
+        </div>
         <div class="toolbar">
           <button type="button" id="btnExportJson" class="secondary">Export JSON</button>
           <button type="button" id="btnExportCsv" class="secondary">Export CSV</button>
@@ -749,6 +903,8 @@ DELETE /content/dam/sensitive"></textarea>
         <li><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a> — Apache access log</li>
         <li><a href="/logs/view?name=renderer_error_log" target="_blank" rel="noopener noreferrer">renderer_error_log</a> — Fake AEM Renderer error log</li>
         <li><a href="/logs/view?name=renderer_access_log" target="_blank" rel="noopener noreferrer">renderer_access_log</a> — Fake AEM Renderer access log</li>
+        <li><a href="/logs/view?name=modsec_audit.log" target="_blank" rel="noopener noreferrer">modsec_audit.log</a> — ModSecurity audit log (full request/response for blocked or flagged requests)</li>
+        <li><a href="/logs/view?name=modsec_debug.log" target="_blank" rel="noopener noreferrer">modsec_debug.log</a> — ModSecurity debug log (empty unless SecDebugLogLevel is raised in your rules)</li>
       </ul>
       <div class="toolbar" style="margin-top:0.85rem">
         <button type="button" id="btnTruncateAllLogs" class="danger">Truncate all logs</button>
@@ -760,7 +916,7 @@ DELETE /content/dam/sensitive"></textarea>
   <script>
   (function () {
     /* ── Tab routing ── */
-    const TAB_IDS = ['guide', 'server', 'filters', 'testing', 'logs'];
+    const TAB_IDS = ['guide', 'server', 'filters', 'modsec', 'testing', 'logs'];
     const tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
     const tabPanels = {};
     TAB_IDS.forEach(function (id) { tabPanels[id] = document.getElementById('tab-' + id); });
@@ -776,6 +932,7 @@ DELETE /content/dam/sensitive"></textarea>
       });
       if (push !== false) history.replaceState(null, '', '#' + name);
       if (name === 'filters') onFiltersTabOpen();
+      if (name === 'modsec') setTimeout(onModsecTabOpen, 0);
     }
 
     tabBtns.forEach(function (b) {
@@ -787,7 +944,7 @@ DELETE /content/dam/sensitive"></textarea>
       activateTab(TAB_IDS.includes(h) ? h : 'guide', false);
     });
 
-    /* ── Keyboard shortcuts: Ctrl+Shift+1–5 ── */
+    /* ── Keyboard shortcuts: Ctrl+Shift+1–6 ── */
     document.addEventListener('keydown', function (e) {
       if (!e.ctrlKey || !e.shiftKey || e.altKey || e.metaKey) return;
       var m = e.code.match(/^Digit(\d)$/);
@@ -819,6 +976,9 @@ DELETE /content/dam/sensitive"></textarea>
     var testResults = document.getElementById('testResults');
     var tableGood   = document.getElementById('tableGood');
     var tableBad    = document.getElementById('tableBad');
+    var blocked     = document.getElementById('blocked');
+    var tableBlocked = document.getElementById('tableBlocked');
+    var modsecAtTest = document.getElementById('modsecAtTest');
     var filterFilesList    = document.getElementById('filterFilesList');
     var filterFilesStatic  = document.getElementById('filterFilesStatic');
     var filterFilesAtTest  = document.getElementById('filterFilesAtTest');
@@ -1306,6 +1466,7 @@ DELETE /content/dam/sensitive"></textarea>
         var j = await r.json();
         if ((j.good_paths || []).length) good.value = j.good_paths.join('\n');
         if ((j.bad_paths  || []).length) bad.value  = j.bad_paths.join('\n');
+        if ((j.blocked_paths || []).length) blocked.value = j.blocked_paths.join('\n');
       } catch (e) { /* keep placeholders */ }
     }
 
@@ -1332,17 +1493,46 @@ DELETE /content/dam/sensitive"></textarea>
       var u = row.url    != null ? String(row.url)    : '';
       var m = row.method != null ? String(row.method) : 'GET';
       var badge = '<span class="method-badge' + (m !== 'GET' ? ' ' + m : '') + '">' + escHtml(m) + '</span>';
-      if (u) {
+      var extra = '';
+      Object.keys(row.headers || {}).forEach(function (k) {
+        extra += '<span class="req-extra">-H ' + escHtml(k + ': ' + row.headers[k]) + '</span>';
+      });
+      if (row.body != null) extra += '<span class="req-extra">-d ' + escHtml(row.body) + '</span>';
+      if (row.error) extra += '<span class="req-extra" style="color:#900">' + escHtml(row.error) + '</span>';
+      if (row.rules_expected) extra += '<span class="req-extra">--rule ' + escHtml(row.rules_expected.join(',')) + '</span>';
+      if (u && m === 'GET' && !row.headers) {
         return '<code>' + badge + '<a href="' + escAttr(u) + '" target="_blank" rel="noopener noreferrer" class="path-link">'
-          + escHtml(p) + '</a></code>';
+          + escHtml(p) + '</a></code>' + extra;
       }
-      return '<code>' + badge + escHtml(p) + '</code>';
+      return '<code>' + badge + escHtml(p) + '</code>' + extra;
+    }
+
+    function modsecCellHtml(row) {
+      var evs = row.modsec || [];
+      if (!evs.length) return '<span class="muted">—</span>';
+      return evs.map(function (ev) {
+        var cls = ev.disruptive ? 'ms-deny' : 'ms-warn';
+        var label = ev.disruptive ? (ev.summary || 'blocked') : 'warning';
+        return '<code class="modsec-event" title="' + escAttr(ev.detail || '') + '">'
+          + '<span class="' + cls + '">' + escHtml(label) + '</span>'
+          + (ev.id ? ' — id ' + escHtml(ev.id) : '')
+          + (ev.msg ? ': ' + escHtml(ev.msg.length > 70 ? ev.msg.slice(0, 70) + '…' : ev.msg) : '')
+          + '</code>';
+      }).join('');
+    }
+
+    function modsecDisrupted(row) {
+      return (row.modsec || []).some(function (ev) { return ev.disruptive; });
     }
 
     var DEFAULT_RULE_RE = /\/(sandbox-default|default-test-container-deny)\b/;
 
-    function buildTable(tableEl, rows, expectLabel, sandboxMode, group) {
-      var thead = '<thead><tr><th>OK</th><th>HTTP</th><th>Expected</th><th>Path</th><th>Filter match</th></tr></thead>';
+    function buildTable(tableEl, rows, expectLabel, sandboxMode, group, scope) {
+      scope = scope || 'both';
+      var showFilter = scope !== 'modsec', showModsec = scope !== 'filters';
+      var ncols = 4 + (showFilter ? 1 : 0) + (showModsec ? 1 : 0);
+      var thead = '<thead><tr><th>OK</th><th>HTTP</th><th>Expected</th><th>Request</th>'
+        + (showFilter ? '<th>Filter match</th>' : '') + (showModsec ? '<th>ModSecurity</th>' : '') + '</tr></thead>';
       var body = '<tbody>';
       (rows || []).forEach(function (row) {
         var ok  = row.ok ? 'yes' : 'no';
@@ -1368,7 +1558,22 @@ DELETE /content/dam/sensitive"></textarea>
 
         // Build advisory note
         var note = '';
-        if (defaultBlocked && group === 'good') {
+        var msBlocked = modsecDisrupted(row);
+        if ((row.rules_missing || []).length) {
+          note = '<div class="filter-note filter-note-danger">Expected rule(s) did not fire: ' + escHtml(row.rules_missing.join(', ')) + '</div>';
+        } else if (msBlocked && group !== 'blocked' && !row.ok) {
+          note = '<div class="filter-note filter-note-danger">Blocked by ModSecurity before reaching the dispatcher filters — possible false positive</div>';
+        } else if (msBlocked && group !== 'blocked') {
+          note = '';
+        } else if (group === 'blocked' && !row.ok && !msBlocked && (row.modsec || []).length) {
+          note = '<div class="filter-note filter-note-warn">ModSecurity matched but did not block — rule is in Log only mode or the engine is DetectionOnly</div>';
+        } else if (group === 'blocked' && !row.ok && !msBlocked) {
+          note = '<div class="filter-note filter-note-warn">No ModSecurity rule blocked this — it reached the dispatcher</div>';
+        } else if (group === 'blocked') {
+          note = '';
+        } else if (scope === 'modsec') {
+          note = '';
+        } else if (defaultBlocked && group === 'good') {
           note = '<div class="filter-note filter-note-warn">No allow rule matched — create a rule to let this through</div>';
         } else if (defaultBlocked && group === 'bad') {
           note = '<div class="filter-note filter-note-info">You don\'t have a rule that rejects this — it was rejected by the sandbox default</div>';
@@ -1379,12 +1584,12 @@ DELETE /content/dam/sensitive"></textarea>
         }
 
         body += '<tr class="' + cls + '"><td>' + ok + '</td><td class="num">' + st
-          + '</td><td class="num">' + expectLabel + '</td><td>' + pathCellHtml(row)
+          + '</td><td class="num">' + (row.expect != null ? row.expect : expectLabel) + '</td><td>' + pathCellHtml(row)
           + (note ? '<br>' + note : '')
-          + '</td><td>' + filterCell + '</td></tr>';
+          + '</td>' + (showFilter ? '<td>' + filterCell + '</td>' : '') + (showModsec ? '<td>' + modsecCellHtml(row) + '</td>' : '') + '</tr>';
       });
       if (!rows || !rows.length) {
-        body = '<tbody><tr><td colspan="5" class="muted">No paths in this group.</td></tr></tbody>';
+        body = '<tbody><tr><td colspan="' + ncols + '" class="muted">No paths in this group.</td></tr></tbody>';
       }
       tableEl.innerHTML = thead + body + '</tbody>';
     }
@@ -1406,8 +1611,17 @@ DELETE /content/dam/sensitive"></textarea>
       }
       var sm = j.sandbox_mode || 'deny_all';
       applySandboxModeUI(sm);
-      buildTable(tableGood, j.good, 200, sm, 'good');
-      buildTable(tableBad,  j.bad,  404, sm, 'bad');
+      var sc = j.test_scope || 'both';
+      buildTable(tableGood, j.good, 200, sm, 'good', sc);
+      buildTable(tableBad,  j.bad,  404, sm, 'bad', sc);
+      buildTable(tableBlocked, j.blocked, 403, sm, 'blocked', sc);
+      document.getElementById('resBad').hidden = sc === 'modsec';
+      document.getElementById('resBlocked').hidden = sc === 'filters';
+      document.getElementById('scopeAtTest').textContent = 'Test scope: ' + SCOPE_LABELS[sc]
+        + (sc === 'modsec' ? ' (dispatcher filters stubbed with allow-all)' : sc === 'filters' ? ' (ModSecurity engine off)' : '');
+      var ms = j.modsec || {};
+      modsecAtTest.textContent = 'ModSecurity at time of test: engine ' + (ms.engine || '?')
+        + ', loaded rule files: ' + ((j.modsec_files || []).join(', ') || '(none)');
     }
 
     function downloadText(filename, text, mime) {
@@ -1418,33 +1632,42 @@ DELETE /content/dam/sensitive"></textarea>
     }
 
     function exportCsv(j) {
-      var lines = [['type','group','ok','http_status','expect','path'].map(escCell).join(',')];
+      var lines = [['type','group','ok','http_status','expect','method','path','filter_match','modsec_rule_ids'].map(escCell).join(',')];
       (j.filter_files || []).forEach(function (f) {
-        lines.push(['filter','','','','',f].map(escCell).join(','));
+        lines.push(['filter','','','','','',f,'',''].map(escCell).join(','));
       });
-      (j.good || []).forEach(function (row) {
-        lines.push(['test','good', row.ok ? 'yes':'no',
-          row.status != null ? String(row.status) : '', '200', row.path||''].map(escCell).join(','));
+      (j.modsec_files || []).forEach(function (f) {
+        lines.push(['modsec_file','','','','','',f,'',''].map(escCell).join(','));
       });
-      (j.bad || []).forEach(function (row) {
-        lines.push(['test','bad', row.ok ? 'yes':'no',
-          row.status != null ? String(row.status) : '', '404', row.path||''].map(escCell).join(','));
+      [['good', 200], ['bad', 404], ['blocked', 403]].forEach(function (g) {
+        (j[g[0]] || []).forEach(function (row) {
+          var ids = (row.modsec || []).map(function (ev) { return ev.id; }).filter(Boolean).join(' ');
+          lines.push(['test', g[0], row.ok ? 'yes':'no',
+            row.status != null ? String(row.status) : '', row.expect != null ? String(row.expect) : String(g[1]),
+            row.method || 'GET', row.path||'', row.filter_log || '', ids].map(escCell).join(','));
+        });
       });
       downloadText('dispatcher-url-tests.csv', lines.join('\r\n') + '\r\n', 'text/csv;charset=utf-8');
     }
 
     function exportJsonForDownload(j) {
       function rowOut(row) {
-        var o = { path: row.path||'', ok: !!row.ok, status: row.status, expect: row.expect };
+        var o = { method: row.method || 'GET', path: row.path||'', ok: !!row.ok, status: row.status, expect: row.expect };
+        if (row.headers) o.headers = row.headers;
+        if (row.body != null) o.body = row.body;
         if (row.filter_log) o.filter_match = row.filter_log;
+        if (row.modsec) o.modsec = row.modsec;
         if (row.error) o.error = row.error;
         return o;
       }
       return {
         filter_files: j.filter_files || [],
         filter_rules: j.filter_rules || [],
+        modsec: j.modsec || {},
+        modsec_files: j.modsec_files || [],
         good: (j.good || []).map(rowOut),
-        bad:  (j.bad  || []).map(rowOut)
+        bad:  (j.bad  || []).map(rowOut),
+        blocked: (j.blocked || []).map(rowOut)
       };
     }
 
@@ -1453,7 +1676,10 @@ DELETE /content/dam/sensitive"></textarea>
 
       var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
       var badLines  = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
-      var total = goodLines.length + badLines.length;
+      var blockedLines = blocked.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      if (currentScope === 'modsec') badLines = [];
+      if (currentScope === 'filters') blockedLines = [];
+      var total = goodLines.length + badLines.length + blockedLines.length;
       if (total === 0) {
         testErr.textContent = 'No paths to test.';
         testErr.hidden = false;
@@ -1470,6 +1696,7 @@ DELETE /content/dam/sensitive"></textarea>
 
       var goodResults = [];
       var badResults  = [];
+      var blockedResults = [];
       var meta        = null;
       var done        = 0;
 
@@ -1481,9 +1708,8 @@ DELETE /content/dam/sensitive"></textarea>
       }
 
       async function testOne(path, group) {
-        var payload = group === 'good'
-          ? { good_paths: [path], bad_paths: [] }
-          : { good_paths: [], bad_paths: [path] };
+        var payload = { good_paths: [], bad_paths: [], blocked_paths: [] };
+        payload[group + '_paths'] = [path];
         var r = await fetch('/api/test-urls', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1491,8 +1717,9 @@ DELETE /content/dam/sensitive"></textarea>
         });
         var j = await r.json();
         if (!r.ok) throw new Error((j && j.error) || 'HTTP ' + r.status);
-        if (!meta) meta = { sandbox_mode: j.sandbox_mode, filter_files: j.filter_files, filter_rules: j.filter_rules };
-        return group === 'good' ? (j.good || [])[0] : (j.bad || [])[0];
+        if (!meta) meta = { sandbox_mode: j.sandbox_mode, filter_files: j.filter_files, filter_rules: j.filter_rules,
+                            modsec: j.modsec, modsec_files: j.modsec_files, test_scope: j.test_scope };
+        return (j[group] || [])[0];
       }
 
       try {
@@ -1506,6 +1733,11 @@ DELETE /content/dam/sensitive"></textarea>
           if (row) badResults.push(row);
           updateProgress(badLines[bi]);
         }
+        for (var ki = 0; ki < blockedLines.length; ki++) {
+          var row = await testOne(blockedLines[ki], 'blocked');
+          if (row) blockedResults.push(row);
+          updateProgress(blockedLines[ki]);
+        }
 
         testProgressFill.style.width = '100%';
         testProgressMsg.textContent = 'Done — ' + total + ' paths tested';
@@ -1516,8 +1748,12 @@ DELETE /content/dam/sensitive"></textarea>
           sandbox_mode:  (meta || {}).sandbox_mode,
           filter_files:  (meta || {}).filter_files  || [],
           filter_rules:  (meta || {}).filter_rules  || [],
+          modsec:        (meta || {}).modsec || {},
+          test_scope:    (meta || {}).test_scope || currentScope,
+          modsec_files:  (meta || {}).modsec_files || [],
           good: goodResults,
-          bad:  badResults
+          bad:  badResults,
+          blocked: blockedResults
         });
         await refreshFilterFilesStatic();
 
@@ -1982,6 +2218,403 @@ DELETE /content/dam/sensitive"></textarea>
       genMsg.hidden = true;
     });
 
+    /* ══════════════════════════════════════════════════════════
+       ── ModSecurity tab ──
+       ══════════════════════════════════════════════════════════ */
+    var msEngineBtns = {
+      On: document.getElementById('btnMsEngineOn'),
+      DetectionOnly: document.getElementById('btnMsEngineDetect'),
+      Off: document.getElementById('btnMsEngineOff')
+    };
+    var msDebugLevel  = document.getElementById('msDebugLevel');
+    var msEngineHint  = document.getElementById('msEngineHint');
+    var msSettingsOut = document.getElementById('msSettingsOut');
+    var msRulesWrap   = document.getElementById('msRulesWrap');
+    var msProblems    = document.getElementById('msProblems');
+    var msModesOut    = document.getElementById('msModesOut');
+    var msDirectivesWrap = document.getElementById('msDirectivesWrap');
+    var msFileSelect  = document.getElementById('msFileSelect');
+    var msNewFileName = document.getElementById('msNewFileName');
+    var msEditor      = document.getElementById('msEditor');
+    var msSaveMsg     = document.getElementById('msSaveMsg');
+    var msSaveOut     = document.getElementById('msSaveOut');
+    var msSettings    = { engine: 'On', debug_level: 0 };
+    var msOverview    = null;
+    var msPendingModes = {};
+    var msTabEverOpened = false;
+    var MS_PATH_RE = /^(?!.*(^|\/)\.)[A-Za-z0-9._\/@+-]+\.(conf|data)$/;
+
+    function applyModsecUI(st) {
+      msSettings = st;
+      var engCls = { On: ' active-on', DetectionOnly: ' active-detect', Off: ' active-off' };
+      Object.keys(msEngineBtns).forEach(function (k) {
+        msEngineBtns[k].className = 'mode-btn' + (st.engine === k ? engCls[k] : '');
+      });
+      msEngineHint.textContent = st.engine === 'On'
+        ? 'Rules with deny/drop/redirect are enforced'
+        : st.engine === 'DetectionOnly'
+          ? 'Rules run and are logged, nothing is blocked'
+          : 'ModSecurity is disabled';
+      msDebugLevel.value = String(st.debug_level || 0);
+    }
+
+    async function loadModsecSettings() {
+      try { applyModsecUI(await (await fetch('/api/modsec-settings')).json()); } catch (e) {}
+    }
+
+    function msResultText(j) {
+      var t = j.ok ? (j.restarted ? 'Applied — dispatcher restarted.' : 'Saved.') : (j.error || 'Error');
+      if (j.valid === null) t += ' (config test skipped: dispatcher module not installed yet)';
+      if ((j.placeholders || []).length) t += '\nCreated empty placeholder data file(s): ' + j.placeholders.join(', ');
+      (j.duplicate_ids || []).forEach(function (d) { t += '\nDuplicate rule id ' + d.id + ' in: ' + d.files.join(', '); });
+      if (!j.ok && j.output) t += '\n\n' + j.output;
+      if (j.detail) t += '\n\n' + j.detail;
+      return t;
+    }
+
+    async function postModsec(url, body, outEl, title) {
+      outEl.hidden = true;
+      showRestartModal(title);
+      try {
+        var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var j = await r.json();
+        outEl.textContent = msResultText(j);
+        outEl.hidden = false;
+        if (j.ok && j.prefs_file) showPrefToast(j.prefs_file);
+        return j;
+      } catch (e) {
+        outEl.textContent = String(e); outEl.hidden = false;
+        return null;
+      } finally {
+        hideRestartModal();
+        await updateModuleGate();
+      }
+    }
+
+    async function setModsecSettings(patch) {
+      var j = await postModsec('/api/modsec-settings', patch, msSettingsOut, 'Applying ModSecurity settings');
+      if (j && j.ok) applyModsecUI({ engine: j.engine, debug_level: j.debug_level });
+      else applyModsecUI(msSettings);
+    }
+
+    Object.keys(msEngineBtns).forEach(function (k) {
+      msEngineBtns[k].addEventListener('click', function () {
+        if (msSettings.engine !== k) setModsecSettings({ engine: k });
+      });
+    });
+    msDebugLevel.addEventListener('change', function () {
+      setModsecSettings({ debug_level: parseInt(msDebugLevel.value, 10) });
+    });
+
+    /* Parse SecRule / SecAction directives (with \ line continuations) */
+    function parseModsecDirectives(file, content) {
+      var out = [];
+      var logical = content.replace(/\\[ \t]*\r?\n/g, ' ').split(/\r?\n/);
+      var inChain = false;
+      logical.forEach(function (line) {
+        var t = line.trim();
+        if (!t || t.charAt(0) === '#') return;
+        var dm = t.match(/^(SecRule|SecAction|SecRuleRemoveById|SecRuleRemoveByTag|SecRuleRemoveByMsg|SecRuleUpdateTargetById|SecRuleUpdateActionById|SecMarker)\b\s*(.*)$/i);
+        if (!dm) return;
+        var directive = dm[1], rest = dm[2];
+        var actions = '';
+        var am = rest.match(/"((?:[^"\\]|\\.)*)"\s*$/);
+        if (am && /^Sec(Rule|Action)$/i.test(directive)) actions = am[1];
+        function act(name) {
+          var m = actions.match(new RegExp('(?:^|,)\\s*' + name + "\\s*:\\s*('((?:[^'\\\\]|\\\\.)*)'|[^,]*)", 'i'));
+          return m ? (m[2] != null ? m[2] : m[1]).trim() : '';
+        }
+        var wasChained = inChain;
+        if (/^Sec(Rule|Action)$/i.test(directive)) inChain = /(?:^|,)\s*chain\b/i.test(actions);
+        if (wasChained) {
+          // chained condition: append to the parent rule
+          var parent = out[out.length - 1];
+          if (parent) {
+            var tm2 = rest.match(/^(\S+)\s+("(?:[^"\\]|\\.)*"|\S+)/);
+            if (tm2) parent.target += '  AND ' + tm2[1] + ' ' + tm2[2];
+          }
+          return;
+        }
+        var disruptive = (actions.match(/(?:^|,)\s*(deny|drop|block|pass|allow|redirect|proxy)\b/i) || [])[1] || '';
+        var status = act('status');
+        var target = '';
+        if (/^SecRule$/i.test(directive)) {
+          var tm = rest.match(/^(\S+)\s+("(?:[^"\\]|\\.)*"|\S+)/);
+          if (tm) target = tm[1] + ' ' + tm[2];
+        } else if (!/^SecAction$/i.test(directive)) {
+          target = rest;
+        }
+        var skip = act('skipAfter');
+        out.push({
+          file: file, directive: directive, id: act('id'), phase: act('phase'),
+          action: (disruptive || (/\bnolog\b/i.test(actions) ? 'pass' : '')) + (status ? ' ' + status : '') + (skip ? ' → ' + skip : ''),
+          logs: !/\bnolog\b/i.test(actions),
+          msg: act('msg'), target: target
+        });
+      });
+      return out;
+    }
+
+    function variantLabel(fam) {
+      var f = fam.variants.block || fam.variants.logonly;
+      return f.file.replace(/\.conf$/, '');
+    }
+
+    function renderModsecRules() {
+      var ov = msOverview;
+      if (!ov) return;
+      var probs = '';
+      (ov.duplicate_ids || []).forEach(function (d) {
+        probs += '<div class="filter-note filter-note-danger">Duplicate rule id ' + escHtml(d.id) + ' in ' + escHtml(d.files.join(', ')) + ' — httpd will not start with this set</div><br>';
+      });
+      (ov.missing_data || []).forEach(function (m) {
+        probs += '<div class="filter-note filter-note-warn">Missing data file ' + escHtml(m) + ' — an empty placeholder is created on apply</div><br>';
+      });
+      msProblems.innerHTML = probs ? '<div style="margin:0.6rem 0">' + probs + '</div>' : '';
+
+      if (!ov.families.length) {
+        msRulesWrap.innerHTML = '<p class="muted" style="margin-top:0.6rem">No <code>*.conf</code> files in <code>' + escHtml(ov.rules_dir) + '</code> yet. Copy your rule set there (the folder is watched; this page refreshes on Refresh).</p>';
+        msDirectivesWrap.innerHTML = '<p class="muted">No active rules.</p>';
+        return;
+      }
+      var html = '<table class="filters" aria-label="ModSecurity rule files" style="margin-top:0.6rem"><thead><tr>'
+        + '<th>Rule file</th><th>Mode</th><th>Rule IDs</th><th>Data files</th></tr></thead><tbody>';
+      ov.families.forEach(function (fam) {
+        var mode = msPendingModes[fam.key] || fam.mode;
+        var opts = fam.kind === 'pair'
+          ? [['block', 'Block'], ['logonly', 'Log only'], ['off', 'Off']]
+          : [['on', 'On'], ['off', 'Off']];
+        var sel = '<select data-ms-key="' + escAttr(fam.key) + '">' + opts.map(function (o) {
+          return '<option value="' + o[0] + '"' + (o[0] === mode ? ' selected' : '') + '>' + o[1] + '</option>';
+        }).join('') + '</select>';
+        if (msPendingModes[fam.key] && msPendingModes[fam.key] !== fam.mode) sel += ' <span class="filter-note filter-note-warn">pending</span>';
+        var shown = fam.kind === 'pair' ? (fam.variants[mode === 'off' ? 'block' : mode] || fam.variants.block) : (fam.variants.block || fam.variants.logonly);
+        var ids = (shown.rule_ids || []);
+        var dataHtml = (shown.data_refs || []).map(function (d) {
+          return '<code style="' + (d.exists ? '' : 'color:#900') + '">' + escHtml(d.rel || d.ref) + '</code>' + (d.exists ? '' : ' (missing)');
+        }).join('<br>') || '<span class="muted">—</span>';
+        html += '<tr><td><code>' + escHtml(variantLabel(fam)) + '</code>'
+          + (fam.kind === 'pair' ? '<br><span class="muted" style="font-size:0.72rem">block + _logonly variants</span>' : '')
+          + '</td><td>' + sel + '</td><td><code>' + escHtml(ids.slice(0, 8).join(', ') + (ids.length > 8 ? ' … (+' + (ids.length - 8) + ')' : '')) + '</code></td>'
+          + '<td>' + dataHtml + '</td></tr>';
+      });
+      html += '</tbody></table><p class="muted" style="margin-top:0.5rem">' + ov.active.length + ' of '
+        + ov.families.length + ' rule file(s) loaded · ' + (ov.data_files || []).length + ' data file(s)</p>';
+      msRulesWrap.innerHTML = html;
+      Array.from(msRulesWrap.querySelectorAll('select[data-ms-key]')).forEach(function (el) {
+        el.addEventListener('change', function () {
+          msPendingModes[el.dataset.msKey] = el.value;
+          renderModsecRules();
+        });
+      });
+    }
+
+    async function renderModsecDirectives() {
+      var ov = msOverview;
+      if (!ov || !ov.active.length) { msDirectivesWrap.innerHTML = '<p class="muted">No active rules.</p>'; return; }
+      var all = [];
+      for (var i = 0; i < ov.active.length; i++) {
+        try {
+          var j = await (await fetch('/api/modsec-file?file=' + encodeURIComponent(ov.active[i]))).json();
+          if (j.ok) all = all.concat(parseModsecDirectives(ov.active[i], j.content));
+        } catch (e) {}
+      }
+      var rules = all.filter(function (r) { return r.directive.toLowerCase() !== 'secmarker'; });
+      var html = '<table class="filters" aria-label="Active ModSecurity rules"><thead><tr>'
+        + '<th>ID</th><th>Phase</th><th>Action</th><th>Target / operator</th><th>Message</th><th>File</th></tr></thead><tbody>';
+      rules.forEach(function (r) {
+        var act = r.action || (r.logs ? 'log (pass)' : '');
+        var cls = /^(deny|drop|block|redirect)\b/i.test(act) ? 'color:#900;font-weight:700' : '';
+        html += '<tr><td style="white-space:nowrap"><code>' + escHtml(r.id || r.directive) + '</code></td><td>' + escHtml(r.phase || '') + '</td>'
+          + '<td><code style="' + cls + '">' + escHtml(act) + '</code></td>'
+          + '<td><code>' + escHtml(r.target.length > 140 ? r.target.slice(0, 140) + '…' : r.target) + '</code></td>'
+          + '<td>' + escHtml(r.msg || '') + '</td><td><code style="font-size:0.72rem">' + escHtml(r.file) + '</code></td></tr>';
+      });
+      html += '</tbody></table><p class="muted" style="margin-top:0.5rem">' + rules.length + ' directive(s) in ' + ov.active.length + ' loaded file(s)</p>';
+      msDirectivesWrap.innerHTML = html;
+    }
+
+    function fillMsFileSelect() {
+      var ov = msOverview || { families: [], data_files: [] };
+      var files = [];
+      ov.families.forEach(function (fam) {
+        if (fam.variants.block) files.push(fam.variants.block.file);
+        if (fam.variants.logonly) files.push(fam.variants.logonly.file);
+      });
+      files = files.concat(ov.data_files || []);
+      var cur = msFileSelect.value;
+      msFileSelect.innerHTML = '';
+      files.forEach(function (f) {
+        var o = document.createElement('option'); o.value = f; o.textContent = f; msFileSelect.appendChild(o);
+      });
+      if (cur && files.indexOf(cur) < 0 && MS_PATH_RE.test(cur)) {
+        var o = document.createElement('option'); o.value = cur; o.textContent = cur + ' (new)'; msFileSelect.appendChild(o);
+      }
+      if (cur) msFileSelect.value = cur;
+    }
+
+    async function loadMsEditorFile() {
+      var f = msFileSelect.value;
+      if (!f) { msEditor.value = ''; return; }
+      try {
+        var j = await (await fetch('/api/modsec-file?file=' + encodeURIComponent(f))).json();
+        msEditor.value = j.ok ? j.content : '';
+      } catch (e) { msEditor.value = ''; }
+    }
+
+    async function loadModsecOverview(reloadEditor) {
+      try { msOverview = await (await fetch('/api/modsec-rules')).json(); } catch (e) { msOverview = null; }
+      renderModsecRules();
+      fillMsFileSelect();
+      if (reloadEditor) await loadMsEditorFile();
+      await renderModsecDirectives();
+    }
+
+    async function onModsecTabOpen() {
+      await loadModsecSettings();
+      await loadModsecOverview(!msTabEverOpened);
+      msTabEverOpened = true;
+    }
+
+    document.getElementById('btnMsRefresh').addEventListener('click', function () { msPendingModes = {}; loadModsecOverview(false); });
+    Array.from(document.querySelectorAll('[data-ms-bulk]')).forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (!msOverview) return;
+        var want = b.dataset.msBulk;
+        msOverview.families.forEach(function (fam) {
+          if (fam.kind === 'pair') msPendingModes[fam.key] = want;
+          else if (want === 'off') msPendingModes[fam.key] = 'off';
+          else msPendingModes[fam.key] = 'on';
+        });
+        renderModsecRules();
+      });
+    });
+    document.getElementById('btnMsApplyModes').addEventListener('click', async function () {
+      var j = await postModsec('/api/modsec-modes', { modes: msPendingModes }, msModesOut, 'Applying rule selection');
+      if (j && j.ok) msPendingModes = {};
+      await loadModsecOverview(false);
+    });
+
+    document.getElementById('btnMsLoad').addEventListener('click', loadMsEditorFile);
+    msFileSelect.addEventListener('change', loadMsEditorFile);
+
+    document.getElementById('btnMsNewFile').addEventListener('click', function () {
+      var name = msNewFileName.value.trim().replace(/^\.?\/+/, '');
+      if (name && !/\.(conf|data)$/.test(name)) name += '.conf';
+      if (!MS_PATH_RE.test(name)) {
+        msSaveMsg.textContent = 'Use a .conf or .data path inside modsecurity/, e.g. local_rules/custom_rules.conf';
+        msSaveMsg.className = 'err'; msSaveMsg.hidden = false;
+        return;
+      }
+      if (!Array.from(msFileSelect.options).some(function (o) { return o.value === name; })) {
+        var o = document.createElement('option'); o.value = name; o.textContent = name + ' (new)';
+        msFileSelect.appendChild(o);
+        msEditor.value = '';
+      }
+      msFileSelect.value = name;
+      msNewFileName.value = '';
+      msSaveMsg.textContent = 'Editing ' + name + ' — click Save to create it. New .conf files are loaded (On) by default.';
+      msSaveMsg.className = 'muted'; msSaveMsg.hidden = false;
+    });
+
+    async function msSaveOrValidate(endpoint, restart) {
+      msSaveMsg.hidden = true; msSaveOut.hidden = true;
+      var filename = msFileSelect.value;
+      if (!filename) {
+        msSaveMsg.textContent = 'Create or select a file first.';
+        msSaveMsg.className = 'err'; msSaveMsg.hidden = false;
+        return null;
+      }
+      var body = { filename: filename, content: msEditor.value, restart: !!restart };
+      if (restart) showRestartModal('Saving & restarting dispatcher');
+      try {
+        var r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var j = await r.json();
+        var label;
+        if (!j.ok) label = j.error || 'httpd config test failed';
+        else if (endpoint === '/api/modsec-validate') label = j.valid ? 'Config test passed (Syntax OK)' : 'Config test skipped: dispatcher module not installed yet';
+        else label = 'Saved ' + (j.saved_path || filename) + (j.valid ? ' — config test passed' : '') + (j.restarted ? ' — dispatcher restarted' : '');
+        msSaveMsg.textContent = label;
+        msSaveMsg.className = j.ok ? 'muted' : 'err';
+        msSaveMsg.hidden = false;
+        var extra = msResultText(j);
+        if (!j.ok || (j.placeholders || []).length || (j.duplicate_ids || []).length) { msSaveOut.textContent = extra; msSaveOut.hidden = false; }
+        return j;
+      } catch (e) {
+        msSaveOut.textContent = String(e); msSaveOut.hidden = false;
+        return null;
+      } finally {
+        if (restart) { hideRestartModal(); await updateModuleGate(); }
+      }
+    }
+
+    document.getElementById('btnMsValidate').addEventListener('click', function () { msSaveOrValidate('/api/modsec-validate', false); });
+    document.getElementById('btnMsSave').addEventListener('click', async function () {
+      var j = await msSaveOrValidate('/api/modsec-save', false);
+      if (j && j.ok) await loadModsecOverview(false);
+    });
+    document.getElementById('btnMsSaveRestart').addEventListener('click', async function () {
+      setBusy(true);
+      try {
+        var j = await msSaveOrValidate('/api/modsec-save', true);
+        if (j && j.ok) await loadModsecOverview(false);
+      } finally { setBusy(false); }
+    });
+
+    /* ── Test scope (filters / ModSecurity / both) ── */
+    var SCOPE_LABELS = { both: 'Filters + ModSecurity', filters: 'Filters only', modsec: 'ModSecurity only' };
+    var currentScope = 'both';
+    var scopeBtns = Array.from(document.querySelectorAll('#scopeBar [data-scope]'));
+
+    function applyScopeUI(scope) {
+      currentScope = scope;
+      scopeBtns.forEach(function (b) { b.className = 'mode-btn' + (b.dataset.scope === scope ? ' active-allow' : ''); });
+      document.getElementById('scopeHint').textContent = {
+        both: 'Requests pass through ModSecurity, then your dispatcher filters',
+        filters: 'ModSecurity engine is off — only your dispatcher filters decide',
+        modsec: 'Dispatcher filters are stubbed with allow-all — only ModSecurity decides'
+      }[scope];
+      document.getElementById('grpBad').hidden = scope === 'modsec';
+      document.getElementById('grpBlocked').hidden = scope === 'filters';
+      document.getElementById('lblGood').textContent = scope === 'modsec'
+        ? 'Allowed requests (one per line) — must not be blocked by ModSecurity, expect HTTP 200'
+        : 'Good request paths (one per line) — expect HTTP 200';
+      Array.from(document.querySelectorAll('[data-scope-banner]')).forEach(function (el) {
+        el.hidden = el.dataset.scopeBanner !== scope;
+      });
+    }
+
+    async function loadScope() {
+      try { applyScopeUI((await (await fetch('/api/test-scope')).json()).scope || 'both'); } catch (e) {}
+    }
+
+    scopeBtns.forEach(function (b) {
+      b.addEventListener('click', async function () {
+        var scope = b.dataset.scope;
+        if (scope === currentScope) return;
+        scopeBtns.forEach(function (x) { x.disabled = true; });
+        showRestartModal('Switching test scope');
+        try {
+          var r = await fetch('/api/test-scope', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: scope }) });
+          var j = await r.json();
+          if (j.ok) {
+            applyScopeUI(scope);
+            if (j.prefs_file) showPrefToast(j.prefs_file);
+            testResults.hidden = true;
+          } else {
+            testErr.textContent = 'Could not switch scope: ' + (j.error || 'unknown error');
+            testErr.hidden = false;
+          }
+        } catch (e) {
+          testErr.textContent = 'Could not switch scope: ' + e; testErr.hidden = false;
+        } finally {
+          hideRestartModal();
+          scopeBtns.forEach(function (x) { x.disabled = false; });
+          await updateModuleGate();
+        }
+      });
+    });
+
     /* ── Test path save / load ── */
     var testPathFileSelect = document.getElementById('testPathFileSelect');
     var btnLoadTestPaths   = document.getElementById('btnLoadTestPaths');
@@ -2024,6 +2657,7 @@ DELETE /content/dam/sensitive"></textarea>
         var j = await r.json();
         if (Array.isArray(j.good_paths)) good.value = j.good_paths.join('\n');
         if (Array.isArray(j.bad_paths))  bad.value  = j.bad_paths.join('\n');
+        if (Array.isArray(j.blocked_paths)) blocked.value = j.blocked_paths.join('\n');
       } catch (e) {}
     });
 
@@ -2033,11 +2667,12 @@ DELETE /content/dam/sensitive"></textarea>
       var filename = selectedKey ? selectedKey.replace(/^tests:/, '') : 'web_test_paths.json';
       var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
       var badLines  = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      var blockedLines = blocked.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
       try {
         var r = await fetch('/api/save-test-paths', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: filename, good_paths: goodLines, bad_paths: badLines })
+          body: JSON.stringify({ filename: filename, good_paths: goodLines, bad_paths: badLines, blocked_paths: blockedLines })
         });
         var j = await r.json();
         if (j.ok) {
@@ -2107,6 +2742,7 @@ DELETE /content/dam/sensitive"></textarea>
       }
       await refreshInstalledVersion();
       await loadSandboxMode();
+      await loadScope();
       await refreshFilterFilesStatic();
       await loadDefaultTestPaths();
       await refreshTestPathFiles();

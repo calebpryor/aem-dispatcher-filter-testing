@@ -1,12 +1,10 @@
-# Docker Installation Guide
+# Running with Docker
 
-This guide covers three ways to run the AEM Dispatcher Filter Sandbox with Docker:
+The [README quick start](../README.md#quick-start-5-minutes) covers the recommended way to run the sandbox: **Docker Compose**. This page covers:
 
-1. **[Docker Compose](#docker-compose)** — recommended for most users; pulls the pre-built image and manages everything for you
-2. **[Pull and Run](#pull-and-run)** — pull the pre-built image from Docker Hub and start it with a `docker run` command
-3. **[Build and Run](#build-and-run)** — build the image yourself from the source code, then start it with `docker run`
-
-All three methods end up with the same running container. The difference is only in how you get the image.
+1. **[Docker Compose details](#docker-compose)**: options, ports and environment variables
+2. **[Build and `docker run`](#build-and-docker-run)**: start the container without Compose
+3. **[The pre-built Docker Hub image](#the-pre-built-docker-hub-image)**: an older release without ModSecurity
 
 > **Using Podman instead of Docker?** See [podman.md](podman.md).
 
@@ -14,225 +12,135 @@ All three methods end up with the same running container. The difference is only
 
 ## Prerequisites
 
-### Install Docker
-
-1. Create a free account at [hub.docker.com](https://hub.docker.com/signup) — you need this to pull images
-2. Download and install **Docker Desktop** from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/)
-3. Run through the installer, launch Docker Desktop, and sign in with your Docker Hub account
-4. Verify it's working by opening a terminal and running:
-
-```bash
-docker --version
-```
-
-You should see a version number like `Docker version 26.x.x`.
-
-### Install Git
-
-Git is needed to clone this repository.
-
-- **Mac:** Git is included with Xcode Command Line Tools. Run `git --version` and macOS will prompt you to install it if missing.
-- **Windows:** Download from [git-scm.com](https://git-scm.com/downloads)
-- **Linux:** Install via your package manager, e.g. `sudo apt install git` or `sudo dnf install git`
+1. **Docker Desktop.** Download it from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/), install it and start it. Check it works:
+   ```bash
+   docker --version
+   docker ps
+   ```
+   Both commands should run without errors. A Docker Hub account isn't required.
+2. **Git.** Check with `git --version`.
+   - **Mac:** macOS offers to install it the first time you run `git`
+   - **Windows:** [git-scm.com/downloads](https://git-scm.com/downloads)
+   - **Linux:** `sudo apt install git` or `sudo dnf install git`
+3. **The code:**
+   ```bash
+   git clone https://github.com/calebpryor/aem-dispatcher-filter-testing.git
+   cd aem-dispatcher-filter-testing
+   ```
 
 ---
 
 ## Docker Compose
 
-Docker Compose is the easiest method. One command pulls the image (or builds it) and starts the container with the correct ports and volume mounts already configured.
-
-### Step 1 — Clone the repository
-
-```bash
-git clone https://github.com/calebpryor/aem-dispatcher-filter-testing.git
-cd aem-dispatcher-filter-testing
-```
-
-### Step 2 — Start the container
-
-**Using the pre-built image from Docker Hub (fastest):**
-
-```bash
-docker compose up
-```
-
-This pulls `pryor/aem-dispatcher-filter-testing:rockylinux8v2` from Docker Hub and starts it. You only download the image once; subsequent runs use the cached copy.
-
-**Or, build the image locally from source:**
-
 ```bash
 docker compose up --build
 ```
 
-This reads the `Dockerfile` in the repository and builds the image on your machine before starting. Use this if you want to verify what's in the image, or if you've modified the `Dockerfile`.
+- The image is **built from this checkout** (`pull_policy: build` in `docker-compose.yml`), so you always run the code you have. The first build takes a few minutes; later ones reuse the cache and take seconds.
+- Add `-d` to run in the background: `docker compose up --build -d`. Follow the output with `docker compose logs -f`.
+- Stop with `Ctrl+C` (foreground) or `docker compose down`.
 
-### Step 3 — Open the control panel
+Then open **http://127.0.0.1:59173**. The control panel installs the dispatcher module the first time you open it (see the [README](../README.md#quick-start-5-minutes)).
 
-Once the container is running you will see log output in your terminal. Open your browser and go to:
+### What Compose sets up
 
-```
-http://127.0.0.1:59173
-```
-
-You should see the **Dispatcher Sandbox control panel**.
-
-### Step 4 — Install the dispatcher module
-
-The Apache module (`mod_dispatcher.so`) is not included in the image. You must download it once through the control panel:
-
-1. Click the **Module Version** tab (or press `Ctrl+Shift+2`)
-2. Select a version from the dropdown (use the latest unless you need a specific version)
-3. Click **Download & switch module**
-4. Wait for the spinner to finish — Apache restarts automatically
-
-After this, the dispatcher is live at **http://localhost**.
-
-### Stopping the container
-
-Press `Ctrl+C` in the terminal where Compose is running, or from another terminal:
-
-```bash
-docker compose down
-```
-
-Your filter files in `./filters/` and logs in `./logs/` are preserved on your machine between runs.
-
-### Changing the control panel port
-
-If port `59173` is already in use on your machine:
-
-```bash
-cp .env.example .env
-# Edit .env and change CONTROL_PORT to a free port, e.g. 49821
-docker compose up
-```
+| Setting | Value | Why |
+|---|---|---|
+| Platform | `linux/amd64` | The Adobe dispatcher module for Rocky Linux 8 is x86_64. Runs fine on Apple Silicon. |
+| Port `80` | dispatcher | Send test traffic to `http://localhost` |
+| Port `127.0.0.1:59173` | control panel | Bound to your machine only (not your network) |
+| `./filters/` | `/etc/httpd/conf.dispatcher.d/filters/` | Dispatcher filter files and panel settings |
+| `./modsecurity/` | `/etc/httpd/modsecurity.d/rules/` | Your ModSecurity rule set |
+| `./tests/` | `/usr/local/share/tests/` | Saved test lists |
+| `./logs/` | `/var/log/httpd/` | All log files |
 
 ### Environment variables
 
-Copy `.env.example` to `.env` to override defaults:
+Copy `.env.example` to `.env` and edit it to override the defaults:
 
 | Variable | Default | Description |
 |---|---|---|
-| `CONTROL_PORT` | `59173` | Port for the browser control panel |
-| `TEST_URL_BASE` | `http://127.0.0.1` | Base URL used when running path tests |
+| `CONTROL_PORT` | `59173` | Port for the control panel. Change it if 59173 is taken, then open `http://127.0.0.1:<port>`. |
+| `TEST_URL_BASE` | `http://127.0.0.1` | Base URL the panel sends test requests to (inside the container) |
+
+To change the dispatcher port (for example if port 80 is taken), edit `"80:80"` in `docker-compose.yml` to `"8080:80"` and use `http://localhost:8080`.
 
 ---
 
-## Pull and Run
+## Build and `docker run`
 
-Use this method if you want to start the container without Compose and without building anything locally.
+Use this if you don't want Compose.
 
-### Step 1 — Pull the image
+### Step 1: Build the image
 
 ```bash
-docker pull pryor/aem-dispatcher-filter-testing:rockylinux8v2
+docker build --platform linux/amd64 -t aem-dispatcher-sandbox .
 ```
 
-This downloads the pre-built image from Docker Hub to your machine. It only needs to happen once.
+### Step 2: Run the container
 
-### Step 2 — Clone the repo (for filter files and logs)
-
-```bash
-git clone https://github.com/calebpryor/aem-dispatcher-filter-testing.git
-cd aem-dispatcher-filter-testing
-```
-
-You need the local `filters/` and `logs/` directories to exist so the container has somewhere to read your filter rules from and write logs to.
-
-### Step 3 — Run the container
-
-Replace `/FULL/PATH/TO/aem-dispatcher-filter-testing` with the actual path to where you cloned the repo:
+From the repository folder (Mac / Linux / WSL):
 
 ```bash
-docker run \
-  --rm \
+docker run --rm --platform linux/amd64 \
   -p 80:80 \
   -p 127.0.0.1:59173:59173 \
   -e CONTROL_PORT=59173 \
-  -v /FULL/PATH/TO/aem-dispatcher-filter-testing/filters/:/etc/httpd/conf.dispatcher.d/filters/ \
-  -v /FULL/PATH/TO/aem-dispatcher-filter-testing/logs/:/var/log/httpd/ \
-  pryor/aem-dispatcher-filter-testing:rockylinux8v2
+  -v "$(pwd)/filters":/etc/httpd/conf.dispatcher.d/filters/ \
+  -v "$(pwd)/modsecurity":/etc/httpd/modsecurity.d/rules/ \
+  -v "$(pwd)/tests":/usr/local/share/tests/ \
+  -v "$(pwd)/logs":/var/log/httpd/ \
+  aem-dispatcher-sandbox
 ```
 
-**What each flag does:**
+On Windows PowerShell, replace `$(pwd)` with `${PWD}` and the trailing `\` with a backtick (`` ` ``).
 
 | Flag | What it does |
 |---|---|
-| `--rm` | Removes the container automatically when you stop it |
-| `-p 80:80` | Maps port 80 on your machine to port 80 in the container (the dispatcher) |
-| `-p 127.0.0.1:59173:59173` | Maps port 59173 on localhost to the control panel (loopback-only for safety) |
-| `-e CONTROL_PORT=59173` | Tells the container which port the control panel should listen on |
-| `-v .../filters:/etc/httpd/conf.dispatcher.d/filters/` | Mounts your local filter files into the container |
-| `-v .../logs:/var/log/httpd/` | Mounts the log directory so logs are written to your machine |
+| `--rm` | Removes the container when it stops. Your files in the mounted folders are kept. |
+| `-p 80:80` | Dispatcher on `http://localhost` |
+| `-p 127.0.0.1:59173:59173` | Control panel on `http://127.0.0.1:59173`, reachable only from your machine |
+| `-e CONTROL_PORT=59173` | Port the control panel listens on inside the container (keep it equal to the published port) |
+| `-v …/filters`, `-v …/modsecurity`, `-v …/tests`, `-v …/logs` | Share your filters, ModSecurity rules, saved tests and logs with the container |
 
-### Step 4 — Install the dispatcher module and open the control panel
+### Step 3: Open the control panel
 
-Same as the Compose method: open `http://127.0.0.1:59173`, go to the **Module Version** tab, and download the module.
+Open `http://127.0.0.1:59173`. The dispatcher module installs automatically on first open.
+
+Stop the container with `Ctrl+C`, or `docker stop <container-id>` (see `docker ps`).
 
 ---
 
-## Build and Run
+## The pre-built Docker Hub image
 
-Use this method if you want to build the image from source — for example, to audit the `Dockerfile`, make changes to the image, or avoid relying on a pre-built image you didn't create.
-
-### Step 1 — Clone the repository
+[`pryor/aem-dispatcher-filter-testing:rockylinux8v2`](https://hub.docker.com/r/pryor/aem-dispatcher-filter-testing) is an earlier release published to Docker Hub. It supports **dispatcher filters only, without ModSecurity**. For ModSecurity testing, build from source as shown above.
 
 ```bash
-git clone https://github.com/calebpryor/aem-dispatcher-filter-testing.git
-cd aem-dispatcher-filter-testing
-```
-
-### Step 2 — Build the image
-
-```bash
-docker build -t pryor/aem-dispatcher-filter-testing:rockylinux8v2 .
-```
-
-This reads the `Dockerfile` in the current directory and creates a local image tagged `pryor/aem-dispatcher-filter-testing:rockylinux8v2`. Building takes a few minutes the first time as it installs packages inside the image.
-
-If you're on Apple Silicon (M1/M2/M3 Mac) and want to explicitly build for x86_64 (recommended, to match the dispatcher module architecture):
-
-```bash
-docker buildx build --platform linux/amd64 -t pryor/aem-dispatcher-filter-testing:rockylinux8v2 .
-```
-
-### Step 3 — Run the container
-
-```bash
-docker run \
-  --rm \
-  -p 80:80 \
-  -p 127.0.0.1:59173:59173 \
-  -e CONTROL_PORT=59173 \
+docker run --rm --platform linux/amd64 \
+  -p 80:80 -p 127.0.0.1:59173:59173 -e CONTROL_PORT=59173 \
   -v "$(pwd)/filters":/etc/httpd/conf.dispatcher.d/filters/ \
   -v "$(pwd)/logs":/var/log/httpd/ \
   pryor/aem-dispatcher-filter-testing:rockylinux8v2
 ```
 
-Using `$(pwd)` automatically fills in the full path to the current directory (works on Mac/Linux). On Windows with PowerShell, replace `$(pwd)` with `${PWD}`.
-
-### Step 4 — Install the dispatcher module and open the control panel
-
-Open `http://127.0.0.1:59173`, go to the **Module Version** tab, and download the module.
-
 ---
 
 ## Troubleshooting
 
-**`port is already allocated` or `address already in use`**
-Something else on your machine is using port 80 or 59173. For port 80, change `-p 80:80` to `-p 8080:80` in your run command and access the dispatcher at `http://localhost:8080`. For port 59173, change the `-p 127.0.0.1:59173:59173` flag and the `-e CONTROL_PORT=` value to a free port.
+**`port is already allocated` / `address already in use`**
+Port 80 or 59173 is in use (`docker ps` shows other containers). Stop the other program, or publish different ports: change `-p 80:80` to `-p 8080:80`, and for the panel change both `-p 127.0.0.1:59173:59173` and `-e CONTROL_PORT=59173` to the same free port.
 
 **The control panel loads but the dispatcher doesn't respond on port 80**
-The dispatcher module hasn't been installed yet. Open `http://127.0.0.1:59173` and install it from the Module Version tab.
+The dispatcher module isn't installed yet. Install it from the window the panel shows, or from **Sandbox Controls → Dispatcher module version**.
 
 **`Cannot load modules/dispatcher/mod_dispatcher.so`**
-You may have an old empty file in `./dispatcher/`. The default Compose and `docker run` commands above do **not** mount `./dispatcher/` — if you added a mount for it, remove it unless you have a valid Linux `.so` file there. See [`dispatcher/README.md`](../dispatcher/README.md).
+Don't mount `./dispatcher/` unless it holds a valid Linux x86_64 `mod_dispatcher.so`. See [`dispatcher/README.md`](../dispatcher/README.md).
 
-**The image takes a long time to pull**
-The image is about 500 MB. This is normal for the first pull. Docker caches it so subsequent starts are instant.
+**Changes to filter files don't take effect**
+Use **Filters → Save & Restart**, or **Sandbox Controls → Restart dispatcher**.
 
-**Filter changes don't take effect**
-Save your filter file and restart the dispatcher. In the control panel, go to **Server Controls → Restart dispatcher**, or use **Filters → Save & Restart**.
+**ModSecurity changes don't take effect**
+The change failed the `httpd -t` check. Look at the ModSecurity tab, or run `docker compose logs` and look for `httpd config test FAILED`.
 
 ---
 

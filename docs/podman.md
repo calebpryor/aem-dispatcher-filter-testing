@@ -1,13 +1,14 @@
-# Podman Installation Guide
+# Running with Podman
 
-Podman is a Docker-compatible container engine that runs containers without requiring a system daemon. It is available on Linux, Mac, and Windows, and can run this project with no changes to the image or the `docker-compose.yml` file.
+Podman is a Docker-compatible container engine that doesn't need a background daemon. It runs this project with the same `Dockerfile` and `docker-compose.yml`.
 
-This guide covers two methods:
+This page covers:
 
-1. **[Podman Compose](#podman-compose)** — recommended; uses the same `docker-compose.yml` that Docker uses
-2. **[Podman Run](#podman-run)** — start the container directly with a `podman run` command
+1. **[Podman Compose](#podman-compose)** (recommended)
+2. **[Build and `podman run`](#build-and-podman-run)**
+3. **[Platform notes](#platform-notes)**: Linux ports, SELinux, Mac, Windows
 
-> **Using Docker instead of Podman?** See [docker.md](docker.md).
+> **Using Docker instead?** Follow the [README quick start](../README.md#quick-start-5-minutes) or [docker.md](docker.md).
 
 ---
 
@@ -15,252 +16,128 @@ This guide covers two methods:
 
 ### Install Podman
 
-**Option A — Podman Desktop (easiest for Mac and Windows)**
+**Option A: Podman Desktop (easiest on Mac and Windows).** Download it from [podman-desktop.io/downloads](https://podman-desktop.io/downloads), install it and start it. On first start it offers to create a **Podman machine** (a small Linux VM). Accept.
 
-Download and install from [podman-desktop.io/downloads](https://podman-desktop.io/downloads). Run through the installer, then launch Podman Desktop. It manages a virtual machine for you automatically.
+**Option B: command line only**
 
-**Option B — Podman CLI only**
+- **Mac:** `brew install podman`, then `podman machine init && podman machine start`
+- **Fedora / RHEL:** `sudo dnf install podman`
+- **Ubuntu / Debian:** `sudo apt install podman`
+- **Windows:** use Podman Desktop (it runs on WSL2)
 
-- **Mac:** `brew install podman` then `podman machine init && podman machine start`
-- **Fedora/RHEL/CentOS:** `sudo dnf install podman`
-- **Ubuntu/Debian:** `sudo apt install podman`
-- **Windows:** Use [Podman Desktop](https://podman-desktop.io/downloads) or WSL2
-
-Verify the installation:
+Check that it works:
 
 ```bash
 podman --version
+podman ps
 ```
 
-### Install `podman-compose` (for the Compose method)
+### Install a Compose provider
 
-If you want to use the Compose method, install `podman-compose`:
+`podman compose` needs a Compose program behind it. Use one of these:
+
+- `pip3 install podman-compose` (or `sudo dnf install podman-compose` on Fedora / RHEL)
+- **Podman Desktop → Settings → Resources → Compose → Setup**, which installs `docker-compose` for Podman
+
+### Get the code
 
 ```bash
-pip3 install podman-compose
+git clone https://github.com/calebpryor/aem-dispatcher-filter-testing.git
+cd aem-dispatcher-filter-testing
 ```
-
-Or on Fedora/RHEL:
-
-```bash
-sudo dnf install podman-compose
-```
-
-Alternatively, enable **Docker compatibility mode** in Podman Desktop settings and use the `docker compose` command — it will route through Podman automatically.
-
-### Install Git
-
-- **Mac:** Run `git --version` — macOS will prompt you to install it if missing
-- **Fedora/RHEL:** `sudo dnf install git`
-- **Ubuntu/Debian:** `sudo apt install git`
-- **Windows:** Download from [git-scm.com](https://git-scm.com/downloads)
 
 ---
 
 ## Podman Compose
 
-### Step 1 — Clone the repository
-
-```bash
-git clone https://github.com/calebpryor/aem-dispatcher-filter-testing.git
-cd aem-dispatcher-filter-testing
-```
-
-### Step 2 — Start the container
-
-```bash
-podman compose up
-```
-
-Or, if you're using Docker compatibility mode in Podman Desktop:
-
-```bash
-docker compose up
-```
-
-Podman reads the same `docker-compose.yml` file that Docker uses. The image (`pryor/aem-dispatcher-filter-testing:rockylinux8v2`) is pulled from Docker Hub automatically on first run.
-
-To build the image locally from source instead of pulling it:
-
 ```bash
 podman compose up --build
 ```
 
-### Step 3 — Open the control panel
+The image is built from this checkout. The first build takes a few minutes. When the output shows `Control panel listening on 0.0.0.0:59173`, open **http://127.0.0.1:59173**. The panel installs the dispatcher module the first time you open it. Then follow the walkthroughs in the [README](../README.md#walkthrough-test-dispatcher-filters).
 
-Once the container is running, open your browser and go to:
+Stop with `Ctrl+C` or `podman compose down`. Change the control panel port with `cp .env.example .env` and edit `CONTROL_PORT`.
 
-```
-http://127.0.0.1:59173
-```
-
-### Step 4 — Install the dispatcher module
-
-1. Click the **Module Version** tab (or press `Ctrl+Shift+2`)
-2. Select a version and click **Download & switch module**
-3. Wait for the spinner — Apache restarts automatically
-
-After this, the dispatcher is live at **http://localhost**.
-
-### Stopping the container
-
-```bash
-podman compose down
-```
-
-Your filter files and logs are preserved in `./filters/` and `./logs/` on your machine.
-
-### Changing the control panel port
-
-```bash
-cp .env.example .env
-# Edit .env and set CONTROL_PORT to a free port, e.g. 49821
-podman compose up
-```
+> On **Linux**, see [rootless Podman and port 80](#linux-rootless-podman-and-port-80) and [SELinux](#linux-selinux-fedora-rhel-centos) before starting.
 
 ---
 
-## Podman Run
-
-Use this to start the container directly without Compose.
-
-### Step 1 — Pull the image
+## Build and `podman run`
 
 ```bash
-podman pull docker.io/pryor/aem-dispatcher-filter-testing:rockylinux8v2
-```
+podman build --platform linux/amd64 -t aem-dispatcher-sandbox .
 
-> Note: Podman requires the full registry prefix (`docker.io/`) when pulling from Docker Hub.
-
-### Step 2 — Clone the repo (for filter files and logs)
-
-```bash
-git clone https://github.com/calebpryor/aem-dispatcher-filter-testing.git
-cd aem-dispatcher-filter-testing
-```
-
-### Step 3 — Run the container
-
-Replace `/FULL/PATH/TO/aem-dispatcher-filter-testing` with the actual path to where you cloned the repo:
-
-```bash
-podman run \
-  --rm \
+podman run --rm --platform linux/amd64 \
   -p 80:80 \
   -p 127.0.0.1:59173:59173 \
   -e CONTROL_PORT=59173 \
-  -v /FULL/PATH/TO/aem-dispatcher-filter-testing/filters/:/etc/httpd/conf.dispatcher.d/filters/:z \
-  -v /FULL/PATH/TO/aem-dispatcher-filter-testing/logs/:/var/log/httpd/:z \
-  docker.io/pryor/aem-dispatcher-filter-testing:rockylinux8v2
+  -v "$(pwd)/filters":/etc/httpd/conf.dispatcher.d/filters/:z \
+  -v "$(pwd)/modsecurity":/etc/httpd/modsecurity.d/rules/:z \
+  -v "$(pwd)/tests":/usr/local/share/tests/:z \
+  -v "$(pwd)/logs":/var/log/httpd/:z \
+  localhost/aem-dispatcher-sandbox
 ```
 
-> The `:z` suffix on the volume mounts is a **SELinux** label flag. It is harmless on systems without SELinux and required on Fedora, RHEL, and CentOS to allow the container to read/write the mounted directories. See [Platform-Specific Notes](#platform-specific-notes) below.
+The `:z` at the end of each `-v` is an SELinux label. It's required on Fedora / RHEL / CentOS and harmless elsewhere.
 
-### Step 4 — Install the dispatcher module and open the control panel
-
-Open `http://127.0.0.1:59173`, go to the **Module Version** tab, and download the module.
+Then open `http://127.0.0.1:59173`.
 
 ---
 
-## Platform-Specific Notes
+## Platform notes
 
-### Linux — rootless Podman and port 80
+### Linux: rootless Podman and port 80
 
-On Linux, Podman runs **rootless** by default, which means binding to ports below 1024 (like port 80) may be blocked by the kernel.
+Rootless Podman can't publish ports below 1024 by default. Either:
 
-**Option A — Change the published port**
+- **Use a high port.** Change `-p 80:80` to `-p 8080:80` (or `"8080:80"` in `docker-compose.yml`) and use `http://localhost:8080`, **or**
+- **Allow low ports.** Run `sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80`. To make it permanent, add that setting to `/etc/sysctl.d/99-podman.conf`.
 
-Replace `-p 80:80` with a high port:
+### Linux: SELinux (Fedora, RHEL, CentOS)
 
-```bash
--p 8080:80
-```
+If the container gets `permission denied` on the mounted folders, add `:z` to every volume:
 
-Then access the dispatcher at `http://localhost:8080`.
-
-**Option B — Allow unprivileged low-port binding (system-wide)**
-
-```bash
-sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80
-```
-
-To make this permanent, add it to `/etc/sysctl.d/99-podman.conf`.
-
-### Linux — SELinux (Fedora, RHEL, CentOS)
-
-If Podman denies access to your mounted `filters/` or `logs/` directories, SELinux is blocking it.
-
-**Fix for `podman run`:** Append `:z` to each `-v` flag (as shown in the run command above).
-
-**Fix for Compose:** Add `:z` to each volume in `docker-compose.yml`:
+- **`podman run`:** already shown above
+- **Compose:** edit `docker-compose.yml`:
 
 ```yaml
 volumes:
   - ./filters/:/etc/httpd/conf.dispatcher.d/filters/:z
   - ./logs/:/var/log/httpd/:z
+  - ./modsecurity/:/etc/httpd/modsecurity.d/rules/:z
+  - ./tests/:/usr/local/share/tests/:z
 ```
 
-### Mac — Docker compatibility mode
+### Mac: Apple Silicon
 
-If you have scripts or muscle memory that type `docker` instead of `podman`, enable **Docker compatibility** in Podman Desktop:
+The image runs as `linux/amd64` (x86_64) on purpose. The Adobe dispatcher module for Rocky Linux 8 is x86_64-only. Podman uses emulation automatically, so nothing extra is needed.
 
-1. Open Podman Desktop
-2. Go to **Settings → Preferences**
-3. Enable **Docker Compatibility**
+### Mac / Windows: Docker compatibility
 
-This creates a Docker socket so `docker` commands work with Podman.
+To type `docker` instead of `podman`, enable **Docker Compatibility** in **Podman Desktop → Settings → Preferences**. After that, `docker compose up --build` works as in the README.
 
 ### Windows
 
-Use **Podman Desktop** on Windows. It manages a WSL2-based virtual machine for you. Once installed, use the terminal inside Podman Desktop or your WSL2 shell.
-
----
-
-## Building from Source with Podman
-
-If you prefer to build the image yourself rather than pulling it:
-
-```bash
-podman build -t pryor/aem-dispatcher-filter-testing:rockylinux8v2 .
-```
-
-For Apple Silicon Macs or if you want to explicitly target x86_64:
-
-```bash
-podman build --platform linux/amd64 -t pryor/aem-dispatcher-filter-testing:rockylinux8v2 .
-```
-
-Then run with the image you just built:
-
-```bash
-podman run \
-  --rm \
-  -p 80:80 \
-  -p 127.0.0.1:59173:59173 \
-  -e CONTROL_PORT=59173 \
-  -v "$(pwd)/filters":/etc/httpd/conf.dispatcher.d/filters/:z \
-  -v "$(pwd)/logs":/var/log/httpd/:z \
-  pryor/aem-dispatcher-filter-testing:rockylinux8v2
-```
+Use **Podman Desktop**, which manages a WSL2 VM. Run the commands from the Podman Desktop terminal or your WSL2 shell.
 
 ---
 
 ## Troubleshooting
 
-**`Error: short-name resolution` when pulling the image**
-Add the full registry prefix: `docker.io/pryor/aem-dispatcher-filter-testing:rockylinux8v2`
+**`podman compose` says no compose provider was found**
+Install one; see [Install a Compose provider](#install-a-compose-provider).
+
+**`Error: short-name resolution`**
+Use the full image name, for example `docker.io/library/rockylinux:8`, or add `docker.io` to `unqualified-search-registries` in `/etc/containers/registries.conf`.
 
 **Port 80 access denied on Linux**
-See [Linux — rootless Podman and port 80](#linux--rootless-podman-and-port-80) above.
+See [rootless Podman and port 80](#linux-rootless-podman-and-port-80).
 
-**`permission denied` on volume mounts (Fedora/RHEL/CentOS)**
-See [Linux — SELinux](#linux--selinux-fedora-rhel-centos) above. Add `:z` to your `-v` mounts.
+**`permission denied` on the mounted folders**
+See [SELinux](#linux-selinux-fedora-rhel-centos).
 
-**The control panel loads but Apache doesn't respond on port 80**
-The dispatcher module hasn't been installed yet. Open `http://127.0.0.1:59173` and install it from the Module Version tab.
-
-**`podman compose` command not found**
-Install `podman-compose`: `pip3 install podman-compose`, or enable Docker compatibility in Podman Desktop and use `docker compose` instead.
+**The control panel loads but the dispatcher doesn't respond on port 80**
+The dispatcher module isn't installed yet. Install it from the window the panel shows, or from **Sandbox Controls → Dispatcher module version**.
 
 ---
 

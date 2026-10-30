@@ -8,7 +8,9 @@ services:
     environment:
      - CONTROL_PORT=${CONTROL_PORT:-59173}
      - TEST_URL_BASE=${TEST_URL_BASE:-http://127.0.0.1}
-    image: pryor/aem-dispatcher-filter-testing:rockylinux8v2
+    image: pryor/aem-dispatcher-filter-testing:rockylinux8-modsec
+    # Always build from this checkout (the image is not pulled from Docker Hub).
+    pull_policy: build
     # The aarch64 (arm64) build of mod_dispatcher.so requires GLIBC_2.32, which is not
     # available on Rocky/RHEL 8 (glibc 2.28). Pin to amd64 so the x86_64 dispatcher
     # binary is downloaded — this matches the RHEL 8 production build and loads cleanly.
@@ -24,5 +26,8 @@ services:
       # the host breaks httpd (see disp_module_valid.sh). To use a vendor .so, add:
       #   - ./dispatcher/mod_dispatcher.so:/etc/httpd/modules/dispatcher/mod_dispatcher.so:ro
       - ./logs/:/var/log/httpd/
+      # ModSecurity rules (*.conf + *.data), copied in from your own rule set (git-ignored).
+      # Choose block / logonly / off per rule from the control panel ModSecurity tab.
+      - ./modsecurity/:/etc/httpd/modsecurity.d/rules/
       # Test path JSON files — entire tests/ directory is mounted so all *.json files are listable.
       - ./tests/:/usr/local/share/tests/
