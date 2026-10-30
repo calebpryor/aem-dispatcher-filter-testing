@@ -24,6 +24,7 @@ CLI (used by start.sh and watch_filters.sh):
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import re
@@ -31,8 +32,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 MODSEC_DIR = Path(os.environ.get("MODSEC_DIR", "/etc/httpd/modsecurity.d"))
 RULES_DIR = MODSEC_DIR / "rules"
@@ -40,6 +42,9 @@ RULES_HOST_DISPLAY = "./modsecurity/"
 PREFS_FILE = Path(os.environ.get("SANDBOX_PREFS_FILE", "/etc/httpd/conf.dispatcher.d/filters/.prefs.json"))
 MODULE_VALID_SCRIPT = "/usr/local/bin/disp_module_valid.sh"
 HTTPD_BIN = "/usr/sbin/httpd"
+# Shared with watch_filters.sh (`flock`) so the control panel and the file watcher never run
+# `supervisorctl restart` at the same time — overlapping restarts leave httpd mid-cycle.
+RESTART_LOCK_FILE = os.environ.get("SANDBOX_RESTART_LOCK", "/tmp/sandbox-httpd-restart.lock")
 
 ENGINE_MODES = ("On", "DetectionOnly", "Off")
 # What the Testing tab exercises: both layers, dispatcher filters only (ModSecurity engine forced
@@ -55,6 +60,17 @@ MAX_FILE_CHARS = 512_000
 
 _DATA_REF_RE = re.compile(r"@(?:pmFromFile|ipMatchFromFile|pmf)\s+([^\s\"']+)")
 _ID_RE = re.compile(r"""(?:^|[\s,"'])id\s*:\s*['"]?(\d+)""")
+
+
+@contextmanager
+def restart_lock() -> Iterator[None]:
+    """Serialize httpd restarts across processes (control server, watcher, CLI)."""
+    with open(RESTART_LOCK_FILE, "a") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
 
 
 # ── prefs ────────────────────────────────────────────────────────────────────
@@ -405,7 +421,8 @@ def main(argv: List[str]) -> int:
         print("[modsec] Created empty placeholder for missing data file: %s%s" % (RULES_HOST_DISPLAY, rel))
     print("[modsec] Active rule files (%d): %s" % (len(res["active"]), ", ".join(res["active"]) or "(none)"))
     if restart and module_installed():
-        r = subprocess.run(["supervisorctl", "restart", "dispatcher"], capture_output=True, text=True)
+        with restart_lock():
+            r = subprocess.run(["supervisorctl", "restart", "dispatcher"], capture_output=True, text=True)
         print("[modsec] dispatcher restart: %s" % (r.stdout.strip() or r.stderr.strip()))
     return 0
 
