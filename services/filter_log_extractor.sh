@@ -35,9 +35,7 @@ extract_filter_logs() {
     
     # Monitor the dispatcher log file and extract filter-related entries
     tail -F "$DISPATCHER_LOG" 2>/dev/null | while read line; do
-        # Forward all dispatcher logs to stdout for container logging
-        echo "$line"
-        
+
         # Extract thread ID from the log line for tracking request sequences
         local tid=$(echo "$line" | grep -oE "tid [0-9]+" | cut -d' ' -f2)
         

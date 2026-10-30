@@ -1,0 +1,2762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dispatcher sandbox — control</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      line-height: 1.45;
+      color: #1a1a1a;
+      background: #f4f5f7;
+    }
+    body { margin: 0; padding: 0 0 2rem; max-width: 60rem; }
+    header {
+      padding: 0.9rem 1.5rem 0.75rem;
+      border-bottom: 1px solid #e2e4e9;
+      background: #fff;
+      margin-bottom: 0;
+    }
+    header h1 { font-size: 1.15rem; margin: 0; font-weight: 700; color: #111; }
+    header p { font-size: 0.8rem; color: #666; margin: 0.2rem 0 0; }
+
+    /* ── Sandbox mode bar ── */
+    .mode-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.5rem;
+      background: #f0f2f5;
+      border-radius: 4px;
+      flex-wrap: wrap;
+    }
+    .mode-label { font-size: 0.8rem; font-weight: 600; color: #555; white-space: nowrap; }
+    .mode-btn {
+      padding: 0.3rem 0.85rem;
+      border: 1px solid #ccd;
+      border-radius: 5px;
+      background: #fff;
+      color: #444;
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mode-btn:hover { background: #e8eaf0; }
+    .mode-btn.active-deny  { background: #fdd; border-color: #c00; color: #900; }
+    .mode-btn.active-allow { background: #d4f5e2; border-color: #0a6633; color: #0a6633; }
+    .mode-hint { font-size: 0.78rem; color: #666; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 2px solid #e2e4e9;
+      padding: 0 1.1rem;
+      gap: 0;
+    }
+    .tab-btn {
+      padding: 0.65rem 1rem;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      background: transparent;
+      color: #555;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 0;
+      white-space: nowrap;
+    }
+    .tab-btn:hover { color: #111; background: #f4f5f7; }
+    .tab-btn.active { color: #1f7aad; border-bottom-color: #1f7aad; }
+    .tab-panel { display: none; padding: 1.25rem 1.5rem 0; }
+    .tab-panel.active { display: block; }
+
+    /* ── Sections ── */
+    section {
+      background: #fff;
+      border: 1px solid #e2e4e9;
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    h2 { font-size: 0.95rem; margin: 0 0 0.65rem; font-weight: 700; color: #222; }
+    h3 { font-size: 0.85rem; margin: 1rem 0 0.5rem; font-weight: 650; color: #333; }
+    section p a { color: #1f7aad; }
+
+    /* ── Forms ── */
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 0.25rem; }
+    select, textarea, button, input[type="number"] { font: inherit; border-radius: 6px; }
+    select { padding: 0.35rem 0.5rem; min-width: 10rem; border: 1px solid #ccd; background: #fff; }
+    textarea {
+      width: 100%; box-sizing: border-box; min-height: 8rem;
+      padding: 0.5rem 0.6rem; border: 1px solid #ccd; resize: vertical;
+      font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+      font-size: 0.82rem;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: flex-end; margin-bottom: 0.75rem; }
+    .row:last-child { margin-bottom: 0; }
+    button {
+      padding: 0.45rem 0.85rem; border: 1px solid #2a6f9c;
+      background: #1f7aad; color: #fff; cursor: pointer; font-weight: 600;
+    }
+    button:hover { background: #1a6b99; }
+    button.secondary { border-color: #999; background: #fff; color: #222; }
+    button.secondary:hover { background: #f0f0f0; }
+    button.danger { border-color: #c0392b; background: #e74c3c; color: #fff; }
+    button.danger:hover { background: #c0392b; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .hint { font-size: 0.8rem; color: #666; margin: 0 0 0.6rem; }
+    .muted { color: #666; font-size: 0.8rem; }
+    .err { color: #b00020; font-size: 0.82rem; }
+
+    /* ── Code output ── */
+    pre.action-out {
+      margin: 0.5rem 0 0; padding: 0.65rem 0.75rem;
+      background: #0d1117; color: #e6edf3;
+      border-radius: 6px; font-size: 0.78rem;
+      overflow: auto; max-height: 16rem;
+      white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* ── Status pill ── */
+    .pill {
+      display: inline-block; padding: 0.15rem 0.6rem;
+      border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+    }
+    .pill-ok { background: #d4f5e2; color: #0a6633; }
+    .pill-warn { background: #fff3cd; color: #856404; }
+    .pill-err { background: #fdd; color: #900; }
+
+    /* ── Service health grid ── */
+    .svc-grid {
+      display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem;
+      margin-top: 0.4rem;
+    }
+    .svc-chip {
+      display: flex; align-items: center; gap: 0.35rem;
+      background: #f0f2f5; border: 1px solid #e2e4e9;
+      border-radius: 6px; padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+    }
+    .svc-chip .svc-name { font-weight: 600; color: #333; }
+    .svc-chip .svc-detail { color: #777; font-size: 0.75rem; }
+
+    /* ── Filter table ── */
+    table.filters {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.8rem; margin-top: 0.6rem;
+    }
+    table.filters th, table.filters td {
+      border: 1px solid #dfe3e8; padding: 0.3rem 0.5rem;
+      text-align: left; vertical-align: top;
+    }
+    table.filters th { background: #f0f2f5; font-weight: 700; }
+    table.filters td code { font-size: 0.82em; font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace; word-break: break-all; }
+
+    /* ── Test results table ── */
+    table.results {
+      width: 100%; border-collapse: collapse;
+      font-size: 0.82rem; margin-top: 0.5rem;
+    }
+    table.results th, table.results td {
+      border: 1px solid #dfe3e8; padding: 0.35rem 0.5rem;
+      text-align: left; vertical-align: top;
+    }
+    table.results th { background: #f0f2f5; font-weight: 600; }
+    table.results td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    table.results tbody tr.row-pass { background: #c8f0d4; }
+    table.results tbody tr.row-fail { background: #ffc9c9; }
+    table.results tbody tr.row-pass td,
+    table.results tbody tr.row-fail td { color: #1a1a1a; }
+    table.results td a { color: #1a1a1a; text-decoration: underline; }
+    table.results td a:hover { color: #000; }
+    table.results td a code { text-decoration: inherit; }
+    table.results td code { font-size: 0.88em; }
+    .filter-note { font-size: 0.75rem; margin-top: 0.3rem; padding: 0.2rem 0.4rem; border-radius: 4px; display: inline-block; }
+    .filter-note-warn   { background: #fff3cd; color: #856404; }
+    .filter-note-info   { background: #d1ecf1; color: #0c5460; }
+    .filter-note-danger { background: #f8d7da; color: #721c24; }
+
+    /* ── Misc ── */
+    .filter-list { font-size: 0.82rem; margin: 0.35rem 0 0; padding-left: 1.2rem; color: #333; }
+    .filter-list li { margin: 0.15rem 0; }
+    ul.log-links { margin: 0.5rem 0 0; padding-left: 1.2rem; font-size: 0.9rem; }
+    ul.log-links li { margin: 0.4rem 0; }
+    ul.log-links a { color: #1f7aad; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
+    label.inline { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 500; margin: 0; }
+
+    /* ── Pref-saved toast ── */
+    #prefToast {
+      position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 20000;
+      background: #1a1a2e; color: #e8eaf6;
+      border-radius: 8px; padding: 0.6rem 1rem;
+      font-size: 0.8rem; line-height: 1.4;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+      max-width: 22rem;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+    #prefToast.visible { opacity: 1; transform: translateY(0); }
+    #prefToast .toast-label { font-weight: 600; margin-bottom: 0.2rem; }
+    #prefToast .toast-path { font-family: monospace; font-size: 0.78rem; color: #90caf9; word-break: break-all; }
+
+    /* ── Module install modal ── */
+    .module-modal {
+      position: fixed; inset: 0; z-index: 10000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem; box-sizing: border-box;
+    }
+    .module-modal[hidden] { display: none !important; }
+    .scope-banner[hidden] { display: none !important; }
+    .module-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+    .module-modal-dialog {
+      position: relative; z-index: 1; background: #fff;
+      border-radius: 10px; padding: 1.35rem 1.5rem;
+      max-width: 28rem; width: 100%;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      border: 1px solid #e2e4e9;
+    }
+    .module-modal-dialog h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+    .module-modal-dialog .row { margin-bottom: 1rem; }
+    #modalMsg { margin-top: 0.75rem; max-height: 10rem; }
+    body.module-modal-open { overflow: hidden; }
+    body.module-modal-open > *:not(.module-modal) { pointer-events: none; user-select: none; }
+    .module-modal { pointer-events: auto; }
+
+    /* ── Spinner ── */
+    .modal-spinner {
+      width: 2rem; height: 2rem;
+      border: 3px solid #e2e4e9; border-top-color: #1f7aad;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      margin: 0 auto 0.75rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Progress bar ── */
+    .progress-track { height: 8px; background: #e2e4e9; border-radius: 4px; overflow: hidden; margin-top: 0.75rem; }
+    .progress-fill  { height: 100%; background: #1f7aad; border-radius: 4px; transition: width 0.15s ease; }
+
+    /* ── Method badge ── */
+    .method-badge {
+      display: inline-block; font-size: 0.68rem; font-weight: 700;
+      padding: 0.05rem 0.35rem; border-radius: 3px; margin-right: 0.35rem;
+      background: #e8f0fe; color: #1a56c4; vertical-align: middle; font-family: inherit;
+    }
+    .method-badge.POST   { background: #fef3c7; color: #92400e; }
+    .method-badge.PUT    { background: #d1fae5; color: #065f46; }
+    .method-badge.DELETE { background: #fee2e2; color: #991b1b; }
+    a.path-link { color: #1a56c4; text-decoration: underline; text-underline-offset: 2px; }
+    a.path-link:hover { color: #0d3a8a; }
+
+    /* ── Help tooltips ── */
+    .help-tip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1rem; height: 1rem;
+      background: #dde1ea; color: #555;
+      border-radius: 50%; font-size: 0.62rem; font-weight: 700;
+      cursor: default; vertical-align: middle; margin-left: 0.4rem;
+      position: relative; user-select: none; flex-shrink: 0;
+    }
+    .help-tip:hover { background: #b8bfcc; color: #222; }
+    .help-tip::after {
+      content: attr(data-tip);
+      display: none;
+      position: absolute; left: 0; top: 1.3rem;
+      background: #1a1a1a; color: #f0f0f0;
+      font-size: 0.76rem; font-weight: 400;
+      padding: 0.5rem 0.75rem;
+      border-radius: 7px;
+      white-space: normal; word-break: normal;
+      max-width: 26rem; min-width: 14rem; width: max-content;
+      z-index: 200; line-height: 1.45;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+    .help-tip:hover::after { display: block; }
+
+    /* ── Guide tab ── */
+    .guide-step { display: flex; gap: 1rem; align-items: flex-start; }
+    .step-num {
+      flex-shrink: 0; width: 2rem; height: 2rem;
+      background: #1f7aad; color: #fff;
+      border-radius: 50%; font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 0.1rem;
+    }
+    .step-num.win { background: #0a6633; }
+    .guide-step h2 { margin: 0 0 0.4rem; }
+    .guide-step p, .guide-step ul { margin: 0 0 0.45rem; }
+    .guide-step ul { padding-left: 1.3rem; }
+    .guide-code {
+      display: inline-block; background: #0d1117; color: #e6edf3;
+      font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+      font-size: 0.78rem; padding: 0.6rem 0.85rem; border-radius: 6px;
+      margin: 0.3rem 0 0.5rem; white-space: pre;
+    }
+    .warning-box {
+      background: #fffbea; border: 1px solid #f0c000;
+      border-left: 4px solid #e6a800;
+      border-radius: 6px; padding: 0.65rem 0.85rem;
+      margin: 0.75rem 0 0.25rem;
+    }
+    .warning-box-title {
+      font-size: 0.8rem; font-weight: 700; color: #7a5500;
+      margin: 0 0 0.4rem; display: flex; align-items: center; gap: 0.35rem;
+    }
+    .warning-box ul { margin: 0; padding-left: 1.2rem; }
+    .warning-box li { font-size: 0.8rem; color: #5a3e00; margin: 0.3rem 0; line-height: 1.45; }
+
+    /* ── Guide collapsible sections ── */
+    details.guide-section {
+      background: #fff; border: 1px solid #e2e4e9; border-radius: 8px;
+      margin-bottom: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); overflow: hidden;
+    }
+    details.guide-section > summary {
+      cursor: pointer; list-style: none; padding: 0.8rem 1.1rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      user-select: none;
+    }
+    details.guide-section > summary::-webkit-details-marker { display: none; }
+    details.guide-section > summary::marker { content: none; }
+    details.guide-section > summary h2 { margin: 0; flex: 1; }
+    .guide-chevron { font-size: 0.65rem; color: #999; transition: transform 0.18s; flex-shrink: 0; }
+    details.guide-section[open] > summary .guide-chevron { transform: rotate(90deg); }
+    .guide-step-summary { display: flex; align-items: center; gap: 0.75rem; flex: 1; min-width: 0; }
+    .guide-step-summary h2 { margin: 0; }
+    .guide-body { padding: 0.75rem 1.1rem 0.9rem; border-top: 1px solid #f0f0f0; }
+    /* Card wrapper for sections that mix collapsible + always-visible content */
+    .guide-section-card {
+      background: #fff; border: 1px solid #e2e4e9; border-radius: 8px;
+      margin-bottom: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.04); overflow: hidden;
+    }
+    .guide-section-card > details > summary {
+      cursor: pointer; list-style: none; padding: 0.8rem 1.1rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+      user-select: none;
+    }
+    .guide-section-card > details > summary::-webkit-details-marker { display: none; }
+    .guide-section-card > details > summary::marker { content: none; }
+    .guide-section-card > details > summary h2 { margin: 0; flex: 1; }
+    .guide-section-card > details[open] > summary .guide-chevron { transform: rotate(90deg); }
+    .guide-always-visible { padding: 0.75rem 1.1rem 0.9rem; border-top: 1px solid #f0f0f0; }
+
+    /* ── Generate rules: allow / deny columns ── */
+    .gen-columns { display: flex; gap: 1rem; }
+    .gen-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .gen-col label { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.35rem; font-size: 0.85rem; font-weight: 600; }
+    .gen-col textarea { flex: 1; }
+    .gen-col-badge {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em;
+      padding: 0.1rem 0.45rem; border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .gen-col-badge-allow { background: #d4f5e2; color: #0a6633; border: 1px solid #a3d9b8; }
+    .gen-col-badge-deny  { background: #fdd;    color: #900;    border: 1px solid #f5b0b0; }
+
+    /* ── ModSecurity ── */
+    .mode-btn.active-on     { background: #fdd;    border-color: #c00;    color: #900; }
+    .mode-btn.active-detect { background: #fff3cd; border-color: #b38600; color: #856404; }
+    .mode-btn.active-off    { background: #e8eaf0; border-color: #555;    color: #333; }
+    input.text-input { font: inherit; border-radius: 6px; border: 1px solid #ccd; padding: 0.35rem 0.5rem; min-width: 16rem; }
+    .modsec-event { display: block; margin-bottom: 0.2rem; }
+    .modsec-event .ms-deny { color: #900; font-weight: 700; }
+    .modsec-event .ms-warn { color: #856404; font-weight: 700; }
+    .req-extra { display: block; font-size: 0.75rem; color: #555; margin-top: 0.15rem; word-break: break-all; }
+    @media (max-width: 600px) { .gen-columns { flex-direction: column; } }
+  </style>
+</head>
+<body>
+
+  <!-- ── Pref-saved toast ── -->
+  <div id="prefToast" role="status" aria-live="polite">
+    <div class="toast-label">Preferences saved</div>
+    <div class="toast-path" id="prefToastPath"></div>
+  </div>
+
+  <!-- ── Module install modal ── -->
+  <div id="moduleModal" class="module-modal" role="dialog" aria-modal="true" aria-labelledby="moduleModalTitle" hidden>
+    <div class="module-modal-backdrop" aria-hidden="true"></div>
+    <div class="module-modal-dialog">
+      <h2 id="moduleModalTitle">Install dispatcher module</h2>
+      <p class="hint">
+        <code>mod_dispatcher.so</code> is not loaded yet. Apache is waiting. Choose the Adobe-published Linux tarball version, then confirm to download and switch.
+      </p>
+      <div class="row">
+        <div>
+          <label for="verModal">Version</label>
+          <select id="verModal" aria-label="Dispatcher version for install"></select>
+        </div>
+      </div>
+      <button type="button" id="btnModalOk">Download module &amp; start</button>
+      <pre class="action-out" id="modalMsg" hidden></pre>
+    </div>
+  </div>
+
+  <!-- ── Sandbox restart modal ── -->
+  <div id="sandboxRestartModal" class="module-modal" role="dialog" aria-modal="true" aria-label="Applying policy" hidden>
+    <div class="module-modal-backdrop" aria-hidden="true"></div>
+    <div class="module-modal-dialog" style="max-width:22rem;text-align:center">
+      <div class="modal-spinner"></div>
+      <h2 id="sandboxRestartTitle">Applying policy change</h2>
+      <p class="hint" id="sandboxRestartMsg">Restarting dispatcher…</p>
+    </div>
+  </div>
+
+  <!-- ── Test progress modal ── -->
+  <div id="testProgressModal" class="module-modal" role="dialog" aria-modal="true" aria-label="Running tests" hidden>
+    <div class="module-modal-backdrop" aria-hidden="true"></div>
+    <div class="module-modal-dialog" style="max-width:28rem">
+      <h2>Running tests</h2>
+      <p id="testProgressMsg" class="hint">Preparing…</p>
+      <div class="progress-track"><div class="progress-fill" id="testProgressFill" style="width:0%"></div></div>
+      <p id="testProgressDetail" class="muted" style="font-size:0.78rem;margin-top:0.5rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></p>
+    </div>
+  </div>
+
+  <!-- ── Page header ── -->
+  <header>
+    <h1>Dispatcher sandbox</h1>
+    <p>Control UI on <strong>CONTROL_PORT</strong> (default 59173) · Dispatcher vhost on port <strong>80</strong></p>
+  </header>
+
+  <!-- ── Tab bar ── -->
+  <nav class="tabs" role="tablist" aria-label="Control sections">
+    <button class="tab-btn" role="tab" data-tab="guide"   aria-controls="tab-guide"   title="Ctrl+Shift+1">1. ⭐ Guide</button>
+    <button class="tab-btn" role="tab" data-tab="server"  aria-controls="tab-server"  title="Ctrl+Shift+2">2. Sandbox Controls</button>
+    <button class="tab-btn" role="tab" data-tab="filters" aria-controls="tab-filters" title="Ctrl+Shift+3">3. Filters</button>
+    <button class="tab-btn" role="tab" data-tab="modsec"  aria-controls="tab-modsec"  title="Ctrl+Shift+4">4. ModSecurity</button>
+    <button class="tab-btn" role="tab" data-tab="testing" aria-controls="tab-testing" title="Ctrl+Shift+5">5. Testing</button>
+    <button class="tab-btn" role="tab" data-tab="logs"    aria-controls="tab-logs"    title="Ctrl+Shift+6">6. Logs</button>
+  </nav>
+
+  <!-- ════════════════════════════════════════
+       TAB: Guide
+  ════════════════════════════════════════ -->
+  <div id="tab-guide" class="tab-panel" role="tabpanel">
+    <section>
+      <h2>Quick-start guide</h2>
+      <p class="hint">New here? Follow these five steps to go from a fresh container to a fully-tested dispatcher filters. Already know what you're doing? Jump straight to any tab above — this guide is here when you need it.</p>
+    </section>
+
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num">1</div>
+          <h2>Choose a module version</h2>
+        </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint"><strong>What:</strong> The AEM Dispatcher module (<code>mod_dispatcher.so</code>) is the AEM Dispatcher Apache plugin that acts as a file handler and uses your filter rules and decides what files are allowed to be fetched from AEM (HTTP 2xx) or not (HTTP 404).</p>
+        <p class="hint"><strong>How:</strong> In <strong>Sandbox Controls → Dispatcher module version</strong>, pick the version that matches your production AEM environment, then click <strong>Download &amp; switch module</strong>. Apache will restart automatically. Not sure which version? Use the latest, or check your team's AEM release notes.</p>
+        <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Sandbox Controls →</button>
+      </div>
+    </details>
+
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num">2</div>
+          <h2>Verify container health</h2>
+        </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint"><strong>What:</strong> Before testing filters the sandbox services must be running. The <strong>dispatcher</strong> service (port 80) is the real dispatcher handling requests. The <strong>renderer</strong> (port 4503) is a lightweight mock AEM publish instance that always returns HTTP 200 — it gives the dispatcher something to fetch from allowing filters to be exercised accurately.</p>
+        <p class="hint"><strong>How:</strong> Check the service status chips in <strong>Sandbox Controls → Status</strong>. Both should show <span class="pill pill-ok" style="font-size:0.72rem;vertical-align:middle">running</span>. If they are not, click <strong>Restart dispatcher</strong>. Status auto-refreshes every 5 seconds.</p>
+        <button type="button" class="secondary" onclick="_gotoTab('server')">Go to Sandbox Controls →</button>
+      </div>
+    </details>
+
+    <div class="guide-section-card">
+      <details>
+        <summary>
+          <div class="guide-step-summary">
+            <div class="step-num">3</div>
+            <h2>Add or generate your filters</h2>
+          </div>
+          <span class="guide-chevron">▶</span>
+        </summary>
+        <div class="guide-body">
+          <p class="hint"><strong>What:</strong> Dispatcher filter rules control which HTTP requests are allowed to reach AEM publish and which are rejected (returning 404). Rules live in <code>_filters.any</code> files and are evaluated top-to-bottom — the last matching rule wins.</p>
+          <p class="hint"><strong>How:</strong> Go to the <strong>Filters</strong> tab:</p>
+          <ul class="hint">
+            <li>Pick a <strong>Default policy</strong> first. <em>Deny all</em> is the realistic production setting — rejects everything unless you explicitly allow it. <em>Allow all</em> is useful for testing deny rules in isolation.</li>
+            <li><strong>Paste rules directly</strong> into the editor — use this if you already have a <code>_filters.any</code> file from your production environment (typically found in <code>/etc/httpd/conf.dispatcher.d/filters/</code>).</li>
+            <li><strong>Generate rules from requests</strong> — paste raw HTTP lines (e.g. from access logs) and rules are created automatically for you.</li>
+          </ul>
+          <p class="hint">Click <strong>Save &amp; Restart</strong> after editing. Your filter file is volume-mounted to the host so changes persist across container restarts.</p>
+          <button type="button" class="secondary" onclick="_gotoTab('filters')">Go to Filters →</button>
+        </div>
+      </details>
+      <div class="guide-always-visible">
+        <div class="warning-box" style="margin:0">
+          <div class="warning-box-title">⚠ Security insights</div>
+          <ul>
+            <li>Using fewer than 2 matchers per filter is a strong sign of a poorly written, insecure rule. Bypassing one matcher is far easier than bypassing many — the more specific matchers you combine, the harder the rule is to circumvent.</li>
+            <li>Dispatcher filters won't stop Apache httpd from serving files directly from the document root or cache. A rejected request never reaching AEM doesn't mean a previously cached file won't be served. Always clear the cache when testing filter changes outside of the sandbox.</li>
+            <li>When the dispatcher rejects a request it responds with a <code>404 Not Found</code>, not a <code>403 Forbidden</code> — it signals the resource doesn't exist rather than that access is denied.</li>
+            <li>Dispatcher filters are not a substitute for a Web Application Firewall. They define which content to expose, not how to fight malicious traffic. Use ModSecurity or a cloud WAF (AWS WAF, Cloudflare, etc.) alongside your dispatcher rules for real threat protection.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num">3b</div>
+          <h2>Add your ModSecurity rules (optional)</h2>
+        </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint"><strong>What:</strong> ModSecurity runs in front of the dispatcher on port 80. It inspects each request (URL, query, headers, body) before the dispatcher filters see it, and blocks matches, usually with <code>403 Forbidden</code>. No rules are built in.</p>
+        <p class="hint"><strong>How:</strong> Copy your rule set (<code>*.conf</code> plus the <code>*.data</code> files they reference) into <code>modsecurity/</code> next to <code>docker-compose.yml</code>. On the <strong>ModSecurity</strong> tab, choose <em>Block</em>, <em>Log only</em> or <em>Off</em> for each rule. A rule file and its <code>_logonly</code> twin count as one rule. Click <strong>Apply &amp; restart</strong>. Every change is checked with <code>httpd -t</code> first, so a bad rule can't take the dispatcher down.</p>
+        <p class="hint">Edit <code>.data</code> lists (allowlisted IPs, author hostnames…) right in the panel. Test requests come from <code>127.0.0.1</code>. Rules that skip by <code>Host</code> header can be tested with <code>-H 'Host: …'</code> on the Testing tab.</p>
+        <button type="button" class="secondary" onclick="_gotoTab('modsec')">Go to ModSecurity →</button>
+      </div>
+    </details>
+
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num">4</div>
+          <h2>Test your filters and share the results</h2>
+        </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint"><strong>What:</strong> Each path in <strong>Good paths</strong> is expected to return HTTP 200 (the dispatcher should allow it). Each path in <strong>Bad paths</strong> is expected to return HTTP 404 (the dispatcher should reject it). Each path in <strong>ModSecurity blocked</strong> is expected to return HTTP 403 (a ModSecurity rule should block it). Tests hit the live running dispatcher — no mocking. The results show which filter rule and which ModSecurity rule IDs matched each request.</p>
+        <p class="hint"><strong>How:</strong> Go to the <strong>Testing</strong> tab. Click <strong>Generate tests from filters</strong> to auto-populate both lists from your current rules, or paste in real paths from your site. Click <strong>Run tests</strong> and review the colour-coded results table. Use <strong>Export JSON</strong> or <strong>Export CSV</strong> to share results with your team or save a baseline for future comparisons.</p>
+        <button type="button" class="secondary" onclick="_gotoTab('testing')">Go to Testing →</button>
+      </div>
+    </details>
+
+    <details class="guide-section">
+      <summary>
+        <div class="guide-step-summary">
+          <div class="step-num win">✓</div>
+          <h2>WIN!</h2>
+        </div>
+        <span class="guide-chevron">▶</span>
+      </summary>
+      <div class="guide-body">
+        <p class="hint">When you test in the sandbox you can verify your rules are functional and play nice by themselves and with other rules without needing to affect an actual AEM hosted system. It's all on your workstation locally. Making sure your rules are working as expected before deploying to production. Then your dispatcher rules are verified and your results are documented. The same <code>002_web_filters.any</code> file from the <code>filters/</code> volume mount is ready to deploy to your production AEM dispatcher — tested and proven.</p>
+      </div>
+    </details>
+
+    <section>
+      <h2>Bonus: reading the logs</h2>
+      <p class="hint">The <strong>Logs</strong> tab links to live-streaming views for all processes. Here is what each log tells you:</p>
+      <ul class="hint" style="margin:0.3rem 0 0.5rem;padding-left:1.3rem">
+        <li><strong><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a></strong> — The most useful log. With trace logging enabled you will see every filter rule evaluated per request. Look for <code>Filter</code> lines to trace exactly why a request was allowed or rejected.</li>
+        <li><strong><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a></strong> — Output from the filter parser script. Check this if rules are not appearing in the <em>Active filter rules</em> view.</li>
+        <li><strong><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a></strong> — Apache / dispatcher startup and runtime errors. First stop when the dispatcher fails to start.</li>
+        <li><strong><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a></strong> — Every HTTP request that reached Apache. Useful for confirming your test client is actually hitting the dispatcher.</li>
+        <li><strong><a href="/logs/view?name=modsec_audit.log" target="_blank" rel="noopener noreferrer">modsec_audit.log</a></strong> — Full request and matched-rule details for every request ModSecurity blocked or flagged. ModSecurity rule matches also appear in <code>error_log</code> as <code>ModSecurity:</code> lines.</li>
+      </ul>
+      <p class="hint">Tip: run this in your terminal for a combined real-time stream of all container output:</p>
+      <code class="guide-code">docker compose logs -f</code>
+      <button type="button" class="secondary" onclick="_gotoTab('logs')">Go to Logs →</button>
+    </section>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: Sandbox Controls
+  ════════════════════════════════════════ -->
+  <div id="tab-server" class="tab-panel" role="tabpanel">
+    <section>
+      <h2>Status <span class="help-tip" data-tip="Shows whether the dispatcher module is loaded and both Apache processes are running. The dispatcher handles real HTTP requests on port 80. The renderer is a mock AEM publish instance on port 4503 that always returns 200 — it gives the dispatcher something to proxy to. Status auto-refreshes every 5 seconds.">?</span></h2>
+      <p class="hint">Module and service status poll every 5 seconds. Restart applies to both Apache processes (dispatcher on :80, renderer on :4503).</p>
+      <div class="row align-center" style="margin-bottom:0.5rem">
+        <span>Module:</span>
+        <span id="statusPill" class="pill pill-warn">checking…</span>
+      </div>
+      <div id="serviceHealth" style="margin-bottom:0.75rem">
+        <div class="svc-grid" id="svcGrid"><span class="muted" style="font-size:0.8rem">Loading services…</span></div>
+      </div>
+      <div class="row">
+        <button type="button" id="btnRestart" class="secondary">Restart dispatcher (httpd)</button>
+      </div>
+      <pre class="action-out" id="serverOut" hidden></pre>
+    </section>
+
+    <section>
+      <h2>Dispatcher module version <span class="help-tip" data-tip="mod_dispatcher.so is the Apache module that evaluates your filter rules. Pick the version that matches your production AEM environment. The module is downloaded fresh from Adobe's CDN — nothing is baked into the image. Switching downloads the selected .so file and restarts both Apache processes automatically.">?</span></h2>
+      <p class="hint">
+        Versions match Adobe-published Linux tarballs. The module is downloaded only from this page — nothing proprietary is baked into the image.
+        Switching downloads the selected <code>.so</code> and restarts both Apache processes.
+      </p>
+      <div class="row align-center" style="margin-bottom:0.75rem">
+        <span style="font-size:0.82rem;color:#555">Currently installed:</span>
+        <span id="installedVersion" class="pill pill-warn">checking…</span>
+      </div>
+      <div class="row">
+        <div>
+          <label for="ver">Switch to version</label>
+          <select id="ver" aria-label="Dispatcher version"></select>
+        </div>
+        <button type="button" id="btnSwitch">Download &amp; switch module</button>
+      </div>
+      <pre class="action-out" id="actionOut" hidden></pre>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: Filters
+  ════════════════════════════════════════ -->
+  <div id="tab-filters" class="tab-panel" role="tabpanel">
+    <div class="warning-box scope-banner" data-scope-banner="modsec" hidden style="margin:1rem 0 0">
+      <div class="warning-box-title">Test scope is “ModSecurity only”</div>
+      Your filter files are not loaded right now — the dispatcher allows every request. Switch the scope on the <a href="#testing">Testing</a> tab to test filters.
+    </div>
+
+    <section>
+      <h2>Default policy <span class="help-tip" data-tip="The catch-all rule applied when no filter matches a request. Deny all is the most realistic production setting — everything is rejected by default and you write allow rules for paths that should pass. Allow all passes everything and you write deny rules for paths to reject. Switch between them without restarting; a dispatcher reload happens automatically.">?</span></h2>
+      <p class="hint">Sets the sandbox catch-all rule. In <strong>Deny all</strong> mode, write allow rules for paths that should pass. In <strong>Allow all</strong> mode, write deny rules for paths that should be rejected.</p>
+      <div class="mode-bar">
+        <span class="mode-label">Default policy:</span>
+        <button type="button" class="mode-btn" id="btnModeDeny" data-mode="deny_all">
+          Deny all (test allow rules)
+        </button>
+        <button type="button" class="mode-btn" id="btnModeAllow" data-mode="allow_all">
+          Allow all (test deny rules)
+        </button>
+        <span class="mode-hint" id="modeHint"></span>
+      </div>
+    </section>
+
+    <section>
+      <h2>Active filter rules <span class="help-tip" data-tip="A read-only parsed view of every filter rule currently loaded by the dispatcher (files matched in glob order). Rules are evaluated top-to-bottom — the last matching rule wins. Use this to verify your saved rules are actually loaded. Hit Refresh after saving a new file.">?</span></h2>
+      <p class="hint">Parsed from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order). Built-in container rules in <code>dispatcher.any</code> are not shown here.</p>
+      <div class="row">
+        <button type="button" id="btnRefreshFilters" class="secondary">Refresh</button>
+      </div>
+      <div id="filterTableWrap">
+        <p class="muted">Loading…</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Generate rules from requests <span class="help-tip" data-tip="Paste raw HTTP request lines — one per line, e.g. 'GET /content/home.html' — and dispatcher filter rules are generated automatically. Add requests to the Allow column to generate /type &quot;allow&quot; rules, or the Deny column to generate /type &quot;deny&quot; rules. Useful when you have Apache access logs and want to build rules from real traffic patterns. Click Append to selected filter to add the generated rules to the editor below.">?</span></h2>
+      <p class="hint">
+        Paste raw HTTP request lines (e.g. <code>GET /content/page.html</code>) into the appropriate column — rules are generated live.
+        Click <strong>Append to selected filter</strong> to add them to the filter editor below.
+      </p>
+      <div class="gen-columns">
+        <div class="gen-col gen-col-allow">
+          <label for="genAllowInput">
+            <span class="gen-col-badge gen-col-badge-allow">Allow</span>
+            Requests that should pass
+          </label>
+          <textarea id="genAllowInput" rows="6" placeholder="GET /content/home.html
+GET /content/dam/images/hero.jpg
+GET /content/site/page.model.json
+POST /content/site/page.html"></textarea>
+        </div>
+        <div class="gen-col gen-col-deny">
+          <label for="genDenyInput">
+            <span class="gen-col-badge gen-col-badge-deny">Deny</span>
+            Requests that should be rejected
+          </label>
+          <textarea id="genDenyInput" rows="6" placeholder="GET /system/console
+GET /crx/de/index.jsp
+POST /bin/wcm/siteadmin
+DELETE /content/dam/sensitive"></textarea>
+        </div>
+      </div>
+      <label for="genRulesOutput" style="margin-top:0.75rem">Generated rules</label>
+      <textarea id="genRulesOutput" rows="10" readonly placeholder="Generated rules will appear here…" style="font-family:ui-monospace,'Cascadia Code','Source Code Pro',monospace;font-size:0.8rem;background:#0d1117;color:#e6edf3;border-color:#30363d;resize:vertical"></textarea>
+      <div class="row" style="margin-top:0.75rem">
+        <button type="button" id="btnAppendGenRules">Append to selected filter</button>
+        <button type="button" id="btnClearGen" class="secondary">Clear</button>
+      </div>
+      <p id="genMsg" class="muted" hidden></p>
+    </section>
+
+    <section>
+      <h2>Edit filter rules <span class="help-tip" data-tip="Direct editor for your dispatcher filter rules. Uses AEM Dispatcher .any syntax: each rule has a /name { } block with /type (allow or deny), and one or more of /method, /url, /path, /extension, /glob. Rules are evaluated in order — last match wins. The file is volume-mounted to the host so changes persist across container restarts. Always click Save & Restart to apply edits.">?</span></h2>
+      <p class="hint">
+        Paste or type dispatcher filter rules below and click <strong>Save</strong>.
+        Rules are written to the selected file in <code>filters/</code> on the container filesystem (also reflected on the host via the volume mount).
+        Restart the dispatcher after saving to apply changes.
+      </p>
+      <div class="row" style="margin-bottom:0.5rem">
+        <label for="filterFileSelect" style="margin:0;line-height:2">File:</label>
+        <select id="filterFileSelect"></select>
+      </div>
+      <label for="filterEditor">Filter rules</label>
+      <textarea id="filterEditor" rows="12" placeholder='/example-allow-content-html { /type "allow" /method "GET" /url "/content/*" /extension "html" }
+/example-allow-design-dir { /type "allow" /method "GET" /url "/etc/designs/*" /path "/etc/designs/*" }
+/example-deny-all { /type "deny" /glob "*" }'></textarea>
+      <div class="row" style="margin-top:0.75rem">
+        <button type="button" id="btnSaveFilters">Save</button>
+        <button type="button" id="btnSaveAndRestart">Save &amp; Restart</button>
+        <button type="button" id="btnLoadFilterEditor" class="secondary">Load current file</button>
+      </div>
+      <p id="filterSaveMsg" class="muted" hidden></p>
+      <pre class="action-out" id="filterSaveOut" hidden></pre>
+    </section>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: ModSecurity
+  ════════════════════════════════════════ -->
+  <div id="tab-modsec" class="tab-panel" role="tabpanel">
+    <div class="warning-box scope-banner" data-scope-banner="filters" hidden style="margin:1rem 0 0">
+      <div class="warning-box-title">Test scope is “Filters only”</div>
+      The ModSecurity engine is forced Off right now (your engine setting below is kept and comes back when you switch). Switch the scope on the <a href="#testing">Testing</a> tab to test ModSecurity.
+    </div>
+
+    <section>
+      <h2>Engine settings <span class="help-tip" data-tip="SecRuleEngine for the dispatcher vhost. On = rules run and disruptive actions (deny, redirect…) are enforced. DetectionOnly = rules run and matches are logged but nothing is blocked. Off = ModSecurity is disabled. Applied after your rule files, so it overrides any SecRuleEngine line inside them. Debug level > 0 writes rule-by-rule tracing to modsec_debug.log.">?</span></h2>
+      <p class="hint">ModSecurity runs on the dispatcher vhost (port 80) before the dispatcher filters. No rules are built in — copy your rule set (<code>*.conf</code> and the <code>*.data</code> files they reference) into <code>modsecurity/</code> next to <code>docker-compose.yml</code>.</p>
+      <div class="mode-bar">
+        <span class="mode-label">Engine:</span>
+        <button type="button" class="mode-btn" id="btnMsEngineOn" data-engine="On">On (block)</button>
+        <button type="button" class="mode-btn" id="btnMsEngineDetect" data-engine="DetectionOnly">DetectionOnly (log only)</button>
+        <button type="button" class="mode-btn" id="btnMsEngineOff" data-engine="Off">Off</button>
+        <span class="mode-hint" id="msEngineHint"></span>
+      </div>
+      <div class="mode-bar">
+        <label class="mode-label" for="msDebugLevel">Debug log level:</label>
+        <select id="msDebugLevel">
+          <option value="0">0 — off</option>
+          <option value="3">3 — rule matches</option>
+          <option value="4">4 — rule evaluation</option>
+          <option value="9">9 — everything</option>
+        </select>
+        <span class="mode-hint">Written to <a href="/logs/view?name=modsec_debug.log" target="_blank" rel="noopener noreferrer">modsec_debug.log</a></span>
+      </div>
+      <pre class="action-out" id="msSettingsOut" hidden></pre>
+    </section>
+
+    <section>
+      <h2>Rule files <span class="help-tip" data-tip="Every *.conf under modsecurity/. A file and its _logonly twin (e.g. foo.conf + foo_logonly.conf) share rule IDs, so they are treated as one rule with a choice of Block, Log only or Off — only one variant is ever loaded, like symlinking one of them into activated_rules/ in production. Other files can be turned On or Off. Load order: files at the top of modsecurity/, then sub-directories, then local_rules/. Changes are checked with httpd -t on a staged copy before going live.">?</span></h2>
+      <p class="hint">
+        Choose how each rule is loaded, then click <strong>Apply &amp; restart</strong>. A file and its <code>_logonly</code> twin count as one rule: pick <em>Block</em>, <em>Log only</em> or <em>Off</em>.
+        Changes are checked with <code>httpd -t</code> first. If the check fails, nothing changes.
+        Referenced <code>.data</code> files that are missing get an empty placeholder, same as the production RPM install.
+      </p>
+      <div class="row" style="gap:0.5rem;flex-wrap:wrap">
+        <button type="button" id="btnMsApplyModes">Apply &amp; restart</button>
+        <button type="button" id="btnMsRefresh" class="secondary">Refresh</button>
+        <span style="color:#ccd;padding:0 0.15rem">|</span>
+        <button type="button" class="secondary" data-ms-bulk="block">All → Block</button>
+        <button type="button" class="secondary" data-ms-bulk="logonly">All → Log only</button>
+        <button type="button" class="secondary" data-ms-bulk="off">All → Off</button>
+      </div>
+      <div id="msProblems"></div>
+      <div id="msRulesWrap"><p class="muted">Loading…</p></div>
+      <pre class="action-out" id="msModesOut" hidden></pre>
+    </section>
+
+    <section>
+      <h2>Active rules <span class="help-tip" data-tip="SecRule / SecAction directives from the files that are currently loaded, with their id, phase and disruptive action. Use the ids with --rule in the Testing tab to assert that a rule fired.">?</span></h2>
+      <p class="hint">Parsed from the loaded files. Use these rule IDs with <code>--rule &lt;id&gt;</code> on the Testing tab to check that a rule fired.</p>
+      <div id="msDirectivesWrap"><p class="muted">Loading…</p></div>
+    </section>
+
+    <section>
+      <h2>Edit rule &amp; data files <span class="help-tip" data-tip="Edit any .conf or .data file under modsecurity/ — e.g. add a hostname to an author-domains .data file or an IP to an allowlist .data file. Every save is checked with httpd -t against a staged copy first; if the check fails the file is not written.">?</span></h2>
+      <p class="hint">
+        Edit <code>.conf</code> rules or the <code>.data</code> lists they read, such as allowlisted IPs or author hostnames. Files are written to <code>modsecurity/</code> on the host.
+        Each save runs <code>httpd -t</code> against a staged copy first. Invalid configuration is <strong>not</strong> saved.
+      </p>
+      <div class="row align-center" style="margin-bottom:0.5rem;gap:0.5rem;flex-wrap:wrap">
+        <label for="msFileSelect" style="margin:0;line-height:2">File:</label>
+        <select id="msFileSelect"></select>
+        <span style="color:#ccd;padding:0 0.15rem">|</span>
+        <input type="text" id="msNewFileName" class="text-input" placeholder="new file, e.g. local_rules/custom_rules.conf" aria-label="New ModSecurity file name">
+        <button type="button" id="btnMsNewFile" class="secondary">New file</button>
+      </div>
+      <label for="msEditor">Content</label>
+      <textarea id="msEditor" rows="14" spellcheck="false" style="font-family:ui-monospace,'Cascadia Code','Source Code Pro',monospace;font-size:0.82rem" placeholder='SecRule REQUEST_URI "@beginsWith /system/console" "id:1000001,phase:1,deny,status:403,log,msg:&apos;Console blocked&apos;"'></textarea>
+      <div class="row" style="margin-top:0.75rem">
+        <button type="button" id="btnMsValidate" class="secondary">Validate</button>
+        <button type="button" id="btnMsSave">Save</button>
+        <button type="button" id="btnMsSaveRestart">Save &amp; Restart</button>
+        <button type="button" id="btnMsLoad" class="secondary">Reload file</button>
+      </div>
+      <p id="msSaveMsg" class="muted" hidden></p>
+      <pre class="action-out" id="msSaveOut" hidden></pre>
+    </section>
+
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: Testing
+  ════════════════════════════════════════ -->
+  <div id="tab-testing" class="tab-panel" role="tabpanel">
+    <section>
+      <h2>Request paths <span class="help-tip" data-tip="Tests paths live against the running dispatcher — no mocking. Good paths should return HTTP 200 (the dispatcher allows the request to reach the renderer). Bad paths should return HTTP 404 (the dispatcher rejects it). ModSecurity blocked paths should return HTTP 403 (a ModSecurity rule blocks it). Generate tests from filters auto-populates both lists from your current rules. Export results to share with your team or save a test baseline.">?</span></h2>
+      <div class="mode-bar" id="scopeBar">
+        <span class="mode-label">Test scope:</span>
+        <button type="button" class="mode-btn" data-scope="both">Filters + ModSecurity</button>
+        <button type="button" class="mode-btn" data-scope="filters">Filters only</button>
+        <button type="button" class="mode-btn" data-scope="modsec">ModSecurity only</button>
+        <span class="mode-hint" id="scopeHint"></span>
+      </div>
+      <p class="hint">
+        Filter fragments are loaded from <code>/etc/httpd/conf.dispatcher.d/filters/*.any</code> (glob order).
+        Default good/bad paths are loaded from <code>tests/default_test_paths.json</code> on the host.
+      </p>
+      <p class="muted" id="filterFilesStatic">Filter files: …</p>
+
+      <p class="hint" style="margin-bottom:0.4rem">One request per line. Format: <code>/path</code> or <code>METHOD /path</code> (e.g. <code>POST /api/submit</code>). Method defaults to GET.</p>
+      <p class="hint" style="margin-bottom:0.4rem">For ModSecurity tests, add curl-style options after the path:
+        <code>-H 'Name: value'</code> (repeatable; e.g. <code>-H 'Host: author.example.com'</code> to test host-based skips), <code>-d 'a=1'</code> (repeatable, joined with <code>&amp;</code>; implies POST),
+        <code>-A</code> user agent, <code>-e</code> referer, <code>-b</code> cookie, <code>-X METHOD</code>.
+        Assertions: <code>--expect 406</code> or <code>--expect '!403'</code> (anything but 403) overrides the group's expected status;
+        <code>--rule 1234</code> fails the test unless that rule ID fired (works for Log only rules too).
+        You can also paste whole <code>curl … 'http://host/path'</code> commands. The URL host becomes the <code>Host</code> header, and the request is sent to the local dispatcher.
+        Paths are sent as typed (encoded characters, <code>..</code> and <code>;</code> are kept). Spaces are encoded.</p>
+      <div class="row align-center" style="margin-bottom:0.5rem;gap:0.5rem;flex-wrap:wrap">
+        <button type="button" id="btnGenTestsFromFilters" class="secondary">Generate tests from filters</button>
+        <span style="color:#ccd;padding:0 0.15rem">|</span>
+        <label class="inline" for="testPathFileSelect" style="white-space:nowrap">Load from file:</label>
+        <select id="testPathFileSelect" style="min-width:11rem"></select>
+        <button type="button" id="btnLoadTestPaths" class="secondary">Load</button>
+      </div>
+
+      <div id="grpGood">
+      <label for="good" id="lblGood">Good request paths (one per line) — expect HTTP 200</label>
+      <textarea id="good" rows="6" placeholder="/content/dam/logo.png
+GET /content/mysite/en.html
+POST /bin/receive"></textarea>
+      </div>
+
+      <div id="grpBad">
+      <label for="bad" style="margin-top:0.65rem">Bad request paths (one per line) — expect HTTP 404</label>
+      <textarea id="bad" rows="6" placeholder="/system/console
+GET /crx/de/index.jsp
+DELETE /content/dam/sensitive"></textarea>
+      </div>
+
+      <div id="grpBlocked">
+      <label for="blocked" style="margin-top:0.65rem">ModSecurity blocked requests (one per line) — expect HTTP 403</label>
+      <textarea id="blocked" rows="6" placeholder="/content/mysite/en.html?q=&lt;script&gt;alert(1)&lt;/script&gt;
+/content/mysite/en.html?id=1' OR '1'='1
+/content/mysite/en.html -A 'sqlmap/1.5'
+POST /content/mysite/en/form.html -d 'comment=&lt;script&gt;alert(1)&lt;/script&gt;'"></textarea>
+      </div>
+
+      <div class="row" style="margin-top:0.75rem;gap:0.5rem">
+        <button type="button" id="btnTest">Run tests</button>
+        <button type="button" id="btnSaveTestPaths" class="secondary">Save tests</button>
+      </div>
+      <p id="testErr" class="err" hidden></p>
+
+      <div id="testResults" hidden>
+        <h3>Results</h3>
+        <p class="muted" id="filterFilesAtTest">Filter files at time of test:</p>
+        <ul class="filter-list" id="filterFilesList"></ul>
+        <p class="hint" style="margin-bottom:0.75rem">Paths in the table are clickable links — click one to open it via the dispatcher and see the live response in your browser.</p>
+        <p class="muted" id="scopeAtTest"></p>
+        <div id="resGood">
+        <h3>Good paths <span class="muted">(expect 200)</span></h3>
+        <table class="results" id="tableGood" aria-label="Good path results"></table>
+        </div>
+        <div id="resBad">
+        <h3>Bad paths <span class="muted">(expect 404)</span></h3>
+        <table class="results" id="tableBad" aria-label="Bad path results"></table>
+        </div>
+        <div id="resBlocked">
+        <h3>ModSecurity blocked <span class="muted">(expect 403)</span></h3>
+        <p class="muted" id="modsecAtTest"></p>
+        <table class="results" id="tableBlocked" aria-label="ModSecurity blocked results"></table>
+        </div>
+        <div class="toolbar">
+          <button type="button" id="btnExportJson" class="secondary">Export JSON</button>
+          <button type="button" id="btnExportCsv" class="secondary">Export CSV</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       TAB: Logs
+  ════════════════════════════════════════ -->
+  <div id="tab-logs" class="tab-panel" role="tabpanel">
+    <section>
+      <h2>Log streams <span class="help-tip" data-tip="Live-streaming log views via Server-Sent Events (tail -F under the hood). dispatcher.log is the most useful — with trace logging it shows every filter rule evaluated per request. error_log is your first stop when the dispatcher won't start. access_log records every HTTP request Apache received. You can also run 'docker compose logs -f' in your terminal for a combined real-time stream.">?</span></h2>
+      <p class="hint">
+        Each link opens a live-streaming view (Server-Sent Events + <code>tail -F</code> under <code>/var/log/httpd/</code>).
+        If a log is linked to container stdout/stderr, use <code>docker compose logs</code> instead.
+      </p>
+      <ul class="log-links">
+        <li><a href="/logs/view?name=dispatcher.log" target="_blank" rel="noopener noreferrer">dispatcher.log</a> — Dispatcher module (trace)</li>
+        <li><a href="/logs/view?name=filter-test.log" target="_blank" rel="noopener noreferrer">filter-test.log</a> — Filter specific output from dispatcher.log</li>
+        <li><a href="/logs/view?name=error_log" target="_blank" rel="noopener noreferrer">error_log</a> — Dispatcher httpd (may be stderr)</li>
+        <li><a href="/logs/view?name=access_log" target="_blank" rel="noopener noreferrer">access_log</a> — Apache access log</li>
+        <li><a href="/logs/view?name=renderer_error_log" target="_blank" rel="noopener noreferrer">renderer_error_log</a> — Fake AEM Renderer error log</li>
+        <li><a href="/logs/view?name=renderer_access_log" target="_blank" rel="noopener noreferrer">renderer_access_log</a> — Fake AEM Renderer access log</li>
+        <li><a href="/logs/view?name=modsec_audit.log" target="_blank" rel="noopener noreferrer">modsec_audit.log</a> — ModSecurity audit log (full request/response for blocked or flagged requests)</li>
+        <li><a href="/logs/view?name=modsec_debug.log" target="_blank" rel="noopener noreferrer">modsec_debug.log</a> — ModSecurity debug log (empty unless SecDebugLogLevel is raised in your rules)</li>
+      </ul>
+      <div class="toolbar" style="margin-top:0.85rem">
+        <button type="button" id="btnTruncateAllLogs" class="danger">Truncate all logs</button>
+        <span id="truncateAllMsg" class="muted" hidden></span>
+      </div>
+    </section>
+  </div>
+
+  <script>
+  (function () {
+    /* ── Tab routing ── */
+    const TAB_IDS = ['guide', 'server', 'filters', 'modsec', 'testing', 'logs'];
+    const tabBtns = Array.from(document.querySelectorAll('.tab-btn'));
+    const tabPanels = {};
+    TAB_IDS.forEach(function (id) { tabPanels[id] = document.getElementById('tab-' + id); });
+
+    var activeTab = null;
+    function activateTab(name, push) {
+      if (!TAB_IDS.includes(name)) name = 'guide';
+      if (name === activeTab) return;
+      activeTab = name;
+      tabBtns.forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+      TAB_IDS.forEach(function (id) {
+        tabPanels[id].style.display = (id === name) ? 'block' : 'none';
+      });
+      if (push !== false) history.replaceState(null, '', '#' + name);
+      if (name === 'filters') onFiltersTabOpen();
+      if (name === 'modsec') setTimeout(onModsecTabOpen, 0);
+    }
+
+    tabBtns.forEach(function (b) {
+      b.addEventListener('click', function () { activateTab(b.dataset.tab); });
+    });
+
+    window.addEventListener('hashchange', function () {
+      var h = location.hash.replace('#', '');
+      activateTab(TAB_IDS.includes(h) ? h : 'guide', false);
+    });
+
+    /* ── Keyboard shortcuts: Ctrl+Shift+1–6 ── */
+    document.addEventListener('keydown', function (e) {
+      if (!e.ctrlKey || !e.shiftKey || e.altKey || e.metaKey) return;
+      var m = e.code.match(/^Digit(\d)$/);
+      if (!m) return;
+      var idx = parseInt(m[1], 10);
+      if (idx >= 1 && idx <= TAB_IDS.length) {
+        e.preventDefault();
+        activateTab(TAB_IDS[idx - 1]);
+      }
+    });
+
+    window._gotoTab = activateTab;
+
+    var initHash = location.hash.replace('#', '');
+    activateTab(TAB_IDS.includes(initHash) ? initHash : 'guide', false);
+
+    /* ── Element refs ── */
+    var ver         = document.getElementById('ver');
+    var btnSwitch   = document.getElementById('btnSwitch');
+    var btnRestart  = document.getElementById('btnRestart');
+    var actionOut   = document.getElementById('actionOut');
+    var serverOut   = document.getElementById('serverOut');
+    var moduleModal = document.getElementById('moduleModal');
+    var verModal    = document.getElementById('verModal');
+    var btnModalOk  = document.getElementById('btnModalOk');
+    var modalMsg    = document.getElementById('modalMsg');
+    var good        = document.getElementById('good');
+    var bad         = document.getElementById('bad');
+    var testResults = document.getElementById('testResults');
+    var tableGood   = document.getElementById('tableGood');
+    var tableBad    = document.getElementById('tableBad');
+    var blocked     = document.getElementById('blocked');
+    var tableBlocked = document.getElementById('tableBlocked');
+    var modsecAtTest = document.getElementById('modsecAtTest');
+    var filterFilesList    = document.getElementById('filterFilesList');
+    var filterFilesStatic  = document.getElementById('filterFilesStatic');
+    var filterFilesAtTest  = document.getElementById('filterFilesAtTest');
+    var btnExportJson = document.getElementById('btnExportJson');
+    var btnExportCsv  = document.getElementById('btnExportCsv');
+    var testErr       = document.getElementById('testErr');
+    var statusPill    = document.getElementById('statusPill');
+    var svcGrid       = document.getElementById('svcGrid');
+    var btnTruncateAllLogs = document.getElementById('btnTruncateAllLogs');
+    var truncateAllMsg     = document.getElementById('truncateAllMsg');
+    var filterTableWrap    = document.getElementById('filterTableWrap');
+    var btnRefreshFilters  = document.getElementById('btnRefreshFilters');
+    var filterEditor       = document.getElementById('filterEditor');
+    var filterFileSelect   = document.getElementById('filterFileSelect');
+    var btnSaveFilters     = document.getElementById('btnSaveFilters');
+    var btnSaveAndRestart  = document.getElementById('btnSaveAndRestart');
+    var btnLoadFilterEditor = document.getElementById('btnLoadFilterEditor');
+    var filterSaveMsg = document.getElementById('filterSaveMsg');
+    var filterSaveOut = document.getElementById('filterSaveOut');
+    var installedVersion = document.getElementById('installedVersion');
+    var btnModeDeny  = document.getElementById('btnModeDeny');
+    var btnModeAllow = document.getElementById('btnModeAllow');
+    var modeHint     = document.getElementById('modeHint');
+    var currentSandboxMode = 'deny_all';
+
+    var sandboxRestartModal  = document.getElementById('sandboxRestartModal');
+    var sandboxRestartMsg    = document.getElementById('sandboxRestartMsg');
+    var testProgressModal    = document.getElementById('testProgressModal');
+    var testProgressMsg      = document.getElementById('testProgressMsg');
+    var testProgressFill     = document.getElementById('testProgressFill');
+    var testProgressDetail   = document.getElementById('testProgressDetail');
+    var btnGenTestsFromFilters = document.getElementById('btnGenTestsFromFilters');
+
+    var lastTestPayload  = null;
+    var filtersLoaded    = false;
+    var cachedFilterRules = [];
+
+    /* ── Pref-saved toast ── */
+    var prefToast     = document.getElementById('prefToast');
+    var prefToastPath = document.getElementById('prefToastPath');
+    var prefToastTimer = null;
+    function showPrefToast(filePath, label) {
+      prefToast.querySelector('.toast-label').textContent = label || 'Preferences saved';
+      prefToastPath.textContent = filePath;
+      prefToast.classList.add('visible');
+      clearTimeout(prefToastTimer);
+      prefToastTimer = setTimeout(function () { prefToast.classList.remove('visible'); }, 3000);
+    }
+
+    /* ── Busy state ── */
+    function setBusy(b) {
+      [btnSwitch, btnRestart, btnModalOk, document.getElementById('btnTest'),
+       btnSaveFilters, btnSaveAndRestart].forEach(function (el) {
+        if (el) el.disabled = b;
+      });
+      if (verModal) verModal.disabled = b;
+    }
+
+    /* ── Sandbox mode ── */
+    function applySandboxModeUI(mode) {
+      currentSandboxMode = mode;
+      btnModeDeny.className  = 'mode-btn' + (mode === 'deny_all'  ? ' active-deny'  : '');
+      btnModeAllow.className = 'mode-btn' + (mode === 'allow_all' ? ' active-allow' : '');
+      modeHint.textContent = mode === 'deny_all'
+        ? 'Default: reject everything — write allow rules for paths that should pass'
+        : 'Default: pass everything — write deny rules for paths that should be rejected';
+    }
+
+    async function loadSandboxMode() {
+      try {
+        var r = await fetch('/api/sandbox-mode');
+        var j = await r.json();
+        applySandboxModeUI(j.mode || 'deny_all');
+      } catch (e) { applySandboxModeUI('deny_all'); }
+    }
+
+    function showRestartModal(title) {
+      sandboxRestartTitle.textContent = title || 'Restarting dispatcher';
+      sandboxRestartMsg.textContent = 'Restarting dispatcher…';
+      sandboxRestartModal.hidden = false;
+      document.body.classList.add('module-modal-open');
+    }
+    function hideRestartModal() {
+      sandboxRestartModal.hidden = true;
+      document.body.classList.remove('module-modal-open');
+    }
+
+    async function setSandboxMode(mode) {
+      btnModeDeny.disabled  = true;
+      btnModeAllow.disabled = true;
+      showRestartModal('Applying policy change');
+      try {
+        var r = await fetch('/api/sandbox-mode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: mode })
+        });
+        var j = await r.json();
+        if (j.ok) {
+          applySandboxModeUI(mode);
+          if (j.prefs_file) showPrefToast(j.prefs_file);
+        } else {
+          sandboxRestartMsg.textContent = 'Error: ' + (j.error || 'unknown error');
+          await new Promise(function (res) { setTimeout(res, 2500); });
+        }
+      } catch (e) {
+        sandboxRestartMsg.textContent = 'Error: ' + String(e);
+        await new Promise(function (res) { setTimeout(res, 2500); });
+      } finally {
+        hideRestartModal();
+        btnModeDeny.disabled  = false;
+        btnModeAllow.disabled = false;
+      }
+    }
+
+    btnModeDeny.addEventListener('click',  function () { setSandboxMode('deny_all'); });
+    btnModeAllow.addEventListener('click', function () { setSandboxMode('allow_all'); });
+
+    /* ── Installed version ── */
+    async function refreshInstalledVersion() {
+      try {
+        var r = await fetch('/api/installed-version');
+        var j = await r.json();
+        if (j.version) {
+          installedVersion.textContent = j.version;
+          installedVersion.className = 'pill pill-ok';
+        } else {
+          installedVersion.textContent = 'none';
+          installedVersion.className = 'pill pill-warn';
+        }
+      } catch (e) {
+        installedVersion.textContent = 'unknown';
+        installedVersion.className = 'pill pill-warn';
+      }
+    }
+
+    /* ── Module gate modal ── */
+    async function updateModuleGate() {
+      try {
+        var r = await fetch('/api/module-status');
+        var j = await r.json();
+        var installed = !!(j && j.installed);
+        moduleModal.hidden = installed;
+        document.body.classList.toggle('module-modal-open', !installed);
+        statusPill.textContent = installed ? 'installed' : 'not installed';
+        statusPill.className = 'pill ' + (installed ? 'pill-ok' : 'pill-warn');
+        return installed;
+      } catch (e) {
+        moduleModal.hidden = false;
+        document.body.classList.add('module-modal-open');
+        statusPill.textContent = 'unknown';
+        statusPill.className = 'pill pill-warn';
+        return false;
+      }
+    }
+
+    function syncModalVersionFromMain() {
+      if (ver && verModal && ver.value) verModal.value = ver.value;
+    }
+
+    /* ── Filter rule extractor — returns raw rule blocks, no parsing ── */
+    function extractRawRules(filename, content) {
+      var rules = [];
+      var pos = 0;
+
+      while (pos < content.length) {
+        // Find next /name {
+        var nameRe = /\/(\S+)\s*\{/g;
+        nameRe.lastIndex = pos;
+        var m = nameRe.exec(content);
+        if (!m) break;
+
+        var blockStart = m.index + m[0].length;
+
+        // Find balanced closing brace (skip quoted strings)
+        var depth = 1, i = blockStart, inStr = false;
+        while (i < content.length && depth > 0) {
+          var c = content[i];
+          if (c === '"') { inStr = !inStr; }
+          else if (!inStr) {
+            if (c === '{') depth++;
+            else if (c === '}') depth--;
+          }
+          if (depth > 0) i++;
+        }
+
+        var body = content.slice(blockStart, i);
+
+        // Skip container blocks (body contains nested /name { ... })
+        if (/\/\w+\s*\{/.test(body)) {
+          pos = m.index + 1;
+          continue;
+        }
+
+        // Reconstruct raw rule: collapse whitespace for single-line display
+        var raw = (m[0].slice(0, -1).trim() + ' {' + body + '}')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        rules.push({ raw: raw, file: filename });
+        pos = i + 1;
+      }
+      return rules;
+    }
+
+    /* ── Filters tab ── */
+    async function loadFilterRules() {
+      filterTableWrap.innerHTML = '<p class="muted">Loading…</p>';
+      try {
+        var r = await fetch('/api/filter-rules');
+        var j = await r.json();
+        var fileRules = j.rules || [];
+        cachedFilterRules = fileRules;
+        renderFilterTable(fileRules);
+        return fileRules;
+      } catch (e) {
+        filterTableWrap.innerHTML = '<p class="err">Could not load filter rules: ' + escHtml(String(e)) + '</p>';
+        return [];
+      }
+    }
+
+    var FILTER_MATCHERS = ['method', 'url', 'path', 'extension', 'selector', 'suffix', 'query', 'glob'];
+
+    function analyzeRule(raw) {
+      var warnings = [];
+      var typeMatch = raw.match(/\/type\s+"(\w+)"/i);
+      var type = typeMatch ? typeMatch[1].toLowerCase() : null;
+
+      var matcherCount = 0;
+      FILTER_MATCHERS.forEach(function (m) {
+        if (new RegExp('\\/' + m + '\\s+"', 'i').test(raw)) matcherCount++;
+      });
+
+      var hasGlob = /\/glob\s+"/i.test(raw);
+      if (type === 'allow' && hasGlob) {
+        warnings.push({ level: 'danger', msg: '\u26a0\ufe0f /glob on an allow rule is a known insecure pattern — /glob matches the entire URL with no type safety, making it easy to bypass. Use /method, /url, /extension, and other specific matchers instead.' });
+      }
+
+      if (matcherCount < 2) {
+        warnings.push({ level: 'warn', msg: '\u26a0\ufe0f Fewer than 2 matchers — this rule is likely too broad. Combining multiple matchers (e.g. /method + /url + /extension) makes the rule far harder to circumvent.' });
+      }
+
+      return warnings;
+    }
+
+    function renderFilterTable(fileRules) {
+      if (!fileRules.length) {
+        filterTableWrap.innerHTML = '<p class="muted">No filter files found in <code>filters/*.any</code>.</p>';
+        return;
+      }
+
+      var allRules = [];
+      fileRules.forEach(function (f) {
+        extractRawRules(f.file, f.content).forEach(function (rule) {
+          allRules.push(rule);
+        });
+      });
+
+      if (!allRules.length) {
+        filterTableWrap.innerHTML = '<p class="muted">Filter files present but no rules found.</p>';
+        return;
+      }
+
+      var html = '<table class="filters" aria-label="Filter rules">'
+        + '<thead><tr><th>#</th><th>Rule</th><th>File</th></tr></thead><tbody>';
+
+      allRules.forEach(function (rule, idx) {
+        var warnings = analyzeRule(rule.raw);
+        var noteHtml = warnings.map(function (w) {
+          return '<div class="filter-note filter-note-' + w.level + '">' + escHtml(w.msg) + '</div>';
+        }).join('');
+        html += '<tr' + (warnings.length ? ' class="rule-has-warning"' : '') + '>'
+          + '<td class="num muted">' + (idx + 1) + '</td>'
+          + '<td><code>' + escHtml(rule.raw) + '</code>' + noteHtml + '</td>'
+          + '<td><span class="muted">' + escHtml(rule.file) + '</span></td>'
+          + '</tr>';
+      });
+
+      html += '</tbody></table>';
+      html += '<p class="muted" style="margin-top:0.5rem">' + allRules.length + ' rule(s) across ' + fileRules.length + ' file(s)</p>';
+      filterTableWrap.innerHTML = html;
+    }
+
+    async function loadFilterEditorContent(fileRules) {
+      if (!fileRules) {
+        try {
+          var r = await fetch('/api/filter-rules');
+          var j = await r.json();
+          fileRules = j.rules || [];
+        } catch (e) { return; }
+      }
+      // Rebuild the file selector, preserving the current selection if possible
+      var currentSel = filterFileSelect.value;
+      filterFileSelect.innerHTML = '';
+      fileRules.forEach(function (f) {
+        var opt = document.createElement('option');
+        opt.value = f.file;
+        opt.textContent = f.file;
+        filterFileSelect.appendChild(opt);
+      });
+      if (currentSel && fileRules.some(function (f) { return f.file === currentSel; })) {
+        filterFileSelect.value = currentSel;
+      }
+      var selected = filterFileSelect.value;
+      var match = fileRules.find(function (x) { return x.file === selected; });
+      filterEditor.value = match ? match.content : '';
+    }
+
+    var filtersTabEverOpened = false;
+    async function onFiltersTabOpen() {
+      var fileRules = await loadFilterRules();
+      if (!filtersTabEverOpened) {
+        filtersTabEverOpened = true;
+        await loadFilterEditorContent(fileRules);
+      }
+    }
+
+    btnRefreshFilters.addEventListener('click', async function () {
+      var fileRules = await loadFilterRules();
+      await loadFilterEditorContent(fileRules);
+    });
+
+    btnLoadFilterEditor.addEventListener('click', async function () {
+      await loadFilterEditorContent(null);
+    });
+
+    filterFileSelect.addEventListener('change', async function () {
+      var fileRules = await (async function () {
+        try { var r = await fetch('/api/filter-rules'); var j = await r.json(); return j.rules || []; } catch (e) { return []; }
+      })();
+      var selected = filterFileSelect.value;
+      var match = fileRules.find(function (x) { return x.file === selected; });
+      filterEditor.value = match ? match.content : '';
+    });
+
+    async function doSaveFilters() {
+      filterSaveMsg.hidden = true;
+      filterSaveOut.hidden = true;
+      var content = filterEditor.value;
+      var filename = filterFileSelect.value || '002_web_filters.any';
+      try {
+        var r = await fetch('/api/save-filters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: content, filename: filename })
+        });
+        var j = await r.json();
+        if (j.ok) {
+          filterSaveMsg.textContent = 'Saved to ' + (j.file || filename);
+          filterSaveMsg.className = 'muted';
+          filterSaveMsg.hidden = false;
+          filtersTabEverOpened = false; // force editor reload next open
+        } else {
+          filterSaveOut.textContent = JSON.stringify(j, null, 2);
+          filterSaveOut.hidden = false;
+        }
+        return j.ok;
+      } catch (e) {
+        filterSaveOut.textContent = String(e);
+        filterSaveOut.hidden = false;
+        return false;
+      }
+    }
+
+    btnSaveFilters.addEventListener('click', doSaveFilters);
+
+    btnSaveAndRestart.addEventListener('click', async function () {
+      setBusy(true);
+      try {
+        var saved = await doSaveFilters();
+        if (!saved) return;
+        showRestartModal('Restarting dispatcher');
+        var r = await fetch('/api/restart-dispatcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        var j = await r.json();
+        filterSaveOut.textContent = JSON.stringify(j, null, 2);
+        filterSaveOut.hidden = false;
+        await updateModuleGate();
+      } catch (e) {
+        filterSaveOut.textContent = String(e);
+        filterSaveOut.hidden = false;
+      } finally {
+        hideRestartModal();
+        setBusy(false);
+      }
+    });
+
+    /* ── Server controls ── */
+    btnRestart.addEventListener('click', async function () {
+      setBusy(true);
+      serverOut.hidden = true;
+      showRestartModal('Restarting dispatcher');
+      try {
+        var r = await fetch('/api/restart-dispatcher', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        var j = await r.json();
+        serverOut.textContent = JSON.stringify(j, null, 2);
+        serverOut.hidden = false;
+        await updateModuleGate();
+      } catch (e) {
+        serverOut.textContent = String(e);
+        serverOut.hidden = false;
+      } finally {
+        hideRestartModal();
+        setBusy(false);
+      }
+    });
+
+    /* ── Module version ── */
+    btnSwitch.addEventListener('click', async function () {
+      setBusy(true);
+      try {
+        var r = await fetch('/api/dispatcher-version', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: ver.value })
+        });
+        var j = await r.json();
+        actionOut.textContent = JSON.stringify(j, null, 2);
+        actionOut.hidden = false;
+        if (j.prefs_file) showPrefToast(j.prefs_file);
+        syncModalVersionFromMain();
+        await updateModuleGate();
+        await refreshInstalledVersion();
+      } catch (e) {
+        actionOut.textContent = String(e);
+        actionOut.hidden = false;
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    /* ── Modal install ── */
+    btnModalOk.addEventListener('click', async function () {
+      modalMsg.hidden = true;
+      modalMsg.textContent = '';
+      setBusy(true);
+      try {
+        var r = await fetch('/api/dispatcher-version', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version: verModal.value })
+        });
+        var text = await r.text();
+        var j;
+        try { j = JSON.parse(text); } catch (pe) {
+          modalMsg.textContent = 'Invalid response: ' + text.slice(0, 800);
+          modalMsg.hidden = false;
+          return;
+        }
+        if (!r.ok) {
+          modalMsg.textContent = JSON.stringify(j, null, 2);
+          modalMsg.hidden = false;
+          return;
+        }
+        ver.value = verModal.value;
+        actionOut.textContent = JSON.stringify(j, null, 2);
+        actionOut.hidden = false;
+        if (j.prefs_file) showPrefToast(j.prefs_file);
+        await updateModuleGate();
+        await refreshInstalledVersion();
+      } catch (e) {
+        modalMsg.textContent = String(e);
+        modalMsg.hidden = false;
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    /* ── Testing ── */
+    async function refreshFilterFilesStatic() {
+      try {
+        var r = await fetch('/api/filter-files');
+        var j = await r.json();
+        var files = j.files || [];
+        filterFilesStatic.textContent = files.length
+          ? 'Filter files on disk: ' + files.join(', ')
+          : 'Filter files on disk: (none — add *.any under filters/)';
+      } catch (e) {
+        filterFilesStatic.textContent = 'Filter files: (could not load)';
+      }
+    }
+
+    async function loadDefaultTestPaths() {
+      try {
+        var r = await fetch('/api/default-test-paths');
+        var j = await r.json();
+        if ((j.good_paths || []).length) good.value = j.good_paths.join('\n');
+        if ((j.bad_paths  || []).length) bad.value  = j.bad_paths.join('\n');
+        if ((j.blocked_paths || []).length) blocked.value = j.blocked_paths.join('\n');
+      } catch (e) { /* keep placeholders */ }
+    }
+
+    function escCell(s) {
+      var t = String(s != null ? s : '');
+      if (/[",\n\r]/.test(t)) return '"' + t.replace(/"/g, '""') + '"';
+      return t;
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function escAttr(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    }
+
+    function pathCellHtml(row) {
+      var p = row.path   != null ? String(row.path)   : '';
+      var u = row.url    != null ? String(row.url)    : '';
+      var m = row.method != null ? String(row.method) : 'GET';
+      var badge = '<span class="method-badge' + (m !== 'GET' ? ' ' + m : '') + '">' + escHtml(m) + '</span>';
+      var extra = '';
+      Object.keys(row.headers || {}).forEach(function (k) {
+        extra += '<span class="req-extra">-H ' + escHtml(k + ': ' + row.headers[k]) + '</span>';
+      });
+      if (row.body != null) extra += '<span class="req-extra">-d ' + escHtml(row.body) + '</span>';
+      if (row.error) extra += '<span class="req-extra" style="color:#900">' + escHtml(row.error) + '</span>';
+      if (row.rules_expected) extra += '<span class="req-extra">--rule ' + escHtml(row.rules_expected.join(',')) + '</span>';
+      if (u && m === 'GET' && !row.headers) {
+        return '<code>' + badge + '<a href="' + escAttr(u) + '" target="_blank" rel="noopener noreferrer" class="path-link">'
+          + escHtml(p) + '</a></code>' + extra;
+      }
+      return '<code>' + badge + escHtml(p) + '</code>' + extra;
+    }
+
+    function modsecCellHtml(row) {
+      var evs = row.modsec || [];
+      if (!evs.length) return '<span class="muted">—</span>';
+      return evs.map(function (ev) {
+        var cls = ev.disruptive ? 'ms-deny' : 'ms-warn';
+        var label = ev.disruptive ? (ev.summary || 'blocked') : 'warning';
+        return '<code class="modsec-event" title="' + escAttr(ev.detail || '') + '">'
+          + '<span class="' + cls + '">' + escHtml(label) + '</span>'
+          + (ev.id ? ' — id ' + escHtml(ev.id) : '')
+          + (ev.msg ? ': ' + escHtml(ev.msg.length > 70 ? ev.msg.slice(0, 70) + '…' : ev.msg) : '')
+          + '</code>';
+      }).join('');
+    }
+
+    function modsecDisrupted(row) {
+      return (row.modsec || []).some(function (ev) { return ev.disruptive; });
+    }
+
+    var DEFAULT_RULE_RE = /\/(sandbox-default|default-test-container-deny)\b/;
+
+    function buildTable(tableEl, rows, expectLabel, sandboxMode, group, scope) {
+      scope = scope || 'both';
+      var showFilter = scope !== 'modsec', showModsec = scope !== 'filters';
+      var ncols = 4 + (showFilter ? 1 : 0) + (showModsec ? 1 : 0);
+      var thead = '<thead><tr><th>OK</th><th>HTTP</th><th>Expected</th><th>Request</th>'
+        + (showFilter ? '<th>Filter match</th>' : '') + (showModsec ? '<th>ModSecurity</th>' : '') + '</tr></thead>';
+      var body = '<tbody>';
+      (rows || []).forEach(function (row) {
+        var ok  = row.ok ? 'yes' : 'no';
+        var st  = (row.status == null) ? '—' : String(row.status);
+        var cls = row.ok ? 'row-pass' : 'row-fail';
+        var fl  = row.filter_log || null;
+
+        // Detect whether the default sandbox rule fired
+        var isDefaultRule = fl && DEFAULT_RULE_RE.test(fl);
+        var defaultBlocked = isDefaultRule && fl.indexOf('blocked') === 0;
+        var defaultAllowed = isDefaultRule && fl.indexOf('allowed') === 0;
+
+        var filterCell;
+        if (fl) {
+          var display = fl.length > 80 ? fl.slice(0, 80) + '…' : fl;
+          var coloured = display
+            .replace(/^(blocked)/, '<span style="color:#900;font-weight:700">$1</span>')
+            .replace(/^(allowed)/, '<span style="color:#0a6633;font-weight:700">$1</span>');
+          filterCell = '<code title="' + escAttr(fl) + '">' + coloured + '</code>';
+        } else {
+          filterCell = '<span class="muted">—</span>';
+        }
+
+        // Build advisory note
+        var note = '';
+        var msBlocked = modsecDisrupted(row);
+        if ((row.rules_missing || []).length) {
+          note = '<div class="filter-note filter-note-danger">Expected rule(s) did not fire: ' + escHtml(row.rules_missing.join(', ')) + '</div>';
+        } else if (msBlocked && group !== 'blocked' && !row.ok) {
+          note = '<div class="filter-note filter-note-danger">Blocked by ModSecurity before reaching the dispatcher filters — possible false positive</div>';
+        } else if (msBlocked && group !== 'blocked') {
+          note = '';
+        } else if (group === 'blocked' && !row.ok && !msBlocked && (row.modsec || []).length) {
+          note = '<div class="filter-note filter-note-warn">ModSecurity matched but did not block — rule is in Log only mode or the engine is DetectionOnly</div>';
+        } else if (group === 'blocked' && !row.ok && !msBlocked) {
+          note = '<div class="filter-note filter-note-warn">No ModSecurity rule blocked this — it reached the dispatcher</div>';
+        } else if (group === 'blocked') {
+          note = '';
+        } else if (scope === 'modsec') {
+          note = '';
+        } else if (defaultBlocked && group === 'good') {
+          note = '<div class="filter-note filter-note-warn">No allow rule matched — create a rule to let this through</div>';
+        } else if (defaultBlocked && group === 'bad') {
+          note = '<div class="filter-note filter-note-info">You don\'t have a rule that rejects this — it was rejected by the sandbox default</div>';
+        } else if (defaultAllowed && group === 'bad') {
+          note = '<div class="filter-note filter-note-warn">No deny rule is rejecting this — it\'s passing through the sandbox default allow</div>';
+        } else if (defaultAllowed && group === 'good') {
+          note = '<div class="filter-note filter-note-info">No explicit allow rule — passing through the sandbox default allow</div>';
+        }
+
+        body += '<tr class="' + cls + '"><td>' + ok + '</td><td class="num">' + st
+          + '</td><td class="num">' + (row.expect != null ? row.expect : expectLabel) + '</td><td>' + pathCellHtml(row)
+          + (note ? '<br>' + note : '')
+          + '</td>' + (showFilter ? '<td>' + filterCell + '</td>' : '') + (showModsec ? '<td>' + modsecCellHtml(row) + '</td>' : '') + '</tr>';
+      });
+      if (!rows || !rows.length) {
+        body = '<tbody><tr><td colspan="' + ncols + '" class="muted">No paths in this group.</td></tr></tbody>';
+      }
+      tableEl.innerHTML = thead + body + '</tbody>';
+    }
+
+    function renderTestResults(j) {
+      lastTestPayload = j;
+      testResults.hidden = false;
+      var files = j.filter_files || [];
+      filterFilesList.innerHTML = '';
+      if (files.length) {
+        files.forEach(function (f) {
+          var li = document.createElement('li'); li.textContent = f; filterFilesList.appendChild(li);
+        });
+        filterFilesAtTest.textContent = 'Filter files at time of test (' + files.length + ' file(s)):';
+      } else {
+        var li = document.createElement('li'); li.className = 'muted';
+        li.textContent = '(no .any files in filters directory)'; filterFilesList.appendChild(li);
+        filterFilesAtTest.textContent = 'Filter files at time of test:';
+      }
+      var sm = j.sandbox_mode || 'deny_all';
+      applySandboxModeUI(sm);
+      var sc = j.test_scope || 'both';
+      buildTable(tableGood, j.good, 200, sm, 'good', sc);
+      buildTable(tableBad,  j.bad,  404, sm, 'bad', sc);
+      buildTable(tableBlocked, j.blocked, 403, sm, 'blocked', sc);
+      document.getElementById('resBad').hidden = sc === 'modsec';
+      document.getElementById('resBlocked').hidden = sc === 'filters';
+      document.getElementById('scopeAtTest').textContent = 'Test scope: ' + SCOPE_LABELS[sc]
+        + (sc === 'modsec' ? ' (dispatcher filters stubbed with allow-all)' : sc === 'filters' ? ' (ModSecurity engine off)' : '');
+      var ms = j.modsec || {};
+      modsecAtTest.textContent = 'ModSecurity at time of test: engine ' + (ms.engine || '?')
+        + ', loaded rule files: ' + ((j.modsec_files || []).join(', ') || '(none)');
+    }
+
+    function downloadText(filename, text, mime) {
+      var blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function exportCsv(j) {
+      var lines = [['type','group','ok','http_status','expect','method','path','filter_match','modsec_rule_ids'].map(escCell).join(',')];
+      (j.filter_files || []).forEach(function (f) {
+        lines.push(['filter','','','','','',f,'',''].map(escCell).join(','));
+      });
+      (j.modsec_files || []).forEach(function (f) {
+        lines.push(['modsec_file','','','','','',f,'',''].map(escCell).join(','));
+      });
+      [['good', 200], ['bad', 404], ['blocked', 403]].forEach(function (g) {
+        (j[g[0]] || []).forEach(function (row) {
+          var ids = (row.modsec || []).map(function (ev) { return ev.id; }).filter(Boolean).join(' ');
+          lines.push(['test', g[0], row.ok ? 'yes':'no',
+            row.status != null ? String(row.status) : '', row.expect != null ? String(row.expect) : String(g[1]),
+            row.method || 'GET', row.path||'', row.filter_log || '', ids].map(escCell).join(','));
+        });
+      });
+      downloadText('dispatcher-url-tests.csv', lines.join('\r\n') + '\r\n', 'text/csv;charset=utf-8');
+    }
+
+    function exportJsonForDownload(j) {
+      function rowOut(row) {
+        var o = { method: row.method || 'GET', path: row.path||'', ok: !!row.ok, status: row.status, expect: row.expect };
+        if (row.headers) o.headers = row.headers;
+        if (row.body != null) o.body = row.body;
+        if (row.filter_log) o.filter_match = row.filter_log;
+        if (row.modsec) o.modsec = row.modsec;
+        if (row.error) o.error = row.error;
+        return o;
+      }
+      return {
+        filter_files: j.filter_files || [],
+        filter_rules: j.filter_rules || [],
+        modsec: j.modsec || {},
+        modsec_files: j.modsec_files || [],
+        good: (j.good || []).map(rowOut),
+        bad:  (j.bad  || []).map(rowOut),
+        blocked: (j.blocked || []).map(rowOut)
+      };
+    }
+
+    document.getElementById('btnTest').addEventListener('click', async function () {
+      testErr.hidden = true; testErr.textContent = '';
+
+      var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      var badLines  = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      var blockedLines = blocked.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      if (currentScope === 'modsec') badLines = [];
+      if (currentScope === 'filters') blockedLines = [];
+      var total = goodLines.length + badLines.length + blockedLines.length;
+      if (total === 0) {
+        testErr.textContent = 'No paths to test.';
+        testErr.hidden = false;
+        return;
+      }
+
+      // Show progress modal
+      testProgressMsg.textContent = 'Starting…';
+      testProgressFill.style.width = '0%';
+      testProgressDetail.textContent = '';
+      testProgressModal.hidden = false;
+      document.body.classList.add('module-modal-open');
+      document.getElementById('btnTest').disabled = true;
+
+      var goodResults = [];
+      var badResults  = [];
+      var blockedResults = [];
+      var meta        = null;
+      var done        = 0;
+
+      function updateProgress(label) {
+        done++;
+        testProgressFill.style.width = Math.round((done / total) * 100) + '%';
+        testProgressMsg.textContent = 'Testing ' + done + ' / ' + total + ' paths…';
+        testProgressDetail.textContent = label;
+      }
+
+      async function testOne(path, group) {
+        var payload = { good_paths: [], bad_paths: [], blocked_paths: [] };
+        payload[group + '_paths'] = [path];
+        var r = await fetch('/api/test-urls', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        var j = await r.json();
+        if (!r.ok) throw new Error((j && j.error) || 'HTTP ' + r.status);
+        if (!meta) meta = { sandbox_mode: j.sandbox_mode, filter_files: j.filter_files, filter_rules: j.filter_rules,
+                            modsec: j.modsec, modsec_files: j.modsec_files, test_scope: j.test_scope };
+        return (j[group] || [])[0];
+      }
+
+      try {
+        for (var gi = 0; gi < goodLines.length; gi++) {
+          var row = await testOne(goodLines[gi], 'good');
+          if (row) goodResults.push(row);
+          updateProgress(goodLines[gi]);
+        }
+        for (var bi = 0; bi < badLines.length; bi++) {
+          var row = await testOne(badLines[bi], 'bad');
+          if (row) badResults.push(row);
+          updateProgress(badLines[bi]);
+        }
+        for (var ki = 0; ki < blockedLines.length; ki++) {
+          var row = await testOne(blockedLines[ki], 'blocked');
+          if (row) blockedResults.push(row);
+          updateProgress(blockedLines[ki]);
+        }
+
+        testProgressFill.style.width = '100%';
+        testProgressMsg.textContent = 'Done — ' + total + ' paths tested';
+        testProgressDetail.textContent = '';
+
+        renderTestResults({
+          ok: true,
+          sandbox_mode:  (meta || {}).sandbox_mode,
+          filter_files:  (meta || {}).filter_files  || [],
+          filter_rules:  (meta || {}).filter_rules  || [],
+          modsec:        (meta || {}).modsec || {},
+          test_scope:    (meta || {}).test_scope || currentScope,
+          modsec_files:  (meta || {}).modsec_files || [],
+          good: goodResults,
+          bad:  badResults,
+          blocked: blockedResults
+        });
+        await refreshFilterFilesStatic();
+
+      } catch (e) {
+        lastTestPayload = null; testResults.hidden = true;
+        testErr.textContent = 'Test failed: ' + e; testErr.hidden = false;
+      } finally {
+        setTimeout(function () {
+          testProgressModal.hidden = true;
+          document.body.classList.remove('module-modal-open');
+          document.getElementById('btnTest').disabled = false;
+        }, 600);
+      }
+    });
+
+    btnExportJson.addEventListener('click', function () {
+      if (!lastTestPayload) return;
+      downloadText('dispatcher-url-tests.json',
+        JSON.stringify(exportJsonForDownload(lastTestPayload), null, 2),
+        'application/json;charset=utf-8');
+    });
+    btnExportCsv.addEventListener('click', function () {
+      if (lastTestPayload) exportCsv(lastTestPayload);
+    });
+
+    ver.addEventListener('change', syncModalVersionFromMain);
+
+    /* ── Service health ── */
+    function svcPillClass(state) {
+      if (state === 'RUNNING') return 'pill-ok';
+      if (['STOPPED', 'EXITED', 'FATAL', 'ERROR'].includes(state)) return 'pill-err';
+      return 'pill-warn';
+    }
+
+    async function refreshServiceHealth() {
+      try {
+        var r = await fetch('/api/service-health');
+        var j = await r.json();
+        var svcs = j.services || [];
+        if (!svcs.length) {
+          svcGrid.innerHTML = '<span class="muted" style="font-size:0.8rem">No services reported</span>';
+          return;
+        }
+        svcGrid.innerHTML = svcs.map(function (s) {
+          var pc = svcPillClass(s.state);
+          var detail = s.detail ? '<span class="svc-detail">' + escHtml(s.detail) + '</span>' : '';
+          return '<div class="svc-chip">'
+            + '<span class="svc-name">' + escHtml(s.name) + '</span>'
+            + '<span class="pill ' + pc + '" style="font-size:0.72rem;padding:0.1rem 0.45rem">' + escHtml(s.state) + '</span>'
+            + detail
+            + '</div>';
+        }).join('');
+      } catch (e) {
+        svcGrid.innerHTML = '<span class="muted" style="font-size:0.8rem">Could not load service status</span>';
+      }
+    }
+
+    /* ── Truncate all logs ── */
+    btnTruncateAllLogs.addEventListener('click', async function () {
+      if (!confirm('Truncate (empty) all log files under /var/log/httpd/?')) return;
+      btnTruncateAllLogs.disabled = true;
+      truncateAllMsg.hidden = true;
+      try {
+        var r = await fetch('/api/truncate-all-logs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        var j = await r.json();
+        truncateAllMsg.textContent = j.ok ? 'All logs truncated.' : ('Error: ' + (j.error || JSON.stringify(j)));
+        truncateAllMsg.className = j.ok ? 'muted' : 'err';
+        truncateAllMsg.hidden = false;
+      } catch (e) {
+        truncateAllMsg.textContent = 'Request failed: ' + e;
+        truncateAllMsg.className = 'err';
+        truncateAllMsg.hidden = false;
+      } finally {
+        btnTruncateAllLogs.disabled = false;
+      }
+    });
+
+    /* ══════════════════════════════════════════════════════════
+       ── Generate rules from requests (ported from filter-fiddler) ──
+       ══════════════════════════════════════════════════════════ */
+    var genAllowInput    = document.getElementById('genAllowInput');
+    var genDenyInput     = document.getElementById('genDenyInput');
+    var genRulesOutput   = document.getElementById('genRulesOutput');
+    var btnAppendGenRules = document.getElementById('btnAppendGenRules');
+    var btnClearGen      = document.getElementById('btnClearGen');
+    var genMsg           = document.getElementById('genMsg');
+
+    /* ── URL component parsers ── */
+
+    function genGetExtension(req) {
+      var m = req.match(/\.(?<extension>[^.][A-Za-z0-9]+)\//);
+      if (m) return m.groups.extension;
+      m = req.match(/\.(?<extension>[A-Za-z0-9]+)(\?.*)?$/);
+      return m ? m.groups.extension : undefined;
+    }
+
+    function genGetMethod(req) {
+      var m = req.match(/^(?<method>[A-Za-z]+)\s/);
+      return m ? m.groups.method : undefined;
+    }
+
+    function genSplitOnExtension(req, ext) {
+      return req.replace('.' + ext, '    ').split('    ');
+    }
+
+    function genGetPath(req, ext) {
+      var s = ext ? genSplitOnExtension(req, ext)[0] : req;
+      var m = s.match(/(?:[A-Za-z]+\s)?(?<path>.*\/)(?<resource>.+)$/);
+      if (!m) return undefined;
+      return m.groups.path + '*';
+    }
+
+    function genGetSelectors(req, ext) {
+      if (!ext) return undefined;
+      var before = genSplitOnExtension(req, ext)[0]; // e.g. "GET /content/dam/logo.800.600"
+      // Grab just the filename segment (after the last /)
+      var lastSlash = before.lastIndexOf('/');
+      var filename = lastSlash >= 0 ? before.slice(lastSlash + 1) : before;
+      // All dot-separated parts after the resource name are selectors
+      var parts = filename.split('.');
+      if (parts.length <= 1) return undefined;
+      var sels = parts.slice(1).filter(function (s) { return s.length > 0; });
+      return sels.length > 0 ? sels : undefined;
+    }
+
+    function genGetSuffix(req, ext) {
+      if (!ext) return undefined;
+      var parts = genSplitOnExtension(req, ext);
+      var after = parts[1];
+      if (!after || !after.trim()) return undefined;
+      return after.indexOf('?') >= 0 ? after.split('?')[0] : after;
+    }
+
+    function genGetQuery(req, ext) {
+      if (!ext) return undefined;
+      var parts = genSplitOnExtension(req, ext);
+      var after = parts[1];
+      if (!after || after.indexOf('?') < 0) return undefined;
+      var qs = after.split('?')[1];
+      return qs.indexOf('&') >= 0 ? qs.split('&') : [qs];
+    }
+
+    function genGetUrl(req) {
+      var method = genGetMethod(req);
+      var s = method ? req.slice(method.length).trim() : req.trim();
+      if (s.indexOf('?') >= 0) s = s.split('?')[0];
+      return s + '*';
+    }
+
+    /* ── Rule ID generator ── */
+    var GEN_MAX_BASE = 29;
+
+    function genBuildId(pathParts, selectorParts, extPart, ruleType) {
+      var typeWord = (ruleType === 'deny') ? 'DENY' : 'ALLOW';
+      return '/' + ['PUB', typeWord].concat(pathParts).concat(selectorParts).concat(extPart ? [extPart] : []).join('_');
+    }
+
+    function genGenerateRuleId(path, ext, selectors, usedIds, ruleType) {
+      var pathParts = (path || '')
+        .replace(/\/\*$/, '').replace(/^\//, '')
+        .split('/').filter(function (s) { return s && s !== '*'; })
+        .map(function (s) { return s.toUpperCase().replace(/[^A-Z0-9]/g, ''); })
+        .filter(function (s) { return s.length > 0; });
+
+      var selectorParts = selectors
+        ? selectors.map(function (s) { return s.toUpperCase().replace(/[^A-Z0-9]/g, ''); })
+        : [];
+
+      var extPart = ext ? ext.toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+
+      var candidate = genBuildId(pathParts, selectorParts, extPart, ruleType);
+
+      // Truncate from right if over limit
+      while (candidate.length > GEN_MAX_BASE) {
+        if (pathParts.length > 0) {
+          pathParts.pop();
+        } else if (selectorParts.length > 0) {
+          selectorParts.pop();
+        } else {
+          break;
+        }
+        candidate = genBuildId(pathParts, selectorParts, extPart, ruleType);
+      }
+
+      // Deduplicate within batch
+      if (!usedIds[candidate]) {
+        usedIds[candidate] = 1;
+        return candidate;
+      }
+      var count = Math.min(usedIds[candidate] + 1, 9);
+      usedIds[candidate] = count;
+      return candidate + '_' + count;
+    }
+
+    /* ── Rule block builder ── */
+    // extValue is pre-formatted: '"png"' for single, "'(jpg|png)'" for merged regex
+    // ruleType is "allow" or "deny"
+    function genGenerateRule(ruleId, methodValue, path, url, extValue, selectors, suffix, query, ruleType) {
+      var lines = [ruleId + ' {'];
+      lines.push('  /type "' + (ruleType || 'allow') + '"');
+      if (methodValue) lines.push('  /method ' + methodValue);
+      if (path)        lines.push('  /path "' + path + '"');
+      if (url)         lines.push('  /url "' + url + '"');
+      if (extValue)    lines.push('  /extension ' + extValue);
+      if (selectors) {
+        if (selectors.length === 1) {
+          lines.push('  /selectors "' + selectors[0] + '"');
+        } else {
+          lines.push("  /selectors '(" + selectors.join('|') + ")'");
+        }
+      }
+      if (suffix) lines.push('  /suffix "' + suffix + '"');
+      if (query) {
+        var qParts = query.slice().sort().map(function (p) {
+          return p.replace(/=.*/, '=.*');
+        });
+        if (qParts.length === 1) {
+          lines.push('  /query "' + query[0].replace(/=.*/, '=*') + '"');
+        } else {
+          lines.push("  /query '(" + qParts.join('|') + ")'");
+        }
+      }
+      lines.push('}');
+      return lines.join('\n') + '\n\n';
+    }
+
+    /* ── Main orchestrator ── */
+    function genParseLines(raw, ruleType) {
+      var objects = [];
+      raw.split(/\r?\n/).forEach(function (line) {
+        if (!/\S/.test(line)) return;
+        var ext       = genGetExtension(line);
+        var method    = genGetMethod(line);
+        var path      = genGetPath(line, ext);
+        var selectors = genGetSelectors(line, ext);
+        var suffix    = genGetSuffix(line, ext);
+        var query     = genGetQuery(line, ext);
+        var url       = genGetUrl(line);
+
+        if (selectors) {
+          url = url.split(selectors.join('.')).join('*');
+        }
+
+        objects.push({ method: method, path: path, url: url, ext: ext,
+                       selectors: selectors, suffix: suffix, query: query,
+                       ruleType: ruleType });
+      });
+      return objects;
+    }
+
+    function genGenerate() {
+      var objects = genParseLines(genAllowInput.value, 'allow')
+                      .concat(genParseLines(genDenyInput.value, 'deny'));
+
+      // Phase 1: group by full fingerprint (everything except method) → merges methods
+      var groups = {};
+      var fingerprintOrder = [];
+      objects.forEach(function (o) {
+        var selectorKey = o.selectors ? o.selectors.slice().sort().join('|') : '';
+        var queryKey    = o.query     ? o.query.slice().sort().join('&')     : '';
+        var fp = [o.path||'', o.url||'', o.ext||'', selectorKey, o.suffix||'', queryKey, o.ruleType||'allow'].join('\x00');
+        if (!groups[fp]) {
+          groups[fp] = { methods: [], first: o };
+          fingerprintOrder.push(fp);
+        }
+        var m = (o.method || '').toUpperCase();
+        if (m && groups[fp].methods.indexOf(m) < 0) groups[fp].methods.push(m);
+      });
+
+      // Resolve method values from phase 1
+      var phase1 = fingerprintOrder.map(function (fp) {
+        var g = groups[fp];
+        g.methods.sort();
+        var mv = g.methods.length === 0 ? null
+               : g.methods.length === 1 ? ('"' + g.methods[0] + '"')
+               : ("'(" + g.methods.join('|') + ")'");
+        return { f: g.first, methodValue: mv };
+      });
+
+      // Phase 2: group by path+selectors+suffix+query+method+type → merges extensions
+      var extGroups = {};
+      var extOrder = [];
+      phase1.forEach(function (r) {
+        var f = r.f;
+        var selectorKey = f.selectors ? f.selectors.slice().sort().join('|') : '';
+        var queryKey    = f.query     ? f.query.slice().sort().join('&')     : '';
+        var fp2 = [f.path||'', selectorKey, f.suffix||'', queryKey, r.methodValue||'', f.ruleType||'allow'].join('\x00');
+        if (!extGroups[fp2]) {
+          extGroups[fp2] = { items: [], first: r };
+          extOrder.push(fp2);
+        }
+        extGroups[fp2].items.push(r);
+      });
+
+      var output = '';
+      var usedIds = {};
+      extOrder.forEach(function (fp2) {
+        var eg = extGroups[fp2];
+        var f  = eg.first.f;
+        var mv = eg.first.methodValue;
+
+        // Collect unique sorted extensions across all items in this group
+        var rawExts = eg.items.map(function (r) { return r.f.ext || ''; }).filter(Boolean);
+        var uniqueExts = rawExts.filter(function (e, i) { return rawExts.indexOf(e) === i; }).sort();
+
+        var extValue, mergedUrl;
+        if (uniqueExts.length <= 1) {
+          // Single extension — keep url, quote normally
+          extValue  = uniqueExts.length ? ('"' + uniqueExts[0] + '"') : null;
+          mergedUrl = f.url;
+        } else {
+          // Multiple extensions — regex alternation, drop url (filenames differ)
+          extValue  = "'(" + uniqueExts.join('|') + ")'";
+          mergedUrl = null;
+        }
+
+        // For rule ID, pass raw ext only for the single-ext case
+        var idExt = uniqueExts.length === 1 ? uniqueExts[0] : null;
+        var ruleId = genGenerateRuleId(f.path, idExt, f.selectors, usedIds, f.ruleType || 'allow');
+        output += genGenerateRule(ruleId, mv, f.path, mergedUrl, extValue, f.selectors, f.suffix, f.query, f.ruleType || 'allow');
+      });
+
+      genRulesOutput.value = output;
+    }
+
+    ['change', 'keyup', 'paste', 'input'].forEach(function (evt) {
+      genAllowInput.addEventListener(evt, genGenerate);
+      genDenyInput.addEventListener(evt, genGenerate);
+    });
+
+    btnAppendGenRules.addEventListener('click', function () {
+      var rules = genRulesOutput.value.trim();
+      if (!rules) return;
+      var current = filterEditor.value.trimEnd();
+      filterEditor.value = current ? current + '\n\n' + rules : rules;
+      genMsg.textContent = 'Rules appended to web filters. Review, then Save or Save & Restart.';
+      genMsg.hidden = false;
+      filterEditor.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    /* ── Auto-generate tests from filter rules ── */
+    function extractAnyField(body, field) {
+      var re = new RegExp('/' + field + '\\s+["\']([^"\']*)["\']', 'i');
+      var m = body.match(re);
+      return m ? m[1] : null;
+    }
+
+    function hasRegexSyntax(str) {
+      return /[\^$()[\]{}+|\\]/.test(str);
+    }
+
+    function buildExamplePath(url, path, ext, glob, selectors) {
+      var base = url || path || glob;
+      if (!base || base === '*' || base === '.*') return null;
+
+      // Dispatcher /glob uses "METHOD /path" format — strip the method token before processing
+      if (!url && !path && glob) {
+        var si = base.indexOf(' ');
+        if (si >= 0) base = base.slice(si + 1).trim();
+        if (!base || base === '*' || base === '.*') return null;
+      }
+
+      // Resolve first concrete selector value (handles regex like '(800|600)' → '800')
+      var firstSel = null;
+      if (selectors) {
+        firstSel = hasRegexSyntax(selectors)
+          ? (selectors.match(/[a-z0-9]+/i) || [null])[0]
+          : selectors.split('|')[0];
+      }
+
+      base = base
+        .replace(/(\.[a-z0-9]+)\*+$/i, '$1')
+        .replace(/\*\*/g, 'example/sub')
+        .replace(/\.\*/g, firstSel ? '.' + firstSel : '.example')
+        .replace(/\*/g,   'example');
+
+      // Append extension when path has no extension suffix
+      if ((path || glob) && ext && ext !== '' && ext !== '*') {
+        // If ext is a regex alternation like (jpg|png), resolve to the first concrete value
+        var concreteExt = hasRegexSyntax(ext)
+          ? (ext.match(/[a-z0-9]+/i) || [null])[0]
+          : ext;
+        if (concreteExt && !/\.[a-z0-9]+$/i.test(base)) {
+          base = base.replace(/\/example\/?$/, '') + '/example.' + concreteExt;
+        }
+      }
+      if (!base.startsWith('/')) base = '/' + base;
+      return base.length > 300 ? null : base;
+    }
+
+    btnGenTestsFromFilters.addEventListener('click', async function () {
+      var rules = cachedFilterRules;
+      if (!rules || !rules.length) {
+        // Try a quick fetch if not yet cached
+        try {
+          var r = await fetch('/api/filter-rules');
+          var j = await r.json();
+          rules = cachedFilterRules = j.rules || [];
+        } catch (e) { rules = []; }
+      }
+      if (!rules.length) {
+        alert('No filter rules found. Add rules in the Filters tab first.');
+        return;
+      }
+
+      var goodPaths = [];
+      var badPaths  = [];
+      var SKIP_RULE_RE = /^\/(sandbox-default|default-test-container)/;
+
+      rules.forEach(function (fileObj) {
+        if (fileObj.file === 'sandbox_policy.any') return;
+        var content = fileObj.content || '';
+        var ruleRe = /\/[\w-]+\s*\{([^}]+)\}/g;
+        var m;
+        while ((m = ruleRe.exec(content)) !== null) {
+          var ruleName = (m[0].match(/^\/([\w-]+)/) || [])[1] || '';
+          if (SKIP_RULE_RE.test('/' + ruleName)) continue;
+          var body   = m[1];
+          var type   = extractAnyField(body, 'type');
+          var method = extractAnyField(body, 'method');
+          var url       = extractAnyField(body, 'url');
+          var path      = extractAnyField(body, 'path');
+          var ext       = extractAnyField(body, 'extension');
+          var glob      = extractAnyField(body, 'glob');
+          var selectors = extractAnyField(body, 'selectors');
+          if (!type) continue;
+          // For glob rules, check only the URL portion (after the space) for regex syntax
+          var globUrlPart = glob ? (glob.indexOf(' ') >= 0 ? glob.slice(glob.indexOf(' ') + 1).trim() : glob) : null;
+          if ([url, path, globUrlPart].some(function (v) { return v && hasRegexSyntax(v); })) continue;
+          var exPath = buildExamplePath(url, path, ext, glob, selectors);
+          if (!exPath) continue;
+          // For glob rules without an explicit /method, extract the method from the glob "METHOD /path" token
+          if (!method && glob && glob.indexOf(' ') >= 0) {
+            var globMethodToken = glob.slice(0, glob.indexOf(' ')).trim();
+            if (globMethodToken && globMethodToken !== '*' && !hasRegexSyntax(globMethodToken)) {
+              method = globMethodToken;
+            }
+          }
+          // If method is a regex like (GET|POST), pick the first concrete value
+          var concreteMethod = method && method !== '' && method !== '*'
+            ? (hasRegexSyntax(method) ? (method.match(/[A-Z]+/i) || [null])[0] : method.toUpperCase())
+            : null;
+          var entry = concreteMethod ? concreteMethod + ' ' + exPath : exPath;
+          var targetList = type === 'allow' ? goodPaths : type === 'deny' ? badPaths : null;
+          if (targetList && targetList.indexOf(entry) < 0) targetList.push(entry);
+        }
+      });
+
+      if (!goodPaths.length && !badPaths.length) {
+        alert('Could not extract example paths from the current rules.\nCheck that rules specify /url, /path, or /glob fields.');
+        return;
+      }
+
+      good.value = goodPaths.join('\n');
+      if (badPaths.length) bad.value = badPaths.join('\n');
+    });
+
+    btnClearGen.addEventListener('click', function () {
+      genAllowInput.value = '';
+      genDenyInput.value = '';
+      genRulesOutput.value = '';
+      genMsg.hidden = true;
+    });
+
+    /* ══════════════════════════════════════════════════════════
+       ── ModSecurity tab ──
+       ══════════════════════════════════════════════════════════ */
+    var msEngineBtns = {
+      On: document.getElementById('btnMsEngineOn'),
+      DetectionOnly: document.getElementById('btnMsEngineDetect'),
+      Off: document.getElementById('btnMsEngineOff')
+    };
+    var msDebugLevel  = document.getElementById('msDebugLevel');
+    var msEngineHint  = document.getElementById('msEngineHint');
+    var msSettingsOut = document.getElementById('msSettingsOut');
+    var msRulesWrap   = document.getElementById('msRulesWrap');
+    var msProblems    = document.getElementById('msProblems');
+    var msModesOut    = document.getElementById('msModesOut');
+    var msDirectivesWrap = document.getElementById('msDirectivesWrap');
+    var msFileSelect  = document.getElementById('msFileSelect');
+    var msNewFileName = document.getElementById('msNewFileName');
+    var msEditor      = document.getElementById('msEditor');
+    var msSaveMsg     = document.getElementById('msSaveMsg');
+    var msSaveOut     = document.getElementById('msSaveOut');
+    var msSettings    = { engine: 'On', debug_level: 0 };
+    var msOverview    = null;
+    var msPendingModes = {};
+    var msTabEverOpened = false;
+    var MS_PATH_RE = /^(?!.*(^|\/)\.)[A-Za-z0-9._\/@+-]+\.(conf|data)$/;
+
+    function applyModsecUI(st) {
+      msSettings = st;
+      var engCls = { On: ' active-on', DetectionOnly: ' active-detect', Off: ' active-off' };
+      Object.keys(msEngineBtns).forEach(function (k) {
+        msEngineBtns[k].className = 'mode-btn' + (st.engine === k ? engCls[k] : '');
+      });
+      msEngineHint.textContent = st.engine === 'On'
+        ? 'Rules with deny/drop/redirect are enforced'
+        : st.engine === 'DetectionOnly'
+          ? 'Rules run and are logged, nothing is blocked'
+          : 'ModSecurity is disabled';
+      msDebugLevel.value = String(st.debug_level || 0);
+    }
+
+    async function loadModsecSettings() {
+      try { applyModsecUI(await (await fetch('/api/modsec-settings')).json()); } catch (e) {}
+    }
+
+    function msResultText(j) {
+      var t = j.ok ? (j.restarted ? 'Applied — dispatcher restarted.' : 'Saved.') : (j.error || 'Error');
+      if (j.valid === null) t += ' (config test skipped: dispatcher module not installed yet)';
+      if ((j.placeholders || []).length) t += '\nCreated empty placeholder data file(s): ' + j.placeholders.join(', ');
+      (j.duplicate_ids || []).forEach(function (d) { t += '\nDuplicate rule id ' + d.id + ' in: ' + d.files.join(', '); });
+      if (!j.ok && j.output) t += '\n\n' + j.output;
+      if (j.detail) t += '\n\n' + j.detail;
+      return t;
+    }
+
+    async function postModsec(url, body, outEl, title) {
+      outEl.hidden = true;
+      showRestartModal(title);
+      try {
+        var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var j = await r.json();
+        outEl.textContent = msResultText(j);
+        outEl.hidden = false;
+        if (j.ok && j.prefs_file) showPrefToast(j.prefs_file);
+        return j;
+      } catch (e) {
+        outEl.textContent = String(e); outEl.hidden = false;
+        return null;
+      } finally {
+        hideRestartModal();
+        await updateModuleGate();
+      }
+    }
+
+    async function setModsecSettings(patch) {
+      var j = await postModsec('/api/modsec-settings', patch, msSettingsOut, 'Applying ModSecurity settings');
+      if (j && j.ok) applyModsecUI({ engine: j.engine, debug_level: j.debug_level });
+      else applyModsecUI(msSettings);
+    }
+
+    Object.keys(msEngineBtns).forEach(function (k) {
+      msEngineBtns[k].addEventListener('click', function () {
+        if (msSettings.engine !== k) setModsecSettings({ engine: k });
+      });
+    });
+    msDebugLevel.addEventListener('change', function () {
+      setModsecSettings({ debug_level: parseInt(msDebugLevel.value, 10) });
+    });
+
+    /* Parse SecRule / SecAction directives (with \ line continuations) */
+    function parseModsecDirectives(file, content) {
+      var out = [];
+      var logical = content.replace(/\\[ \t]*\r?\n/g, ' ').split(/\r?\n/);
+      var inChain = false;
+      logical.forEach(function (line) {
+        var t = line.trim();
+        if (!t || t.charAt(0) === '#') return;
+        var dm = t.match(/^(SecRule|SecAction|SecRuleRemoveById|SecRuleRemoveByTag|SecRuleRemoveByMsg|SecRuleUpdateTargetById|SecRuleUpdateActionById|SecMarker)\b\s*(.*)$/i);
+        if (!dm) return;
+        var directive = dm[1], rest = dm[2];
+        var actions = '';
+        var am = rest.match(/"((?:[^"\\]|\\.)*)"\s*$/);
+        if (am && /^Sec(Rule|Action)$/i.test(directive)) actions = am[1];
+        function act(name) {
+          var m = actions.match(new RegExp('(?:^|,)\\s*' + name + "\\s*:\\s*('((?:[^'\\\\]|\\\\.)*)'|[^,]*)", 'i'));
+          return m ? (m[2] != null ? m[2] : m[1]).trim() : '';
+        }
+        var wasChained = inChain;
+        if (/^Sec(Rule|Action)$/i.test(directive)) inChain = /(?:^|,)\s*chain\b/i.test(actions);
+        if (wasChained) {
+          // chained condition: append to the parent rule
+          var parent = out[out.length - 1];
+          if (parent) {
+            var tm2 = rest.match(/^(\S+)\s+("(?:[^"\\]|\\.)*"|\S+)/);
+            if (tm2) parent.target += '  AND ' + tm2[1] + ' ' + tm2[2];
+          }
+          return;
+        }
+        var disruptive = (actions.match(/(?:^|,)\s*(deny|drop|block|pass|allow|redirect|proxy)\b/i) || [])[1] || '';
+        var status = act('status');
+        var target = '';
+        if (/^SecRule$/i.test(directive)) {
+          var tm = rest.match(/^(\S+)\s+("(?:[^"\\]|\\.)*"|\S+)/);
+          if (tm) target = tm[1] + ' ' + tm[2];
+        } else if (!/^SecAction$/i.test(directive)) {
+          target = rest;
+        }
+        var skip = act('skipAfter');
+        out.push({
+          file: file, directive: directive, id: act('id'), phase: act('phase'),
+          action: (disruptive || (/\bnolog\b/i.test(actions) ? 'pass' : '')) + (status ? ' ' + status : '') + (skip ? ' → ' + skip : ''),
+          logs: !/\bnolog\b/i.test(actions),
+          msg: act('msg'), target: target
+        });
+      });
+      return out;
+    }
+
+    function variantLabel(fam) {
+      var f = fam.variants.block || fam.variants.logonly;
+      return f.file.replace(/\.conf$/, '');
+    }
+
+    function renderModsecRules() {
+      var ov = msOverview;
+      if (!ov) return;
+      var probs = '';
+      (ov.duplicate_ids || []).forEach(function (d) {
+        probs += '<div class="filter-note filter-note-danger">Duplicate rule id ' + escHtml(d.id) + ' in ' + escHtml(d.files.join(', ')) + ' — httpd will not start with this set</div><br>';
+      });
+      (ov.missing_data || []).forEach(function (m) {
+        probs += '<div class="filter-note filter-note-warn">Missing data file ' + escHtml(m) + ' — an empty placeholder is created on apply</div><br>';
+      });
+      msProblems.innerHTML = probs ? '<div style="margin:0.6rem 0">' + probs + '</div>' : '';
+
+      if (!ov.families.length) {
+        msRulesWrap.innerHTML = '<p class="muted" style="margin-top:0.6rem">No <code>*.conf</code> files in <code>' + escHtml(ov.rules_dir) + '</code> yet. Copy your rule set there (the folder is watched; this page refreshes on Refresh).</p>';
+        msDirectivesWrap.innerHTML = '<p class="muted">No active rules.</p>';
+        return;
+      }
+      var html = '<table class="filters" aria-label="ModSecurity rule files" style="margin-top:0.6rem"><thead><tr>'
+        + '<th>Rule file</th><th>Mode</th><th>Rule IDs</th><th>Data files</th></tr></thead><tbody>';
+      ov.families.forEach(function (fam) {
+        var mode = msPendingModes[fam.key] || fam.mode;
+        var opts = fam.kind === 'pair'
+          ? [['block', 'Block'], ['logonly', 'Log only'], ['off', 'Off']]
+          : [['on', 'On'], ['off', 'Off']];
+        var sel = '<select data-ms-key="' + escAttr(fam.key) + '">' + opts.map(function (o) {
+          return '<option value="' + o[0] + '"' + (o[0] === mode ? ' selected' : '') + '>' + o[1] + '</option>';
+        }).join('') + '</select>';
+        if (msPendingModes[fam.key] && msPendingModes[fam.key] !== fam.mode) sel += ' <span class="filter-note filter-note-warn">pending</span>';
+        var shown = fam.kind === 'pair' ? (fam.variants[mode === 'off' ? 'block' : mode] || fam.variants.block) : (fam.variants.block || fam.variants.logonly);
+        var ids = (shown.rule_ids || []);
+        var dataHtml = (shown.data_refs || []).map(function (d) {
+          return '<code style="' + (d.exists ? '' : 'color:#900') + '">' + escHtml(d.rel || d.ref) + '</code>' + (d.exists ? '' : ' (missing)');
+        }).join('<br>') || '<span class="muted">—</span>';
+        html += '<tr><td><code>' + escHtml(variantLabel(fam)) + '</code>'
+          + (fam.kind === 'pair' ? '<br><span class="muted" style="font-size:0.72rem">block + _logonly variants</span>' : '')
+          + '</td><td>' + sel + '</td><td><code>' + escHtml(ids.slice(0, 8).join(', ') + (ids.length > 8 ? ' … (+' + (ids.length - 8) + ')' : '')) + '</code></td>'
+          + '<td>' + dataHtml + '</td></tr>';
+      });
+      html += '</tbody></table><p class="muted" style="margin-top:0.5rem">' + ov.active.length + ' of '
+        + ov.families.length + ' rule file(s) loaded · ' + (ov.data_files || []).length + ' data file(s)</p>';
+      msRulesWrap.innerHTML = html;
+      Array.from(msRulesWrap.querySelectorAll('select[data-ms-key]')).forEach(function (el) {
+        el.addEventListener('change', function () {
+          msPendingModes[el.dataset.msKey] = el.value;
+          renderModsecRules();
+        });
+      });
+    }
+
+    async function renderModsecDirectives() {
+      var ov = msOverview;
+      if (!ov || !ov.active.length) { msDirectivesWrap.innerHTML = '<p class="muted">No active rules.</p>'; return; }
+      var all = [];
+      for (var i = 0; i < ov.active.length; i++) {
+        try {
+          var j = await (await fetch('/api/modsec-file?file=' + encodeURIComponent(ov.active[i]))).json();
+          if (j.ok) all = all.concat(parseModsecDirectives(ov.active[i], j.content));
+        } catch (e) {}
+      }
+      var rules = all.filter(function (r) { return r.directive.toLowerCase() !== 'secmarker'; });
+      var html = '<table class="filters" aria-label="Active ModSecurity rules"><thead><tr>'
+        + '<th>ID</th><th>Phase</th><th>Action</th><th>Target / operator</th><th>Message</th><th>File</th></tr></thead><tbody>';
+      rules.forEach(function (r) {
+        var act = r.action || (r.logs ? 'log (pass)' : '');
+        var cls = /^(deny|drop|block|redirect)\b/i.test(act) ? 'color:#900;font-weight:700' : '';
+        html += '<tr><td style="white-space:nowrap"><code>' + escHtml(r.id || r.directive) + '</code></td><td>' + escHtml(r.phase || '') + '</td>'
+          + '<td><code style="' + cls + '">' + escHtml(act) + '</code></td>'
+          + '<td><code>' + escHtml(r.target.length > 140 ? r.target.slice(0, 140) + '…' : r.target) + '</code></td>'
+          + '<td>' + escHtml(r.msg || '') + '</td><td><code style="font-size:0.72rem">' + escHtml(r.file) + '</code></td></tr>';
+      });
+      html += '</tbody></table><p class="muted" style="margin-top:0.5rem">' + rules.length + ' directive(s) in ' + ov.active.length + ' loaded file(s)</p>';
+      msDirectivesWrap.innerHTML = html;
+    }
+
+    function fillMsFileSelect() {
+      var ov = msOverview || { families: [], data_files: [] };
+      var files = [];
+      ov.families.forEach(function (fam) {
+        if (fam.variants.block) files.push(fam.variants.block.file);
+        if (fam.variants.logonly) files.push(fam.variants.logonly.file);
+      });
+      files = files.concat(ov.data_files || []);
+      var cur = msFileSelect.value;
+      msFileSelect.innerHTML = '';
+      files.forEach(function (f) {
+        var o = document.createElement('option'); o.value = f; o.textContent = f; msFileSelect.appendChild(o);
+      });
+      if (cur && files.indexOf(cur) < 0 && MS_PATH_RE.test(cur)) {
+        var o = document.createElement('option'); o.value = cur; o.textContent = cur + ' (new)'; msFileSelect.appendChild(o);
+      }
+      if (cur) msFileSelect.value = cur;
+    }
+
+    async function loadMsEditorFile() {
+      var f = msFileSelect.value;
+      if (!f) { msEditor.value = ''; return; }
+      try {
+        var j = await (await fetch('/api/modsec-file?file=' + encodeURIComponent(f))).json();
+        msEditor.value = j.ok ? j.content : '';
+      } catch (e) { msEditor.value = ''; }
+    }
+
+    async function loadModsecOverview(reloadEditor) {
+      try { msOverview = await (await fetch('/api/modsec-rules')).json(); } catch (e) { msOverview = null; }
+      renderModsecRules();
+      fillMsFileSelect();
+      if (reloadEditor) await loadMsEditorFile();
+      await renderModsecDirectives();
+    }
+
+    async function onModsecTabOpen() {
+      await loadModsecSettings();
+      await loadModsecOverview(!msTabEverOpened);
+      msTabEverOpened = true;
+    }
+
+    document.getElementById('btnMsRefresh').addEventListener('click', function () { msPendingModes = {}; loadModsecOverview(false); });
+    Array.from(document.querySelectorAll('[data-ms-bulk]')).forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (!msOverview) return;
+        var want = b.dataset.msBulk;
+        msOverview.families.forEach(function (fam) {
+          if (fam.kind === 'pair') msPendingModes[fam.key] = want;
+          else if (want === 'off') msPendingModes[fam.key] = 'off';
+          else msPendingModes[fam.key] = 'on';
+        });
+        renderModsecRules();
+      });
+    });
+    document.getElementById('btnMsApplyModes').addEventListener('click', async function () {
+      var j = await postModsec('/api/modsec-modes', { modes: msPendingModes }, msModesOut, 'Applying rule selection');
+      if (j && j.ok) msPendingModes = {};
+      await loadModsecOverview(false);
+    });
+
+    document.getElementById('btnMsLoad').addEventListener('click', loadMsEditorFile);
+    msFileSelect.addEventListener('change', loadMsEditorFile);
+
+    document.getElementById('btnMsNewFile').addEventListener('click', function () {
+      var name = msNewFileName.value.trim().replace(/^\.?\/+/, '');
+      if (name && !/\.(conf|data)$/.test(name)) name += '.conf';
+      if (!MS_PATH_RE.test(name)) {
+        msSaveMsg.textContent = 'Use a .conf or .data path inside modsecurity/, e.g. local_rules/custom_rules.conf';
+        msSaveMsg.className = 'err'; msSaveMsg.hidden = false;
+        return;
+      }
+      if (!Array.from(msFileSelect.options).some(function (o) { return o.value === name; })) {
+        var o = document.createElement('option'); o.value = name; o.textContent = name + ' (new)';
+        msFileSelect.appendChild(o);
+        msEditor.value = '';
+      }
+      msFileSelect.value = name;
+      msNewFileName.value = '';
+      msSaveMsg.textContent = 'Editing ' + name + ' — click Save to create it. New .conf files are loaded (On) by default.';
+      msSaveMsg.className = 'muted'; msSaveMsg.hidden = false;
+    });
+
+    async function msSaveOrValidate(endpoint, restart) {
+      msSaveMsg.hidden = true; msSaveOut.hidden = true;
+      var filename = msFileSelect.value;
+      if (!filename) {
+        msSaveMsg.textContent = 'Create or select a file first.';
+        msSaveMsg.className = 'err'; msSaveMsg.hidden = false;
+        return null;
+      }
+      var body = { filename: filename, content: msEditor.value, restart: !!restart };
+      if (restart) showRestartModal('Saving & restarting dispatcher');
+      try {
+        var r = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var j = await r.json();
+        var label;
+        if (!j.ok) label = j.error || 'httpd config test failed';
+        else if (endpoint === '/api/modsec-validate') label = j.valid ? 'Config test passed (Syntax OK)' : 'Config test skipped: dispatcher module not installed yet';
+        else label = 'Saved ' + (j.saved_path || filename) + (j.valid ? ' — config test passed' : '') + (j.restarted ? ' — dispatcher restarted' : '');
+        msSaveMsg.textContent = label;
+        msSaveMsg.className = j.ok ? 'muted' : 'err';
+        msSaveMsg.hidden = false;
+        var extra = msResultText(j);
+        if (!j.ok || (j.placeholders || []).length || (j.duplicate_ids || []).length) { msSaveOut.textContent = extra; msSaveOut.hidden = false; }
+        return j;
+      } catch (e) {
+        msSaveOut.textContent = String(e); msSaveOut.hidden = false;
+        return null;
+      } finally {
+        if (restart) { hideRestartModal(); await updateModuleGate(); }
+      }
+    }
+
+    document.getElementById('btnMsValidate').addEventListener('click', function () { msSaveOrValidate('/api/modsec-validate', false); });
+    document.getElementById('btnMsSave').addEventListener('click', async function () {
+      var j = await msSaveOrValidate('/api/modsec-save', false);
+      if (j && j.ok) await loadModsecOverview(false);
+    });
+    document.getElementById('btnMsSaveRestart').addEventListener('click', async function () {
+      setBusy(true);
+      try {
+        var j = await msSaveOrValidate('/api/modsec-save', true);
+        if (j && j.ok) await loadModsecOverview(false);
+      } finally { setBusy(false); }
+    });
+
+    /* ── Test scope (filters / ModSecurity / both) ── */
+    var SCOPE_LABELS = { both: 'Filters + ModSecurity', filters: 'Filters only', modsec: 'ModSecurity only' };
+    var currentScope = 'both';
+    var scopeBtns = Array.from(document.querySelectorAll('#scopeBar [data-scope]'));
+
+    function applyScopeUI(scope) {
+      currentScope = scope;
+      scopeBtns.forEach(function (b) { b.className = 'mode-btn' + (b.dataset.scope === scope ? ' active-allow' : ''); });
+      document.getElementById('scopeHint').textContent = {
+        both: 'Requests pass through ModSecurity, then your dispatcher filters',
+        filters: 'ModSecurity engine is off — only your dispatcher filters decide',
+        modsec: 'Dispatcher filters are stubbed with allow-all — only ModSecurity decides'
+      }[scope];
+      document.getElementById('grpBad').hidden = scope === 'modsec';
+      document.getElementById('grpBlocked').hidden = scope === 'filters';
+      document.getElementById('lblGood').textContent = scope === 'modsec'
+        ? 'Allowed requests (one per line) — must not be blocked by ModSecurity, expect HTTP 200'
+        : 'Good request paths (one per line) — expect HTTP 200';
+      Array.from(document.querySelectorAll('[data-scope-banner]')).forEach(function (el) {
+        el.hidden = el.dataset.scopeBanner !== scope;
+      });
+    }
+
+    async function loadScope() {
+      try { applyScopeUI((await (await fetch('/api/test-scope')).json()).scope || 'both'); } catch (e) {}
+    }
+
+    scopeBtns.forEach(function (b) {
+      b.addEventListener('click', async function () {
+        var scope = b.dataset.scope;
+        if (scope === currentScope) return;
+        scopeBtns.forEach(function (x) { x.disabled = true; });
+        showRestartModal('Switching test scope');
+        try {
+          var r = await fetch('/api/test-scope', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scope: scope }) });
+          var j = await r.json();
+          if (j.ok) {
+            applyScopeUI(scope);
+            if (j.prefs_file) showPrefToast(j.prefs_file);
+            testResults.hidden = true;
+          } else {
+            testErr.textContent = 'Could not switch scope: ' + (j.error || 'unknown error');
+            testErr.hidden = false;
+          }
+        } catch (e) {
+          testErr.textContent = 'Could not switch scope: ' + e; testErr.hidden = false;
+        } finally {
+          hideRestartModal();
+          scopeBtns.forEach(function (x) { x.disabled = false; });
+          await updateModuleGate();
+        }
+      });
+    });
+
+    /* ── Test path save / load ── */
+    var testPathFileSelect = document.getElementById('testPathFileSelect');
+    var btnLoadTestPaths   = document.getElementById('btnLoadTestPaths');
+    var btnSaveTestPaths   = document.getElementById('btnSaveTestPaths');
+
+    function updateSaveButton() {
+      var isDefault = testPathFileSelect.value === 'tests:default_test_paths.json';
+      btnSaveTestPaths.disabled = isDefault;
+    }
+
+    async function refreshTestPathFiles() {
+      try {
+        var r = await fetch('/api/test-path-files');
+        var j = await r.json();
+        var files = j.files || [];
+        testPathFileSelect.innerHTML = '';
+        if (!files.length) {
+          var o = document.createElement('option');
+          o.value = ''; o.textContent = '— no saved files —'; o.disabled = true; o.selected = true;
+          testPathFileSelect.appendChild(o);
+          btnLoadTestPaths.disabled = true;
+        } else {
+          btnLoadTestPaths.disabled = false;
+          files.forEach(function (f) {
+            var o = document.createElement('option'); o.value = f.key; o.textContent = f.label;
+            testPathFileSelect.appendChild(o);
+          });
+        }
+        updateSaveButton();
+      } catch (e) {}
+    }
+
+    testPathFileSelect.addEventListener('change', updateSaveButton);
+
+    btnLoadTestPaths.addEventListener('click', async function () {
+      var key = testPathFileSelect.value;
+      if (!key) return;
+      try {
+        var r = await fetch('/api/load-test-paths?key=' + encodeURIComponent(key));
+        var j = await r.json();
+        if (Array.isArray(j.good_paths)) good.value = j.good_paths.join('\n');
+        if (Array.isArray(j.bad_paths))  bad.value  = j.bad_paths.join('\n');
+        if (Array.isArray(j.blocked_paths)) blocked.value = j.blocked_paths.join('\n');
+      } catch (e) {}
+    });
+
+    btnSaveTestPaths.addEventListener('click', async function () {
+      if (testPathFileSelect.value === 'tests:default_test_paths.json') return;
+      var selectedKey = testPathFileSelect.value;
+      var filename = selectedKey ? selectedKey.replace(/^tests:/, '') : 'web_test_paths.json';
+      var goodLines = good.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      var badLines  = bad.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      var blockedLines = blocked.value.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      try {
+        var r = await fetch('/api/save-test-paths', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: filename, good_paths: goodLines, bad_paths: badLines, blocked_paths: blockedLines })
+        });
+        var j = await r.json();
+        if (j.ok) {
+          showPrefToast(j.saved_path, 'Tests saved');
+          await refreshTestPathFiles();
+          var savedKey = 'tests:' + j.filename;
+          for (var i = 0; i < testPathFileSelect.options.length; i++) {
+            if (testPathFileSelect.options[i].value === savedKey) {
+              testPathFileSelect.selectedIndex = i; break;
+            }
+          }
+        }
+      } catch (e) {}
+    });
+
+    /* ── Init ── */
+    async function loadVersions() {
+      var r = await fetch('/api/versions');
+      var j = await r.json();
+      var list = j.versions || [];
+      ver.innerHTML = ''; verModal.innerHTML = '';
+      list.forEach(function (v) {
+        var o = document.createElement('option'); o.value = v; o.textContent = v; ver.appendChild(o);
+        var om = document.createElement('option'); om.value = v; om.textContent = v; verModal.appendChild(om);
+      });
+      var want = new URLSearchParams(location.search).get('ver');
+      var prefs = {};
+      try { var pr = await fetch('/api/prefs'); prefs = await pr.json(); } catch (_) {}
+      var prefVer = (prefs.dispatcher_version && list.indexOf(prefs.dispatcher_version) >= 0)
+        ? prefs.dispatcher_version : null;
+      if (want && list.indexOf(want) >= 0) ver.value = want;
+      else if (prefVer) ver.value = prefVer;
+      else if (list.length) ver.selectedIndex = 0;
+      syncModalVersionFromMain();
+      if (btnModalOk) btnModalOk.disabled = list.length === 0;
+      var installed = await updateModuleGate();
+      if (!installed && list.length) {
+        var autoVer = prefVer || list[0];
+        moduleModal.hidden = true;
+        document.body.classList.remove('module-modal-open');
+        setBusy(true);
+        try {
+          var ar = await fetch('/api/dispatcher-version', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version: autoVer })
+          });
+          var arText = await ar.text();
+          var arJ; try { arJ = JSON.parse(arText); } catch (_) {}
+          if (ar.ok) {
+            ver.value = autoVer;
+            actionOut.textContent = JSON.stringify(arJ, null, 2);
+            actionOut.hidden = false;
+            await updateModuleGate();
+          } else {
+            moduleModal.hidden = false;
+            document.body.classList.add('module-modal-open');
+            try { btnModalOk.focus(); } catch (_) {}
+          }
+        } catch (e) {
+          moduleModal.hidden = false;
+          document.body.classList.add('module-modal-open');
+          try { btnModalOk.focus(); } catch (_) {}
+        } finally {
+          setBusy(false);
+        }
+      }
+      await refreshInstalledVersion();
+      await loadSandboxMode();
+      await loadScope();
+      await refreshFilterFilesStatic();
+      await loadDefaultTestPaths();
+      await refreshTestPathFiles();
+      await refreshServiceHealth();
+    }
+
+    // Poll module + service status every 5 seconds
+    setInterval(function () { updateModuleGate(); refreshServiceHealth(); }, 5000);
+
+    loadVersions().catch(function (e) {
+      actionOut.textContent = 'Failed to load versions: ' + e;
+      actionOut.hidden = false;
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# Local secrets / overrides
+.env
+
+# Editor & local AI context (not shared)
+.cursor/
+.ai/
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# HTTPD / dispatcher runtime logs (Compose bind-mount)
+logs/*
+!logs/README.md
+
+# User filter files created at runtime (via container or control panel UI)
+filters/001_my_filters.any
+filters/002_web_filters.any
+
+# Dispatcher binary
+*.so
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Customer ModSecurity rules copied in for testing (keep only the README)
+modsecurity/*
+!modsecurity/README.md
+
+# Runtime sandbox preferences (may list private rule file names)
+filters/.prefs.json

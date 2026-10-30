@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Log stream — dispatcher sandbox</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      line-height: 1.45;
+      color: #1a1a1a;
+      background: #0d1117;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+      padding: 0.5rem 0.85rem;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      flex-shrink: 0;
+    }
+    .toolbar a {
+      color: #58a6ff;
+      font-size: 0.82rem;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .toolbar a:hover { text-decoration: underline; }
+    .toolbar .sep { color: #484f58; }
+    .spacer { flex: 1; }
+
+    /* Log selector */
+    #logSelect {
+      background: #21262d;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+      border-radius: 5px;
+      padding: 0.25rem 0.5rem;
+      font: inherit;
+      font-size: 0.82rem;
+      cursor: pointer;
+      min-width: 14rem;
+    }
+    #logSelect:focus { outline: 1px solid #58a6ff; }
+
+    /* Status dot */
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #3fb950; flex-shrink: 0;
+      box-shadow: 0 0 5px #3fb950;
+    }
+    .status-dot.closed { background: #484f58; box-shadow: none; }
+    #statusLabel { font-size: 0.78rem; color: #8b949e; white-space: nowrap; }
+
+    /* Auto-scroll toggle */
+    .autoscroll-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .autoscroll-wrap input[type="checkbox"] {
+      width: 15px; height: 15px; cursor: pointer;
+      accent-color: #3fb950;
+    }
+    .autoscroll-wrap label {
+      font-size: 0.8rem;
+      color: #8b949e;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .autoscroll-wrap input:checked + label { color: #3fb950; }
+
+    /* Toolbar buttons */
+    button.toolbar-btn {
+      padding: 0.25rem 0.6rem;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #c9d1d9;
+      border-radius: 5px;
+      font: inherit;
+      font-size: 0.78rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button.toolbar-btn:hover { background: #30363d; }
+    button.toolbar-btn.danger { border-color: #6e1a1a; background: #3d1212; color: #f47068; }
+    button.toolbar-btn.danger:hover { background: #5a1919; }
+
+    /* ── Log area ── */
+    #out {
+      flex: 1;
+      margin: 0;
+      padding: 0.65rem 0.85rem 1rem;
+      background: #0d1117;
+      color: #e6edf3;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      overflow-y: scroll;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      border: none;
+      outline: none;
+      min-height: 0;
+    }
+    .err-banner {
+      margin: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      background: #2d1117;
+      color: #f85149;
+      border: 1px solid #f8514940;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <a href="/">← Control panel</a>
+    <span class="sep">|</span>
+    <select id="logSelect" aria-label="Select log file"></select>
+    <span class="spacer"></span>
+    <span class="status-dot" id="statusDot" class="closed"></span>
+    <span id="statusLabel">connecting…</span>
+    <span class="sep">|</span>
+    <span class="autoscroll-wrap">
+      <input type="checkbox" id="chkAutoScroll" checked />
+      <label for="chkAutoScroll">Auto-scroll</label>
+    </span>
+    <button type="button" class="toolbar-btn" id="btnClear">Clear</button>
+    <button type="button" class="toolbar-btn danger" id="btnTruncate">Truncate log</button>
+  </div>
+
+  <pre id="out" aria-live="polite" aria-label="Log output"></pre>
+  <p id="errBanner" class="err-banner" hidden></p>
+
+  <script>
+    (function () {
+      var LOG_FILES = [
+        { name: 'dispatcher.log',       label: 'dispatcher.log — Dispatcher module (trace)' },
+        { name: 'filter-test.log',      label: 'filter-test.log — Filter extractor' },
+        { name: 'error_log',            label: 'error_log — Dispatcher httpd' },
+        { name: 'access_log',           label: 'access_log — Dispatcher access' },
+        { name: 'renderer_error_log',   label: 'renderer_error_log — Renderer httpd' },
+        { name: 'renderer_access_log',  label: 'renderer_access_log — Renderer access' },
+        { name: 'modsec_audit.log',     label: 'modsec_audit.log — ModSecurity audit (blocked requests)' },
+        { name: 'modsec_debug.log',     label: 'modsec_debug.log — ModSecurity debug' },
+      ];
+
+      var logSelect   = document.getElementById('logSelect');
+      var out         = document.getElementById('out');
+      var errBanner   = document.getElementById('errBanner');
+      var statusDot   = document.getElementById('statusDot');
+      var statusLabel = document.getElementById('statusLabel');
+      var chkAutoScroll = document.getElementById('chkAutoScroll');
+      var btnClear    = document.getElementById('btnClear');
+      var btnTruncate = document.getElementById('btnTruncate');
+
+      var currentEs = null;
+
+      // Populate dropdown
+      LOG_FILES.forEach(function (f) {
+        var opt = document.createElement('option');
+        opt.value = f.name;
+        opt.textContent = f.label;
+        logSelect.appendChild(opt);
+      });
+
+      // Pick initial log from ?name= or default to first
+      var params = new URLSearchParams(location.search);
+      var initName = params.get('name');
+      var validNames = LOG_FILES.map(function (f) { return f.name; });
+      if (!initName || !validNames.includes(initName)) initName = LOG_FILES[0].name;
+      logSelect.value = initName;
+
+      function setStatus(state) {
+        if (state === 'live') {
+          statusDot.className = 'status-dot';
+          statusLabel.textContent = 'live';
+        } else if (state === 'reconnecting') {
+          statusDot.className = 'status-dot closed';
+          statusLabel.textContent = 'reconnecting…';
+        } else if (state === 'closed') {
+          statusDot.className = 'status-dot closed';
+          statusLabel.textContent = 'closed';
+        } else if (state === 'error') {
+          statusDot.className = 'status-dot closed';
+          statusLabel.textContent = 'error';
+        } else {
+          statusDot.className = 'status-dot closed';
+          statusLabel.textContent = state;
+        }
+      }
+
+      function scrollToBottom() {
+        out.scrollTop = out.scrollHeight;
+      }
+
+      function appendLine(text) {
+        out.textContent += text + '\n';
+        if (chkAutoScroll.checked) scrollToBottom();
+      }
+
+      out.addEventListener('scroll', function () {
+        var atBottom = out.scrollTop + out.clientHeight >= out.scrollHeight - 8;
+        if (!atBottom && chkAutoScroll.checked) {
+          chkAutoScroll.checked = false;
+        } else if (atBottom && !chkAutoScroll.checked) {
+          chkAutoScroll.checked = true;
+        }
+      });
+
+      chkAutoScroll.addEventListener('change', function () {
+        if (chkAutoScroll.checked) scrollToBottom();
+      });
+
+      btnClear.addEventListener('click', function () {
+        out.textContent = '';
+      });
+
+      btnTruncate.addEventListener('click', async function () {
+        var name = logSelect.value;
+        if (!confirm('Truncate (empty) ' + name + ' on disk?')) return;
+        btnTruncate.disabled = true;
+        try {
+          var r = await fetch('/api/truncate-log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name })
+          });
+          var j = await r.json();
+          out.textContent = '';
+          if (!j.ok) {
+            appendLine('[truncate error: ' + (j.error || JSON.stringify(j)) + ']');
+          } else {
+            appendLine('[log truncated]');
+          }
+        } catch (e) {
+          appendLine('[truncate failed: ' + e + ']');
+        } finally {
+          btnTruncate.disabled = false;
+        }
+      });
+
+      function startStream(name) {
+        // Close any existing stream
+        if (currentEs) {
+          currentEs.close();
+          currentEs = null;
+        }
+
+        errBanner.hidden = true;
+        errBanner.textContent = '';
+        out.textContent = '';
+        setStatus('connecting…');
+
+        document.title = name + ' — dispatcher sandbox';
+        history.pushState(null, '', '/logs/view?name=' + encodeURIComponent(name));
+
+        var es = new EventSource('/api/log-stream?name=' + encodeURIComponent(name));
+        currentEs = es;
+
+        es.addEventListener('open', function () {
+          setStatus('live');
+        });
+
+        es.addEventListener('error', function () {
+          if (es.readyState === EventSource.CLOSED) {
+            setStatus('closed');
+            appendLine('\n[stream closed]');
+          } else {
+            setStatus('reconnecting');
+          }
+        });
+
+        es.onmessage = function (e) {
+          try {
+            var o = JSON.parse(e.data);
+            if (o.error) {
+              errBanner.hidden = false;
+              errBanner.textContent = o.error;
+              setStatus('error');
+              es.close();
+              return;
+            }
+            if (o.line !== undefined && o.line !== null) {
+              appendLine(o.line);
+            }
+          } catch (err) {
+            appendLine(e.data);
+          }
+        };
+      }
+
+      logSelect.addEventListener('change', function () {
+        startStream(logSelect.value);
+      });
+
+      // Handle browser back/forward
+      window.addEventListener('popstate', function () {
+        var p = new URLSearchParams(location.search).get('name');
+        if (p && validNames.includes(p) && p !== logSelect.value) {
+          logSelect.value = p;
+          startStream(p);
+        }
+      });
+
+      startStream(initName);
+    })();
+  </script>
+</body>
+</html>
