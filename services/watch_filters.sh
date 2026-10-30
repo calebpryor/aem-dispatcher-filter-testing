@@ -11,7 +11,8 @@ echo "$LOG_PREFIX Starting file watcher for directories: $FILTERS_DIR $MODSEC_RU
 # Function to restart dispatcher httpd
 restart_dispatcher() {
     echo "$LOG_PREFIX Filter files changed, restarting dispatcher..."
-    supervisorctl restart dispatcher
+    # Shared lock with the control panel (see modsec_config.py) so restarts never overlap.
+    flock /tmp/sandbox-httpd-restart.lock supervisorctl restart dispatcher
     if [ $? -eq 0 ]; then
         echo "$LOG_PREFIX Dispatcher restarted successfully"
     else

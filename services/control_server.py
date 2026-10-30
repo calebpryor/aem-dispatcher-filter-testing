@@ -493,23 +493,39 @@ def _get_service_health() -> List[Dict[str, str]]:
         return [{"name": "supervisorctl", "state": "ERROR", "detail": str(e)}]
 
 
+_HTTPD_PROGRAMS = ("dispatcher", "renderer")
+
+
+def _wait_until_running(timeout: float = 20.0) -> List[str]:
+    """Poll supervisord until both httpd programs are RUNNING; return those that aren't."""
+    deadline = time.monotonic() + timeout
+    while True:
+        not_running = [
+            s["name"] for s in _get_service_health()
+            if s.get("name") in _HTTPD_PROGRAMS and s.get("state", "").upper() != "RUNNING"
+        ]
+        if not not_running or time.monotonic() >= deadline:
+            return not_running
+        time.sleep(0.5)
+
+
 def _restart_httpd_processes() -> None:
     # supervisorctl restart exits non-zero when processes pass through intermediate
     # ERROR/stopped states while cycling — even when they ultimately come up fine.
-    # Ignore the exit code and verify the final running state instead.
-    result = subprocess.run(
-        ["/usr/bin/supervisorctl", "restart", "dispatcher", "renderer"],
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-    health = _get_service_health()
-    not_running = [
-        s["name"] for s in health
-        if s.get("name") in ("dispatcher", "renderer")
-        and s.get("state", "").upper() != "RUNNING"
-    ]
-    if not_running:
+    # Ignore the exit code and verify the final running state instead. Restarts are
+    # serialized with the file watcher (shared lock), the final state is polled rather
+    # than sampled once, and a restart that still hasn't settled is retried once.
+    with msc.restart_lock():
+        result = None
+        for _attempt in range(2):
+            result = subprocess.run(
+                ["/usr/bin/supervisorctl", "restart", *_HTTPD_PROGRAMS],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if not _wait_until_running():
+                return
         raise subprocess.CalledProcessError(
             result.returncode, result.args,
             output=result.stdout, stderr=result.stderr,
